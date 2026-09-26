@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Somik World v0.6 — Long Run</title>
+<title>Somik World v0.6.1 — Long Run Integrity</title>
 <style>
 :root{
   --bg:#111827;
@@ -101,8 +101,8 @@ button{
 <body>
 <div class="app">
   <main>
-    <h1>Somik World v0.6</h1>
-    <div class="subtitle">Long Run — חוקי העולם מוקפאים. נותנים לאבולוציה לרוץ לאורך זמן בלי להוסיף עוד חוקים.</div>
+    <h1>Somik World v0.6.1</h1>
+    <div class="subtitle">Long Run Integrity — חוקי החיים נשארו כפי שהיו; השדרוג מתקן רק הטיות ניסוי, שמירה ומדידה.</div>
 
     <div class="toolbar">
       <button id="pauseBtn">⏸ עצור</button>
@@ -237,11 +237,11 @@ button{
     </div>
 
     <div class="card">
-      <h3>🔒 מצב ריצה ארוכה</h3>
+      <h3>🔒 מצב ריצה ארוכה — v0.6.1</h3>
       <div class="small">
-        חוקי העולם של v0.6 נעולים כרגע לניסוי ארוך.
-        לא משנים מזון, סכנה, בלוקים, רבייה, זיכרון, גודל מוח או SIGNAL בזמן הריצה.
-        המטרה עכשיו היא לצפות במה שמתפתח — לא לכוון את התוצאה.
+        חוקי החיים נעולים לניסוי ארוך. לא נוספו חושים, פעולות או מטרות חדשות.
+        זרימת המזון היא חיצונית וקבועה באמת; מגבלות דפדפן עוצרות את הסימולציה במקום לשנות רבייה או אקולוגיה.
+        המטרה היא לצפות במה שמתפתח — לא לכוון את התוצאה.
       </div>
     </div>
 
@@ -252,13 +252,13 @@ button{
       <div class="row"><span>התאמה לפי אוכלוסייה</span><b>אין</b></div>
       <div class="row"><span>מזון יכול להישאר באגירה</span><b>כן</b></div>
       <div class="small" style="margin-top:8px">
-        המדדים כאן הם תצפית בלבד. העולם אינו מגדיל מזון כשהאוכלוסייה גדלה,
-        אינו מציל אוכלוסייה מרעב ואינו יוצר “תקופות שפע” מלאכותיות.
+        המדדים כאן הם תצפית בלבד. 0.18 יחידות מזון נכנסות בכל tick בממוצע גם אם המזון מצטבר.
+        העולם אינו מגיב לגודל האוכלוסייה, אינו מציל מרעב ואינו עוצר את הזרימה בגלל אגירה.
       </div>
     </div>
 
     <div class="card">
-      <h3>v0.6 — מצב חי</h3>
+      <h3>v0.6.1 — מצב חי</h3>
       <div class="row"><span>גודל מוח ממוצע</span><b id="avgHidden">9.0</b></div>
       <div class="row"><span>טווח גודל מוח</span><b id="hiddenRange">9–9</b></div>
       <div class="row"><span>שימוש ממוצע באות</span><b id="avgSignal">—</b></div>
@@ -305,6 +305,21 @@ button{
         </div>
       </div>
     </details>
+
+    <div class="card">
+      <h3>🧭 Long Run Integrity</h3>
+      <div class="row"><span>דגימות ארכיון מלא</span><b id="longRunSamples">0</b></div>
+      <div class="row"><span>עצירת בטיחות</span><b id="computeGuardState">לא</b></div>
+      <div class="row"><span>Checkpoint בדפדפן</span><b id="checkpointState">ממתין</b></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button id="checkpointBtn">🛡 שמור Checkpoint</button>
+        <button id="restoreCheckpointBtn">↩ שחזר Checkpoint</button>
+        <button id="abPairBtn">A/B מאותו Seed</button>
+      </div>
+      <div class="small" style="margin-top:8px">
+        הכלים כאן תצפיתיים בלבד. A/B יוצר שתי נקודות התחלה זהות מאותו Seed — עם SIGNAL ובלעדיו — בלי לשנות את העולם הפעיל.
+      </div>
+    </div>
 
     <div class="card">
       <h3>Somik נבחר <span class="badge" id="selectedBadge">לחץ על Somik</span></h3>
@@ -385,7 +400,8 @@ const VISION=180;
 const BLOCK_VISION=140;
 const BLOCK_SIZE=22;
 const BLOCK_GRID=25;
-const EMERGENCY_MAX_POP=1000; // לא חוק ביולוגי — רק הגנת דפדפן
+const COMPUTE_POP_PAUSE=1000; // מגבלת מחשוב בלבד: עוצרים את הריצה, לא את הרבייה
+const COMPUTE_FOOD_PAUSE=20000; // מגבלת מחשוב בלבד: עוצרים לפני שהדפדפן קורס
 const MATE_VISION=180;
 const MATE_CONTACT_RADIUS=24;
 const REPRO_SIGNAL_THRESHOLD=0.58;
@@ -403,8 +419,8 @@ const BRAIN_SIZE_COST_PER_NEURON=0.00045;
 const SIGNAL_RANGE=140;
 const SIGNAL_COST=0.0015;
 const STRONG_SIGNAL_THRESHOLD=0.50;
-const FOOD_TARGET=220;
-const FOOD_REGEN_RATE=0.18; // יחידות מזון לכל tick — זרימה קבועה, לא תלויה באוכלוסייה
+const FOOD_SURPLUS_ALERT=220; // סף תצפית בלבד; אינו מגביל יצירת מזון
+const FOOD_REGEN_RATE=0.18; // יחידות מזון לכל tick — זרימה חיצונית קבועה, ללא יעד מלאי
 const FOOD_ENERGY=42;
 const INITIAL_BLOCKS=100;
 
@@ -447,6 +463,8 @@ let usefulProtectionTicks=0;
 let hazardDamageTotal=0;
 let populationHistory=[];
 let lastHistoryTick=0;
+let longRunArchive=[];
+let computePauseReason="";
 let memoryMetrics=makeMemoryStats(0);
 
 let worldEventLog=[];
@@ -491,7 +509,8 @@ const PRE_EMERGENCE_V14_SAVE_KEY="somik-world-v05-pre-emergence-v14-backup";
 const PRE_051_SAVE_KEY="somik-world-v05-pre-051-backup";
 const PRE_PURE_SENSOR_SAVE_KEY="somik-world-v051-pre-pure-sensors-backup";
 const PRE_V06_SAVE_KEY="somik-world-v051-pre-v06-backup";
-const SAVE_VERSION=17;
+const PRE_V061_SAVE_KEY="somik-world-v06-pre-v061-backup";
+const SAVE_VERSION=18;
 
 const MEMORY_GATE_OPEN=0.65;
 const MEMORY_WRITE_DELTA=0.03;
@@ -1240,11 +1259,11 @@ function evaluateWorldAlerts(){
       "unexpected",
       30000
     );
-  }else if(food>=FOOD_TARGET*0.9 && pop<baseline*0.7){
+  }else if(food>=FOOD_SURPLUS_ALERT && pop<baseline*0.7){
     pushWorldEvent(
       "food-surplus",
       "האוכל מצטבר",
-      `האוכל כמעט מלא (${food}), בזמן שהאוכלוסייה נמוכה יחסית.`,
+      `האוכל מצטבר (${food}), בזמן שהאוכלוסייה נמוכה יחסית.`,
       "emerging",
       50000
     );
@@ -2553,6 +2572,56 @@ function setSaveStatus(text){
   if(el)el.textContent=text;
 }
 
+function makeLongRunSnapshot(){
+  const complexity=brainComplexityStats();
+  const mem=currentMemorySignal();
+  const lineage=livingFounderStats();
+  const oldest=somiks.reduce((m,s)=>Math.max(m,s.age||0),0);
+  return{
+    t:ticks,
+    p:somiks.length,
+    food:totalFoodUnits(),
+    foodGround:foods.length,
+    foodCarried:carriedFoodCount(),
+    generation:somiks.reduce((m,s)=>Math.max(m,s.generation||0),0),
+    births,
+    deaths,
+    oldest,
+    activeFounders:lineage.active||0,
+    avgBrain:complexity.avg||0,
+    minBrain:complexity.min||0,
+    maxBrain:complexity.max||0,
+    avgSignal:signalMetrics.samples?signalMetrics.absEmit/signalMetrics.samples:0,
+    strongSignalRate:signalMetrics.samples?signalMetrics.strongEmit/signalMetrics.samples:0,
+    memoryHold:mem.hold||0,
+    memoryResponse:mem.strongest||0
+  };
+}
+
+function recordLongRunSample(force=false){
+  if(!force && ticks-lastHistoryTick<2500)return;
+  const snap=makeLongRunSnapshot();
+  const prev=longRunArchive[longRunArchive.length-1];
+  if(!prev||prev.t!==snap.t)longRunArchive.push(snap);
+}
+
+function pauseForComputeLimit(reason){
+  if(computePauseReason===reason&&!running)return;
+  computePauseReason=reason;
+  running=false;
+  pushWorldEvent(
+    "compute-pause-"+reason,
+    "עצירת בטיחות חישובית",
+    reason,
+    "unexpected",
+    0
+  );
+  const pauseBtn=document.getElementById("pauseBtn");
+  if(pauseBtn)pauseBtn.textContent="⚠ עצירת חישוב";
+  saveGame();
+  saveCheckpoint();
+}
+
 function stateObject(){
   return{
     version:SAVE_VERSION,
@@ -2576,6 +2645,8 @@ function stateObject(){
     hazardDamageTotal,
     populationHistory,
     lastHistoryTick,
+    longRunArchive,
+    computePauseReason,
     memoryMetrics,
     worldEventLog,
     alertFlags,
@@ -2622,7 +2693,7 @@ function saveGame(){
 
 function restoreState(state){
   if(!state||typeof state!=="object")return false;
-  if(state.version!==1&&state.version!==2&&state.version!==3&&state.version!==4&&state.version!==5&&state.version!==6&&state.version!==7&&state.version!==8&&state.version!==9&&state.version!==10&&state.version!==11&&state.version!==12&&state.version!==13&&state.version!==14&&state.version!==15&&state.version!==16&&state.version!==17)return false;
+  if(state.version!==1&&state.version!==2&&state.version!==3&&state.version!==4&&state.version!==5&&state.version!==6&&state.version!==7&&state.version!==8&&state.version!==9&&state.version!==10&&state.version!==11&&state.version!==12&&state.version!==13&&state.version!==14&&state.version!==15&&state.version!==16&&state.version!==17&&state.version!==18)return false;
 
   ticks=state.ticks ?? 0;
 
@@ -2649,6 +2720,13 @@ function restoreState(state){
 
   populationHistory=Array.isArray(state.populationHistory)?state.populationHistory:[];
   lastHistoryTick=state.lastHistoryTick ?? ticks;
+  longRunArchive=Array.isArray(state.longRunArchive)?state.longRunArchive:[];
+  if(longRunArchive.length===0&&populationHistory.length){
+    longRunArchive=populationHistory.map(d=>({
+      t:d.t??0,p:d.p??0,food:d.f??0,generation:d.g??0,legacy:true
+    }));
+  }
+  computePauseReason=state.computePauseReason??"";
   memoryMetrics=normalizeMemoryStats(state.memoryMetrics,ticks);
   worldEventLog=Array.isArray(state.worldEventLog)?state.worldEventLog:[];
   alertFlags=state.alertFlags&&typeof state.alertFlags==="object"?state.alertFlags:{};
@@ -2748,14 +2826,17 @@ function loadGame(){
       if((state.version??0)<17&&!localStorage.getItem(PRE_V06_SAVE_KEY)){
         localStorage.setItem(PRE_V06_SAVE_KEY,raw);
       }
+      if((state.version??0)<18&&!localStorage.getItem(PRE_V061_SAVE_KEY)){
+        localStorage.setItem(PRE_V061_SAVE_KEY,raw);
+      }
 
       if(restoreState(state)){
-        if(worldExtinct){
+        if(worldExtinct||computePauseReason){
           running=false;
           const pauseBtn=document.getElementById("pauseBtn");
-          if(pauseBtn)pauseBtn.textContent="☠ העולם נכחד";
+          if(pauseBtn)pauseBtn.textContent=worldExtinct?"☠ העולם נכחד":"⚠ עצירת חישוב";
         }
-        setSaveStatus("🧠 המשך מהשמירה — v0.6");
+        setSaveStatus("🧠 המשך מהשמירה — v0.6.1");
         return true;
       }
     }
@@ -2809,7 +2890,7 @@ function exportSave(){
   saveGame();
   downloadStateFile(
     stateObject(),
-    "somik-world-v06-"+ticks+"-world-time.json",
+    "somik-world-v061-"+ticks+"-world-time.json",
     "⬇️ קובץ השמירה נוצר"
   );
 }
@@ -2821,7 +2902,7 @@ function exportControlClone(){
   clone.savedAt=Date.now();
   downloadStateFile(
     clone,
-    "somik-world-v06-control-no-signal-"+ticks+"-world-time.json",
+    "somik-world-v061-control-no-signal-"+ticks+"-world-time.json",
     "🧪 Clone ביקורת ללא אות נוצר"
   );
 }
@@ -2831,10 +2912,16 @@ function importSaveFile(file){
 
   reader.onload=()=>{
     try{
-      const state=JSON.parse(reader.result);
+      const parsed=JSON.parse(reader.result);
+      let state=parsed;
+      if(parsed&&parsed.type==="somik-v061-ab-pair"){
+        const chooseA=confirm("קובץ A/B: OK = Run A עם SIGNAL, ביטול = Run B בלי SIGNAL.");
+        state=chooseA?parsed.runA:parsed.runB;
+      }
       if(!restoreState(state))throw new Error("Invalid save");
+      computePauseReason="";
       saveGame();
-      setSaveStatus(communicationEnabled?"⬆️ השמירה נטענה בהצלחה":"🧪 Clone ביקורת ללא אות נטען");
+      setSaveStatus(communicationEnabled?"⬆️ השמירה נטענה בהצלחה":"🧪 ביקורת ללא אות נטענה");
     }catch(err){
       console.error(err);
       alert("לא ניתן לקרוא את קובץ השמירה.");
@@ -2842,6 +2929,100 @@ function importSaveFile(file){
   };
 
   reader.readAsText(file);
+}
+
+const CHECKPOINT_DB_NAME="somik-world-v061-checkpoints";
+const CHECKPOINT_STORE="states";
+const CHECKPOINT_KEY="latest";
+let lastCheckpointAt=0;
+
+function openCheckpointDB(){
+  return new Promise((resolve,reject)=>{
+    if(!window.indexedDB)return reject(new Error("IndexedDB unavailable"));
+    const req=indexedDB.open(CHECKPOINT_DB_NAME,1);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(CHECKPOINT_STORE))db.createObjectStore(CHECKPOINT_STORE);
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error("IndexedDB open failed"));
+  });
+}
+
+async function saveCheckpoint(){
+  try{
+    const db=await openCheckpointDB();
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction(CHECKPOINT_STORE,"readwrite");
+      tx.objectStore(CHECKPOINT_STORE).put(stateObject(),CHECKPOINT_KEY);
+      tx.oncomplete=resolve;
+      tx.onerror=()=>reject(tx.error||new Error("Checkpoint write failed"));
+    });
+    db.close();
+    lastCheckpointAt=Date.now();
+    const el=document.getElementById("checkpointState");
+    if(el)el.textContent="נשמר "+new Date(lastCheckpointAt).toLocaleTimeString("he-IL");
+    return true;
+  }catch(err){
+    console.error("Checkpoint failed",err);
+    const el=document.getElementById("checkpointState");
+    if(el)el.textContent="נכשל";
+    return false;
+  }
+}
+
+async function restoreCheckpoint(){
+  try{
+    const db=await openCheckpointDB();
+    const state=await new Promise((resolve,reject)=>{
+      const tx=db.transaction(CHECKPOINT_STORE,"readonly");
+      const req=tx.objectStore(CHECKPOINT_STORE).get(CHECKPOINT_KEY);
+      req.onsuccess=()=>resolve(req.result||null);
+      req.onerror=()=>reject(req.error||new Error("Checkpoint read failed"));
+    });
+    db.close();
+    if(!state){alert("אין Checkpoint שמור בדפדפן הזה.");return false;}
+    if(!confirm("לשחזר את ה-Checkpoint האחרון? מצב העולם הנוכחי יוחלף."))return false;
+    if(!restoreState(state))throw new Error("Invalid checkpoint");
+    running=!worldExtinct&&!computePauseReason;
+    saveGame();
+    const pauseBtn=document.getElementById("pauseBtn");
+    if(pauseBtn)pauseBtn.textContent=running?"⏸ עצור":(worldExtinct?"☠ העולם נכחד":"⚠ עצירת חישוב");
+    return true;
+  }catch(err){
+    console.error("Restore checkpoint failed",err);
+    alert("לא ניתן לשחזר את ה-Checkpoint.");
+    return false;
+  }
+}
+
+function makeFreshStateForSeed(seed,communication){
+  const current=stateObject();
+  const wasRunning=running;
+  const oldSeed=worldSeed;
+  worldSeed=normalizeSeed(seed);
+  resetWorld({keepSeed:true,communication});
+  const fresh=stateObject();
+  restoreState(current);
+  worldSeed=oldSeed===current.worldSeed?current.worldSeed:worldSeed;
+  running=wasRunning;
+  return fresh;
+}
+
+function exportABPair(){
+  saveGame();
+  const seed=worldSeed;
+  const runA=makeFreshStateForSeed(seed,true);
+  const runB=makeFreshStateForSeed(seed,false);
+  const pack={
+    type:"somik-v061-ab-pair",
+    version:1,
+    createdAt:Date.now(),
+    seed,
+    note:"Run A = SIGNAL active; Run B = SIGNAL disabled. Both start from the same deterministic seed and initial world.",
+    runA,runB
+  };
+  downloadStateFile(pack,"somik-world-v061-ab-seed-"+seed+".json","🧪 זוג A/B מאותו Seed נוצר");
 }
 
 function pointInsideBlock(x,y,pad=0){
@@ -2976,6 +3157,8 @@ function resetWorld(options={}){
   hazardDamageTotal=0;
   populationHistory=[];
   lastHistoryTick=0;
+  longRunArchive=[];
+  computePauseReason="";
   memoryMetrics=makeMemoryStats(0);
   worldEventLog=[];
   alertFlags={};
@@ -3003,11 +3186,10 @@ function resetWorld(options={}){
   createPopulation(20);
   addFood(135);
   populationHistory.push({t:0,p:somiks.length,f:totalFoodUnits(),g:0});
+  recordLongRunSample(true);
 }
 
 function processFreeReproduction(){
-  if(somiks.length>=EMERGENCY_MAX_POP)return;
-
   const willing=somiks.filter(s=>
     s.energy>0 &&
     (s.lastDecision.reproduce??0)>=REPRO_SIGNAL_THRESHOLD
@@ -3035,7 +3217,7 @@ function processFreeReproduction(){
     const investB=desiredReproInvestment(partner);
 
     // כל הורה בוחר את ההשקעה שלו. אם אין לו את האנרגיה שבחר — הניסיון נכשל.
-    if(a.energy<=investA||partner.energy<=investB||somiks.length>=EMERGENCY_MAX_POP)continue;
+    if(a.energy<=investA||partner.energy<=investB)continue;
 
     a.energy-=investA;
     partner.energy-=investB;
@@ -3113,15 +3295,12 @@ function updateWorld(){
 
   somiks=alive;
 
-  // v0.5.1: זרימת מזון קבועה. אין התאמה לאוכלוסייה ואין מצב מיוחד של רעב/שפע.
-  // 0.18 יחידות/tick = יחידת מזון אחת בערך כל 5.56 ticks לאורך זמן.
-  if(totalFoodUnits()<FOOD_TARGET){
-    foodSpawnAccumulator+=FOOD_REGEN_RATE;
-
-    while(foodSpawnAccumulator>=1 && totalFoodUnits()<FOOD_TARGET){
-      addFood(1);
-      foodSpawnAccumulator-=1;
-    }
+  // v0.6.1: זרימת מזון חיצונית קבועה באמת.
+  // אין יעד מלאי, אין משוב מהאוכלוסייה ואין עצירה בגלל אגירה.
+  foodSpawnAccumulator+=FOOD_REGEN_RATE;
+  while(foodSpawnAccumulator>=1){
+    addFood(1);
+    foodSpawnAccumulator-=1;
   }
 
   evaluateWorldAlerts();
@@ -3133,8 +3312,17 @@ function updateWorld(){
       f:totalFoodUnits(),
       g:somiks.reduce((m,s)=>Math.max(m,s.generation),0)
     });
+    recordLongRunSample(true);
+    // הגרף מחזיק חלון נוח לתצוגה; הארכיון המלא נשמר בנפרד ואינו נמחק.
     if(populationHistory.length>400)populationHistory.shift();
     lastHistoryTick=ticks;
+  }
+
+  // מגבלות מחשוב אינן חוקי עולם: לא משנים רבייה/מזון, רק עוצרים לשמירה בטוחה.
+  if(somiks.length>=COMPUTE_POP_PAUSE){
+    pauseForComputeLimit(`האוכלוסייה הגיעה ל-${somiks.length}. הרבייה לא נחסמה; הריצה נעצרה כדי לא להפוך מגבלת דפדפן לחוק ביולוגי.`);
+  }else if(totalFoodUnits()>=COMPUTE_FOOD_PAUSE){
+    pauseForComputeLimit(`מספר יחידות המזון הגיע ל-${totalFoodUnits()}. המזון לא נמחק ולא נעצר; הריצה נעצרה כדי לשמור את מצב העולם.`);
   }
 
   if(somiks.length===0 && !worldExtinct){
@@ -3363,6 +3551,11 @@ function drawWorld(){
   if(foodFlowEl)foodFlowEl.textContent=FOOD_REGEN_RATE.toFixed(2)+" / tick";
   const foodFluxEl=document.getElementById("foodEnergyFlux");
   if(foodFluxEl)foodFluxEl.textContent=(FOOD_REGEN_RATE*FOOD_ENERGY).toFixed(2)+" / tick";
+
+  const longRunSamplesEl=document.getElementById("longRunSamples");
+  if(longRunSamplesEl)longRunSamplesEl.textContent=longRunArchive.length.toLocaleString("he-IL");
+  const computeGuardEl=document.getElementById("computeGuardState");
+  if(computeGuardEl)computeGuardEl.textContent=computePauseReason?"כן — העולם נעצר":"לא";
 
   const complexity=brainComplexityStats();
   document.getElementById("avgHidden").textContent=complexity.avg.toFixed(2);
@@ -3744,15 +3937,17 @@ worldCanvas.addEventListener("pointerdown",e=>{
 });
 
 document.getElementById("pauseBtn").onclick=()=>{
+  if(!running&&computePauseReason)computePauseReason="";
   running=!running;
   document.getElementById("pauseBtn").textContent=running?"⏸ עצור":"▶ המשך";
 };
 
 document.getElementById("resetBtn").onclick=()=>{
-  const ok=confirm("להתחיל עולם v0.6 חדש עם Seed חדש? השמירה הנוכחית תוחלף.");
+  const ok=confirm("להתחיל עולם v0.6.1 חדש עם Seed חדש? השמירה הנוכחית תוחלף.");
   if(!ok)return;
   clearSavedGame();
   resetWorld({keepSeed:false,communication:true});
+  computePauseReason="";
   running=true;
   document.getElementById("pauseBtn").textContent="⏸ עצור";
   saveGame();
@@ -3763,6 +3958,7 @@ document.getElementById("sameSeedBtn").onclick=()=>{
   if(!ok)return;
   clearSavedGame();
   resetWorld({keepSeed:true,communication:communicationEnabled});
+  computePauseReason="";
   running=true;
   document.getElementById("pauseBtn").textContent="⏸ עצור";
   saveGame();
@@ -3776,6 +3972,9 @@ document.getElementById("speedBtn").onclick=()=>{
 document.getElementById("saveBtn").onclick=saveGame;
 document.getElementById("exportBtn").onclick=exportSave;
 document.getElementById("controlCloneBtn").onclick=exportControlClone;
+document.getElementById("checkpointBtn").onclick=saveCheckpoint;
+document.getElementById("restoreCheckpointBtn").onclick=restoreCheckpoint;
+document.getElementById("abPairBtn").onclick=exportABPair;
 document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();
 document.getElementById("importFile").addEventListener("change",e=>{
   const file=e.target.files&&e.target.files[0];
@@ -3790,7 +3989,7 @@ document.addEventListener("visibilitychange",()=>{
 
 function loop(){
   if(running){
-    for(let i=0;i<speed;i++)updateWorld();
+    for(let i=0;i<speed && running;i++)updateWorld();
   }
 
   drawWorld();
@@ -3799,6 +3998,10 @@ function loop(){
   if(now-lastAutosaveAt>=5000){
     saveGame();
     lastAutosaveAt=now;
+  }
+  if(now-lastCheckpointAt>=60000){
+    saveCheckpoint();
+    lastCheckpointAt=now;
   }
 
   requestAnimationFrame(loop);
