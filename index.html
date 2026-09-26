@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Somik World v0.4.1 — AutoSave</title>
+<title>Somik World v0.5 — Natural World + Memory</title>
 <style>
 :root{
   --bg:#111827;
@@ -76,14 +76,17 @@ button{
 <body>
 <div class="app">
   <main>
-    <h1>Somik World v0.4.1</h1>
-    <div class="subtitle">Useful World — בלוקים יכולים להפחית סכנה. Somik עדיין לא יודע מהו קיר, גשר או מחסה.</div>
+    <h1>Somik World v0.5</h1>
+    <div class="subtitle">Natural World + Memory — לכל Somik יש עכשיו שני תאי זיכרון פנימיים. אף אחד לא אומר לו מה לזכור.</div>
 
     <div class="toolbar">
       <button id="pauseBtn">⏸ עצור</button>
       <button id="resetBtn">↻ עולם חדש</button>
       <button id="speedBtn">⚡ x1</button>
       <button id="saveBtn">💾 שמור עכשיו</button>
+      <button id="exportBtn">⬇️ ייצא שמירה</button>
+      <button id="importBtn">⬆️ ייבא שמירה</button>
+      <input id="importFile" type="file" accept=".json,application/json" style="display:none">
     </div>
     <div id="saveStatus" class="subtitle">שמירה אוטומטית פעילה</div>
 
@@ -94,29 +97,42 @@ button{
 
   <aside>
     <h2>מצב העולם</h2>
-    <div class="row"><span>Somik-ים</span><b id="pop">0</b></div>
-    <div class="row"><span>אוכל</span><b id="foodCount">0</b></div>
-    <div class="row"><span>בלוקים בעולם</span><b id="blockCount">0</b></div>
-    <div class="row"><span>בלוקים באזור סכנה</span><b id="hazardBlocks">0</b></div>
-    <div class="row"><span>בלוקים יציבים</span><b id="stableBlocks">0</b></div>
-    <div class="row"><span>בלוקים בנשיאה</span><b id="carriedCount">0</b></div>
-    <div class="row"><span>Pick מוצלחים</span><b id="pickups">0</b></div>
-    <div class="row"><span>Drop מוצלחים</span><b id="drops">0</b></div>
-    <div class="row"><span>אשכול בלוקים גדול</span><b id="largestCluster">0</b></div>
-    <div class="row"><span>תורמים לאשכול הגדול</span><b id="clusterContributors">0</b></div>
-    <div class="row"><span>Ticks מוגנים</span><b id="protectedTicks">0</b></div>
-    <div class="row"><span>נזק סכנה כולל</span><b id="hazardDamage">0</b></div>
+    <div class="row"><span>Somik-ים חיים</span><b id="pop">0</b></div>
+    <div class="row"><span>אוכל זמין</span><b id="foodCount">0</b></div>
+    <div class="row"><span>בלוקים על הקרקע</span><b id="blockCount">0</b></div>
+    <div class="row"><span>בלוקים באזור המסוכן</span><b id="hazardBlocks">0</b></div>
+    <div class="row"><span>בלוקים שלא זזו הרבה זמן</span><b id="stableBlocks">0</b></div>
+    <div class="row"><span>בלוקים שנושאים עכשיו</span><b id="carriedCount">0</b></div>
+    <div class="row"><span>בלוקים שהורמו</span><b id="pickups">0</b></div>
+    <div class="row"><span>בלוקים שהונחו</span><b id="drops">0</b></div>
+    <div class="row"><span>הועברו לתוך הסכנה</span><b id="importEvents">0</b></div>
+    <div class="row"><span>הועברו החוצה מהסכנה</span><b id="exportEvents">0</b></div>
+    <div class="row"><span>נמצאים בסכנה והובאו לשם</span><b id="importedNow">0</b></div>
+    <div class="row"><span>קבוצת הבלוקים הגדולה ביותר</span><b id="largestCluster">0</b></div>
+    <div class="row"><span>קבוצה מבלוקים שהוזזו</span><b id="movedCluster">0</b></div>
+    <div class="row"><span>Somik-ים שתרמו לקבוצה</span><b id="clusterContributors">0</b></div>
+    <div class="row"><span>זמן מוגן מצטבר</span><b id="protectedTicks">0</b></div>
+    <div class="row"><span>הגנה מבלוקים שהובאו לסכנה</span><b id="usefulProtection">0</b></div>
+    <div class="row"><span>נזק כולל מהאזור המסוכן</span><b id="hazardDamage">0</b></div>
     <div class="row"><span>לידות</span><b id="births">0</b></div>
-    <div class="row"><span>מוות</span><b id="deaths">0</b></div>
-    <div class="row"><span>דור מקסימלי</span><b id="maxGen">0</b></div>
-    <div class="row"><span>הכחדות</span><b id="extinctions">0</b></div>
-    <div class="row"><span>Ticks</span><b id="ticks">0</b></div>
+    <div class="row"><span>מתים</span><b id="deaths">0</b></div>
+    <div class="row"><span>הדור הכי מתקדם</span><b id="maxGen">0</b></div>
+    <div class="row"><span>ה-Somik המבוגר ביותר</span><b id="oldestAge">0</b></div>
+    <div class="row"><span>שושלות חיות</span><b id="livingLineages">0</b></div>
+    <div class="row"><span>פעמים שכל האוכלוסייה נעלמה</span><b id="extinctions">0</b></div>
+    <div class="row"><span>זמן עולם</span><b id="ticks">0</b></div>
 
     <div class="alert" id="structureAlert"></div>
 
     <div class="card">
+      <h3>אוכלוסייה לאורך זמן</h3>
+      <canvas id="populationCanvas" width="320" height="150" style="width:100%;height:auto;background:#101827;border:1px solid #374151;border-radius:8px;display:block"></canvas>
+      <div class="small" id="populationChartNote">הגרף נשמר יחד עם העולם.</div>
+    </div>
+
+    <div class="card">
       <h3>Somik נבחר <span class="badge" id="selectedBadge">לחץ על Somik</span></h3>
-      <div id="selectedInfo" class="small">לחץ על Somik כדי לראות אם הוא חש סכנה, בלוקים ומה המוח מחליט.</div>
+      <div id="selectedInfo" class="small">לחץ על Somik כדי לראות את חייו, השושלת שלו, החושים וההחלטות שלו.</div>
     </div>
 
     <div class="card">
@@ -128,9 +144,16 @@ button{
       <h3>המוח</h3>
       <canvas id="brainCanvas" width="320" height="330"></canvas>
       <div class="small" style="margin-top:7px">
-        13 קלטים → 9 נוירונים פנימיים → 4 יציאות:
-        TURN, MOVE, PICK, DROP.
+        13 חושים + 2 תאי זיכרון → 9 נוירונים פנימיים → 8 יציאות:
+        4 פעולות + ערך ושער עדכון לכל אחד משני תאי הזיכרון.
       </div>
+    </div>
+
+    <div class="card small">
+      <b>זיכרון פנימי:</b> M1 ו-M2 מתחילים ב-0 בכל לידה.
+      המוח מחליט בכל רגע איזה ערך לכתוב וכמה לעדכן.
+      אנחנו לא מגדירים מה משמעות הזיכרון, והזיכרון עצמו לא עובר לצאצא —
+      רק המוח שיודע להשתמש בו עובר בתורשה.
     </div>
 
     <div class="card">
@@ -144,9 +167,10 @@ button{
     </div>
 
     <div class="card small">
-      <b>כלל העולם החדש:</b> בתוך האזור האדום Somik מאבד אנרגיה מהר יותר.
-      בלוק שנמצא באזור הסכנה מפחית את הנזק ברדיוס קטן סביבו.
-      המערכת לא אומרת ל-Somik להניח שם בלוק — היא רק מעניקה לבלוק תכונה פיזית שימושית.
+      <b>חוקי החיים:</b> אין מוות מזקנה ואין תקרת אוכלוסייה ביולוגית.
+      Somik מת רק כשהאנרגיה שלו נגמרת. קצב יצירת האוכל קבוע ואינו גדל עם מספר ה-Somik-ים,
+      ולכן האוכל, התחרות, הסכנה והרבייה הם שקובעים את גודל האוכלוסייה.
+      קיימת רק מגבלת חירום טכנית גבוהה כדי למנוע קריסה של הדפדפן.
     </div>
   </aside>
 </div>
@@ -158,6 +182,8 @@ const worldCanvas=document.getElementById("world");
 const ctx=worldCanvas.getContext("2d");
 const brainCanvas=document.getElementById("brainCanvas");
 const bctx=brainCanvas.getContext("2d");
+const populationCanvas=document.getElementById("populationCanvas");
+const pctx=populationCanvas.getContext("2d");
 
 const W=worldCanvas.width;
 const H=worldCanvas.height;
@@ -166,7 +192,9 @@ const VISION=180;
 const BLOCK_VISION=140;
 const BLOCK_SIZE=22;
 const BLOCK_GRID=25;
-const MAX_POP=170;
+const EMERGENCY_MAX_POP=1000; // לא חוק ביולוגי — רק הגנת דפדפן
+const FOOD_TARGET=220;
+const FOOD_REGEN_CHANCE=0.18;
 const INITIAL_BLOCKS=100;
 
 const HAZARD={
@@ -195,13 +223,18 @@ let extinctions=0;
 let pickups=0;
 let drops=0;
 let protectedTicks=0;
+let usefulProtectionTicks=0;
 let hazardDamageTotal=0;
+let populationHistory=[];
+let lastHistoryTick=0;
 let nextId=1;
 let nextBlockId=1;
 let selectedId=null;
 
-const SAVE_KEY="somik-world-v04-autosave";
-const SAVE_VERSION=1;
+const SAVE_KEY="somik-world-v05-autosave";
+const PRE_MEMORY_SAVE_KEY="somik-world-v05-pre-memory-backup";
+const LEGACY_SAVE_KEY="somik-world-v04-autosave";
+const SAVE_VERSION=3;
 let lastAutosaveAt=0;
 
 const rnd=(a,b)=>Math.random()*(b-a)+a;
@@ -239,8 +272,9 @@ function distanceToHazard(x,y){
   return Math.sqrt(dx*dx+dy*dy);
 }
 
-function hazardProtectionAt(x,y){
+function hazardProtectionInfoAt(x,y){
   let best=0;
+  let bestBlock=null;
 
   for(const b of blocks){
     if(!insideHazard(b.x,b.y))continue;
@@ -249,17 +283,25 @@ function hazardProtectionAt(x,y){
 
     if(d<BLOCK_PROTECT_RADIUS){
       const p=1-d/BLOCK_PROTECT_RADIUS;
-      if(p>best)best=p;
+      if(p>best){
+        best=p;
+        bestBlock=b;
+      }
     }
   }
-  return best;
+
+  return{level:best,block:bestBlock};
+}
+
+function hazardProtectionAt(x,y){
+  return hazardProtectionInfoAt(x,y).level;
 }
 
 class Brain{
   constructor(parent=null){
-    this.inputN=13;
+    this.inputN=15;
     this.hiddenN=9;
-    this.outputN=4;
+    this.outputN=8;
 
     if(parent){
       this.w1=parent.w1.map(row=>row.map(v=>mutateValue(v)));
@@ -298,7 +340,11 @@ class Brain{
       Math.tanh(raw[0]),
       sigmoid(raw[1]),
       sigmoid(raw[2]),
-      sigmoid(raw[3])
+      sigmoid(raw[3]),
+      Math.tanh(raw[4]),
+      sigmoid(raw[5]),
+      Math.tanh(raw[6]),
+      sigmoid(raw[7])
     ];
 
     this.lastHidden=hidden.slice();
@@ -308,7 +354,11 @@ class Brain{
       turn:outputs[0],
       thrust:outputs[1],
       pick:outputs[2],
-      drop:outputs[3]
+      drop:outputs[3],
+      memory1Value:outputs[4],
+      memory1Gate:outputs[5],
+      memory2Value:outputs[6],
+      memory2Gate:outputs[7]
     };
   }
 }
@@ -319,6 +369,16 @@ class Block{
     this.x=x;
     this.y=y;
     this.size=BLOCK_SIZE;
+    this.startX=x;
+    this.startY=y;
+    this.startInHazard=insideHazard(x,y);
+    this.everMoved=false;
+    this.timesPicked=0;
+    this.timesDropped=0;
+    this.importedCount=0;
+    this.exportedCount=0;
+    this.lastPickupInHazard=this.startInHazard;
+    this.lastPickedBy=null;
     this.lastMovedTick=0;
     this.lastDroppedBy=null;
   }
@@ -362,6 +422,19 @@ class Somik{
     this.color=parent?parent.color:COLORS[Math.floor(Math.random()*COLORS.length)];
     this.brain=new Brain(parent?parent.brain:null);
 
+    this.parentId=parent?parent.id:null;
+    this.lineageId=parent?parent.lineageId:this.id;
+    this.birthTick=ticks;
+    this.childrenCount=0;
+    this.foodEaten=0;
+    this.blocksPicked=0;
+    this.blocksDropped=0;
+    this.protectedLifeTicks=0;
+    this.hazardDamageTaken=0;
+
+    // שני תאי זיכרון. צאצא חדש תמיד מתחיל ללא זיכרונות.
+    this.memory=[0,0];
+
     this.carrying=null;
     this.actionCooldown=0;
 
@@ -381,7 +454,11 @@ class Somik{
       noise:0
     };
 
-    this.lastDecision={turn:0,thrust:0,pick:0,drop:0};
+    this.lastDecision={
+      turn:0,thrust:0,pick:0,drop:0,
+      memory1Value:0,memory1Gate:0,
+      memory2Value:0,memory2Gate:0
+    };
     this.nearestFood=null;
     this.nearestBlock=null;
     this.lastHazardDamage=0;
@@ -499,7 +576,9 @@ class Somik{
       hazardHere,
       hazardAhead,
       protection,
-      noise
+      noise,
+      this.memory[0],
+      this.memory[1]
     ];
   }
 
@@ -523,7 +602,13 @@ class Somik{
 
     if(bestIndex>=0){
       this.carrying=blocks.splice(bestIndex,1)[0];
+      this.carrying.everMoved=true;
+      this.carrying.timesPicked=(this.carrying.timesPicked||0)+1;
+      this.carrying.lastPickedBy=this.id;
+      this.carrying.lastPickupInHazard=insideHazard(this.carrying.x,this.carrying.y);
       this.carrying.lastMovedTick=ticks;
+
+      this.blocksPicked++;
       this.energy-=0.55;
       this.actionCooldown=20;
       pickups++;
@@ -557,14 +642,26 @@ class Somik{
       if(sq(s.x-x)+sq(s.y-y)<sq(BLOCK_SIZE))return false;
     }
 
+    const dropInHazard=insideHazard(x,y);
+    const pickupInHazard=!!this.carrying.lastPickupInHazard;
+
+    if(!pickupInHazard&&dropInHazard){
+      this.carrying.importedCount=(this.carrying.importedCount||0)+1;
+    }else if(pickupInHazard&&!dropInHazard){
+      this.carrying.exportedCount=(this.carrying.exportedCount||0)+1;
+    }
+
     this.carrying.x=x;
     this.carrying.y=y;
+    this.carrying.everMoved=true;
+    this.carrying.timesDropped=(this.carrying.timesDropped||0)+1;
     this.carrying.lastMovedTick=ticks;
     this.carrying.lastDroppedBy=this.id;
 
     blocks.push(this.carrying);
     this.carrying=null;
 
+    this.blocksDropped++;
     this.energy-=0.35;
     this.actionCooldown=18;
     drops++;
@@ -589,15 +686,22 @@ class Somik{
 
     if(!insideHazard(this.x,this.y))return;
 
-    const protection=hazardProtectionAt(this.x,this.y);
+    const info=hazardProtectionInfoAt(this.x,this.y);
+    const protection=info.level;
     const damage=HAZARD_DAMAGE*(1-protection*0.92);
 
     this.energy-=damage;
     this.lastHazardDamage=damage;
+    this.hazardDamageTaken+=damage;
     hazardDamageTotal+=damage;
 
     if(protection>0.15){
       protectedTicks++;
+      this.protectedLifeTicks++;
+
+      if(info.block&&(info.block.importedCount||0)>0){
+        usefulProtectionTicks++;
+      }
     }
   }
 
@@ -608,6 +712,17 @@ class Somik{
     const inputs=this.sense();
     const decision=this.brain.think(inputs);
     this.lastDecision=decision;
+
+    // gate=0: שומר את הזיכרון הישן. gate=1: מחליף בערך החדש.
+    // הערך החדש ישפיע על ההחלטה החל מה-tick הבא.
+    this.memory[0]=clamp(
+      this.memory[0]*(1-decision.memory1Gate)+decision.memory1Value*decision.memory1Gate,
+      -1,1
+    );
+    this.memory[1]=clamp(
+      this.memory[1]*(1-decision.memory2Gate)+decision.memory2Value*decision.memory2Gate,
+      -1,1
+    );
 
     this.dir+=decision.turn*0.17;
 
@@ -642,6 +757,7 @@ class Somik{
 
       if(dx*dx+dy*dy<sq(this.r+f.r)){
         this.energy=Math.min(180,this.energy+42);
+        this.foodEaten++;
         foods.splice(i,1);
         break;
       }
@@ -656,10 +772,11 @@ class Somik{
     if(
       this.energy>148&&
       this.age>280&&
-      somiks.length<MAX_POP&&
+      somiks.length<EMERGENCY_MAX_POP&&
       Math.random()<0.00065
     ){
       this.energy-=62;
+      this.childrenCount++;
 
       const child=new Somik(
         clamp(this.x+rnd(-16,16),15,W-15),
@@ -755,13 +872,39 @@ function serializeBrain(brain){
 
 function deserializeBrain(data){
   const brain=Object.create(Brain.prototype);
-  brain.inputN=data.inputN;
-  brain.hiddenN=data.hiddenN;
-  brain.outputN=data.outputN;
-  brain.w1=data.w1;
-  brain.b1=data.b1;
-  brain.w2=data.w2;
-  brain.b2=data.b2;
+  const oldOutputN=data.outputN??4;
+
+  brain.inputN=15;
+  brain.hiddenN=data.hiddenN??9;
+  brain.outputN=8;
+
+  // מוח ישן נשמר בדיוק בארבעת הפעולות הישנות.
+  // שני קלטי הזיכרון מתחילים במשקל 0 כדי שהשדרוג לא ישנה מיד את ההתנהגות.
+  brain.w1=data.w1.map(row=>{
+    const r=row.slice(0,13);
+    while(r.length<13)r.push(0);
+    r.push(0,0);
+    return r;
+  });
+  brain.b1=data.b1.slice();
+
+  brain.w2=data.w2.slice(0,4).map(row=>row.slice());
+  brain.b2=data.b2.slice(0,4);
+
+  if(oldOutputN>=8){
+    for(let i=4;i<8;i++){
+      brain.w2.push(data.w2[i].slice());
+      brain.b2.push(data.b2[i]??0);
+    }
+  }else{
+    // יציאות כתיבת הזיכרון חדשות. האבולוציה תצטרך לפתח גם
+    // קשרים מהזיכרון בחזרה לפעולות כדי להפוך אותו למועיל.
+    for(let i=4;i<8;i++){
+      brain.w2.push(Array.from({length:brain.hiddenN},()=>rnd(-0.45,0.45)));
+      brain.b2.push(rnd(-0.2,0.2));
+    }
+  }
+
   brain.lastInputs=Array(brain.inputN).fill(0);
   brain.lastHidden=Array(brain.hiddenN).fill(0);
   brain.lastOutputs=Array(brain.outputN).fill(0);
@@ -774,6 +917,16 @@ function serializeBlock(block){
     x:block.x,
     y:block.y,
     size:block.size,
+    startX:block.startX,
+    startY:block.startY,
+    startInHazard:block.startInHazard,
+    everMoved:block.everMoved,
+    timesPicked:block.timesPicked,
+    timesDropped:block.timesDropped,
+    importedCount:block.importedCount,
+    exportedCount:block.exportedCount,
+    lastPickupInHazard:block.lastPickupInHazard,
+    lastPickedBy:block.lastPickedBy,
     lastMovedTick:block.lastMovedTick,
     lastDroppedBy:block.lastDroppedBy
   };
@@ -785,6 +938,16 @@ function deserializeBlock(data){
   block.x=data.x;
   block.y=data.y;
   block.size=data.size ?? BLOCK_SIZE;
+  block.startX=data.startX ?? data.x;
+  block.startY=data.startY ?? data.y;
+  block.startInHazard=data.startInHazard ?? insideHazard(block.startX,block.startY);
+  block.everMoved=data.everMoved ?? ((data.lastMovedTick??0)>0);
+  block.timesPicked=data.timesPicked ?? 0;
+  block.timesDropped=data.timesDropped ?? 0;
+  block.importedCount=data.importedCount ?? 0;
+  block.exportedCount=data.exportedCount ?? 0;
+  block.lastPickupInHazard=data.lastPickupInHazard ?? insideHazard(data.x,data.y);
+  block.lastPickedBy=data.lastPickedBy ?? null;
   block.lastMovedTick=data.lastMovedTick ?? 0;
   block.lastDroppedBy=data.lastDroppedBy ?? null;
   return block;
@@ -802,6 +965,16 @@ function serializeSomik(s){
     generation:s.generation,
     color:s.color,
     brain:serializeBrain(s.brain),
+    parentId:s.parentId,
+    lineageId:s.lineageId,
+    birthTick:s.birthTick,
+    childrenCount:s.childrenCount,
+    foodEaten:s.foodEaten,
+    blocksPicked:s.blocksPicked,
+    blocksDropped:s.blocksDropped,
+    protectedLifeTicks:s.protectedLifeTicks,
+    hazardDamageTaken:s.hazardDamageTaken,
+    memory:s.memory.slice(),
     carrying:s.carrying?serializeBlock(s.carrying):null,
     actionCooldown:s.actionCooldown,
     lastSensors:s.lastSensors,
@@ -822,6 +995,20 @@ function deserializeSomik(data){
   s.generation=data.generation;
   s.color=data.color;
   s.brain=deserializeBrain(data.brain);
+
+  s.parentId=data.parentId ?? null;
+  s.lineageId=data.lineageId ?? data.id;
+  s.birthTick=data.birthTick ?? Math.max(0,ticks-(data.age??0));
+  s.childrenCount=data.childrenCount ?? 0;
+  s.foodEaten=data.foodEaten ?? 0;
+  s.blocksPicked=data.blocksPicked ?? 0;
+  s.blocksDropped=data.blocksDropped ?? 0;
+  s.protectedLifeTicks=data.protectedLifeTicks ?? 0;
+  s.hazardDamageTaken=data.hazardDamageTaken ?? 0;
+  s.memory=Array.isArray(data.memory)&&data.memory.length>=2
+    ? [clamp(data.memory[0],-1,1),clamp(data.memory[1],-1,1)]
+    : [0,0];
+
   s.carrying=data.carrying?deserializeBlock(data.carrying):null;
   s.actionCooldown=data.actionCooldown ?? 0;
   s.lastSensors=data.lastSensors ?? {
@@ -829,7 +1016,16 @@ function deserializeSomik(data){
     blockNear:0,blockAhead:0,blockSide:0,carrying:0,
     hazardHere:0,hazardAhead:0,protection:0,noise:0
   };
-  s.lastDecision=data.lastDecision ?? {turn:0,thrust:0,pick:0,drop:0};
+  s.lastDecision={
+    turn:data.lastDecision?.turn ?? 0,
+    thrust:data.lastDecision?.thrust ?? 0,
+    pick:data.lastDecision?.pick ?? 0,
+    drop:data.lastDecision?.drop ?? 0,
+    memory1Value:data.lastDecision?.memory1Value ?? 0,
+    memory1Gate:data.lastDecision?.memory1Gate ?? 0,
+    memory2Value:data.lastDecision?.memory2Value ?? 0,
+    memory2Gate:data.lastDecision?.memory2Gate ?? 0
+  };
   s.lastHazardDamage=data.lastHazardDamage ?? 0;
   s.nearestFood=null;
   s.nearestBlock=null;
@@ -841,33 +1037,38 @@ function setSaveStatus(text){
   if(el)el.textContent=text;
 }
 
+function stateObject(){
+  return{
+    version:SAVE_VERSION,
+    savedAt:Date.now(),
+    ticks,
+    births,
+    deaths,
+    extinctions,
+    pickups,
+    drops,
+    protectedTicks,
+    usefulProtectionTicks,
+    hazardDamageTotal,
+    populationHistory,
+    lastHistoryTick,
+    nextId,
+    nextBlockId,
+    selectedId,
+    speed,
+    foods,
+    blocks:blocks.map(serializeBlock),
+    somiks:somiks.map(serializeSomik)
+  };
+}
+
 function saveGame(){
   try{
-    const state={
-      version:SAVE_VERSION,
-      savedAt:Date.now(),
-      ticks,
-      births,
-      deaths,
-      extinctions,
-      pickups,
-      drops,
-      protectedTicks,
-      hazardDamageTotal,
-      nextId,
-      nextBlockId,
-      selectedId,
-      speed,
-      foods,
-      blocks:blocks.map(serializeBlock),
-      somiks:somiks.map(serializeSomik)
-    };
-
-    localStorage.setItem(SAVE_KEY,JSON.stringify(state));
+    localStorage.setItem(SAVE_KEY,JSON.stringify(stateObject()));
 
     const t=new Date();
     setSaveStatus(
-      "✅ נשמר אוטומטית "+t.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit",second:"2-digit"})
+      "✅ נשמר "+t.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit",second:"2-digit"})
     );
     return true;
   }catch(err){
@@ -877,43 +1078,80 @@ function saveGame(){
   }
 }
 
+function restoreState(state){
+  if(!state||typeof state!=="object")return false;
+  if(state.version!==1&&state.version!==2&&state.version!==3)return false;
+
+  ticks=state.ticks ?? 0;
+  births=state.births ?? 0;
+  deaths=state.deaths ?? 0;
+  extinctions=state.extinctions ?? 0;
+  pickups=state.pickups ?? 0;
+  drops=state.drops ?? 0;
+  protectedTicks=state.protectedTicks ?? 0;
+  usefulProtectionTicks=state.usefulProtectionTicks ?? 0;
+  hazardDamageTotal=state.hazardDamageTotal ?? 0;
+
+  populationHistory=Array.isArray(state.populationHistory)?state.populationHistory:[];
+  lastHistoryTick=state.lastHistoryTick ?? ticks;
+
+  foods=Array.isArray(state.foods)?state.foods:[];
+  blocks=Array.isArray(state.blocks)?state.blocks.map(deserializeBlock):[];
+  somiks=Array.isArray(state.somiks)?state.somiks.map(deserializeSomik):[];
+
+  nextId=state.nextId ?? (somiks.reduce((m,s)=>Math.max(m,s.id),0)+1);
+
+  const allBlockIds=[
+    ...blocks.map(b=>b.id),
+    ...somiks.filter(s=>s.carrying).map(s=>s.carrying.id)
+  ];
+  nextBlockId=state.nextBlockId ?? ((allBlockIds.length?Math.max(...allBlockIds):0)+1);
+
+  selectedId=state.selectedId ?? null;
+  if(!somiks.some(s=>s.id===selectedId))selectedId=null;
+
+  speed=[1,5,20,100].includes(state.speed)?state.speed:1;
+  document.getElementById("speedBtn").textContent="⚡ x"+speed;
+
+  if(populationHistory.length===0){
+    populationHistory.push({
+      t:ticks,
+      p:somiks.length,
+      f:foods.length,
+      g:somiks.reduce((m,s)=>Math.max(m,s.generation),0)
+    });
+  }
+
+  return somiks.length>0;
+}
+
 function loadGame(){
   try{
     const raw=localStorage.getItem(SAVE_KEY);
-    if(!raw)return false;
+    if(raw){
+      const state=JSON.parse(raw);
 
-    const state=JSON.parse(raw);
-    if(!state || state.version!==SAVE_VERSION)return false;
+      if((state.version??0)<3&&!localStorage.getItem(PRE_MEMORY_SAVE_KEY)){
+        localStorage.setItem(PRE_MEMORY_SAVE_KEY,raw);
+      }
 
-    ticks=state.ticks ?? 0;
-    births=state.births ?? 0;
-    deaths=state.deaths ?? 0;
-    extinctions=state.extinctions ?? 0;
-    pickups=state.pickups ?? 0;
-    drops=state.drops ?? 0;
-    protectedTicks=state.protectedTicks ?? 0;
-    hazardDamageTotal=state.hazardDamageTotal ?? 0;
+      if(restoreState(state)){
+        setSaveStatus("🧠 המשך מהשמירה של v0.5 עם זיכרון פנימי");
+        return true;
+      }
+    }
 
-    foods=Array.isArray(state.foods)?state.foods:[];
-    blocks=Array.isArray(state.blocks)?state.blocks.map(deserializeBlock):[];
-    somiks=Array.isArray(state.somiks)?state.somiks.map(deserializeSomik):[];
+    const legacyRaw=localStorage.getItem(LEGACY_SAVE_KEY);
+    if(legacyRaw){
+      const legacy=JSON.parse(legacyRaw);
+      if(restoreState(legacy)){
+        saveGame();
+        setSaveStatus("🧬 Run A הועתק ל-v0.5; השמירה הישנה נשמרה כגיבוי");
+        return true;
+      }
+    }
 
-    nextId=state.nextId ?? (somiks.reduce((m,s)=>Math.max(m,s.id),0)+1);
-    const allBlockIds=[
-      ...blocks.map(b=>b.id),
-      ...somiks.filter(s=>s.carrying).map(s=>s.carrying.id)
-    ];
-    nextBlockId=state.nextBlockId ?? ((allBlockIds.length?Math.max(...allBlockIds):0)+1);
-
-    selectedId=state.selectedId ?? null;
-    if(!somiks.some(s=>s.id===selectedId))selectedId=null;
-
-    speed=[1,5,20,100].includes(state.speed)?state.speed:1;
-
-    document.getElementById("speedBtn").textContent="⚡ x"+speed;
-    setSaveStatus("▶ המשך משמירה קודמת");
-
-    return somiks.length>0;
+    return false;
   }catch(err){
     console.error("Load failed",err);
     setSaveStatus("⚠️ לא ניתן לטעון שמירה קודמת");
@@ -927,6 +1165,44 @@ function clearSavedGame(){
   }catch(err){
     console.error(err);
   }
+}
+
+function exportSave(){
+  saveGame();
+  try{
+    const data=JSON.stringify(stateObject(),null,2);
+    const blob=new Blob([data],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download="somik-world-v05-memory-"+ticks+"-world-time.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    setSaveStatus("⬇️ קובץ השמירה נוצר");
+  }catch(err){
+    console.error(err);
+    setSaveStatus("⚠️ ייצוא השמירה נכשל");
+  }
+}
+
+function importSaveFile(file){
+  const reader=new FileReader();
+
+  reader.onload=()=>{
+    try{
+      const state=JSON.parse(reader.result);
+      if(!restoreState(state))throw new Error("Invalid save");
+      saveGame();
+      setSaveStatus("⬆️ השמירה נטענה בהצלחה");
+    }catch(err){
+      console.error(err);
+      alert("לא ניתן לקרוא את קובץ השמירה.");
+    }
+  };
+
+  reader.readAsText(file);
 }
 
 function pointInsideBlock(x,y,pad=0){
@@ -1034,7 +1310,10 @@ function resetWorld(){
   pickups=0;
   drops=0;
   protectedTicks=0;
+  usefulProtectionTicks=0;
   hazardDamageTotal=0;
+  populationHistory=[];
+  lastHistoryTick=0;
 
   nextId=1;
   nextBlockId=1;
@@ -1043,6 +1322,7 @@ function resetWorld(){
   addBlocks(INITIAL_BLOCKS);
   createPopulation(20);
   addFood(135);
+  populationHistory.push({t:0,p:somiks.length,f:foods.length,g:0});
 }
 
 function updateWorld(){
@@ -1053,7 +1333,7 @@ function updateWorld(){
   const alive=[];
 
   for(const s of somiks){
-    if(s.energy>0&&s.age<18000){
+    if(s.energy>0){
       alive.push(s);
     }else{
       deaths++;
@@ -1076,10 +1356,20 @@ function updateWorld(){
 
   somiks=alive;
 
-  const targetFood=Math.max(125,Math.round(somiks.length*1.9));
-
-  if(foods.length<targetFood&&Math.random()<0.18){
+  // משאבים אינם גדלים עם האוכלוסייה: יותר Somik-ים = יותר תחרות על אותו קצב התחדשות.
+  if(foods.length<FOOD_TARGET&&Math.random()<FOOD_REGEN_CHANCE){
     addFood(1);
+  }
+
+  if(ticks-lastHistoryTick>=2500){
+    populationHistory.push({
+      t:ticks,
+      p:somiks.length,
+      f:foods.length,
+      g:somiks.reduce((m,s)=>Math.max(m,s.generation),0)
+    });
+    if(populationHistory.length>400)populationHistory.shift();
+    lastHistoryTick=ticks;
   }
 
   if(somiks.length===0){
@@ -1121,15 +1411,21 @@ function drawBackground(){
   }
 }
 
-function clusterData(){
-  if(blocks.length===0)return{largest:0,contributors:0,indices:[]};
+function clusterData(filterFn=()=>true){
+  const eligible=[];
+  for(let i=0;i<blocks.length;i++){
+    if(filterFn(blocks[i]))eligible.push(i);
+  }
 
+  if(eligible.length===0)return{largest:0,contributors:0,indices:[]};
+
+  const eligibleSet=new Set(eligible);
   const visited=new Set();
   let bestIndices=[];
   const linkDist=BLOCK_GRID*1.45;
   const linkD2=linkDist*linkDist;
 
-  for(let i=0;i<blocks.length;i++){
+  for(const i of eligible){
     if(visited.has(i))continue;
 
     const stack=[i];
@@ -1140,8 +1436,8 @@ function clusterData(){
       const a=stack.pop();
       current.push(a);
 
-      for(let j=0;j<blocks.length;j++){
-        if(visited.has(j))continue;
+      for(const j of eligible){
+        if(!eligibleSet.has(j)||visited.has(j))continue;
 
         const dx=blocks[a].x-blocks[j].x;
         const dy=blocks[a].y-blocks[j].y;
@@ -1192,6 +1488,84 @@ function hazardBlockCount(){
   return count;
 }
 
+
+function blockScience(){
+  let importEvents=0;
+  let exportEvents=0;
+  let importedNow=0;
+
+  for(const b of blocks){
+    importEvents+=b.importedCount||0;
+    exportEvents+=b.exportedCount||0;
+    if(insideHazard(b.x,b.y)&&(b.importedCount||0)>0)importedNow++;
+  }
+
+  for(const s of somiks){
+    if(!s.carrying)continue;
+    importEvents+=s.carrying.importedCount||0;
+    exportEvents+=s.carrying.exportedCount||0;
+  }
+
+  return{importEvents,exportEvents,importedNow};
+}
+
+function drawPopulationChart(){
+  const w=populationCanvas.width;
+  const h=populationCanvas.height;
+
+  pctx.clearRect(0,0,w,h);
+  pctx.fillStyle="#101827";
+  pctx.fillRect(0,0,w,h);
+
+  const data=populationHistory.slice();
+  data.push({
+    t:ticks,
+    p:somiks.length,
+    f:foods.length,
+    g:somiks.reduce((m,s)=>Math.max(m,s.generation),0)
+  });
+
+  if(data.length<2){
+    pctx.fillStyle="#94a3b8";
+    pctx.font="12px Arial";
+    pctx.textAlign="center";
+    pctx.fillText("הגרף יתחיל להצטבר עם הזמן",w/2,h/2);
+    return;
+  }
+
+  const maxP=Math.max(10,...data.map(d=>d.p));
+  const minT=data[0].t;
+  const maxT=Math.max(minT+1,data[data.length-1].t);
+
+  pctx.strokeStyle="rgba(148,163,184,.22)";
+  pctx.lineWidth=1;
+  for(let i=1;i<4;i++){
+    const y=h*i/4;
+    pctx.beginPath();
+    pctx.moveTo(0,y);
+    pctx.lineTo(w,y);
+    pctx.stroke();
+  }
+
+  pctx.beginPath();
+  data.forEach((d,i)=>{
+    const x=(d.t-minT)/(maxT-minT)*(w-10)+5;
+    const y=h-8-(d.p/maxP)*(h-20);
+    if(i===0)pctx.moveTo(x,y);
+    else pctx.lineTo(x,y);
+  });
+  pctx.strokeStyle="#e5e7eb";
+  pctx.lineWidth=2;
+  pctx.stroke();
+
+  pctx.fillStyle="#cbd5e1";
+  pctx.font="10px Arial";
+  pctx.textAlign="left";
+  pctx.fillText("שיא "+maxP,6,12);
+  pctx.textAlign="right";
+  pctx.fillText("עכשיו "+somiks.length,w-6,h-5);
+}
+
 function drawWorld(){
   drawBackground();
 
@@ -1224,24 +1598,36 @@ function drawWorld(){
   document.getElementById("stableBlocks").textContent=stableBlockCount();
   document.getElementById("protectedTicks").textContent=protectedTicks.toLocaleString("he-IL");
   document.getElementById("hazardDamage").textContent=Math.round(hazardDamageTotal).toLocaleString("he-IL");
+  document.getElementById("usefulProtection").textContent=usefulProtectionTicks.toLocaleString("he-IL");
+
+  const science=blockScience();
+  document.getElementById("importEvents").textContent=science.importEvents.toLocaleString("he-IL");
+  document.getElementById("exportEvents").textContent=science.exportEvents.toLocaleString("he-IL");
+  document.getElementById("importedNow").textContent=science.importedNow.toLocaleString("he-IL");
+
+  const oldest=somiks.reduce((m,s)=>Math.max(m,s.age),0);
+  document.getElementById("oldestAge").textContent=oldest.toLocaleString("he-IL");
+  document.getElementById("livingLineages").textContent=new Set(somiks.map(s=>s.lineageId)).size.toLocaleString("he-IL");
 
   const cluster=clusterData();
+  const movedClusterData=clusterData(b=>!!b.everMoved);
   document.getElementById("largestCluster").textContent=cluster.largest;
+  document.getElementById("movedCluster").textContent=movedClusterData.largest;
   document.getElementById("clusterContributors").textContent=cluster.contributors;
+  drawPopulationChart();
 
   const alert=document.getElementById("structureAlert");
 
   const usefulCandidate=
-    cluster.largest>=6&&
+    movedClusterData.largest>=6&&
     cluster.contributors>=2&&
-    hazardBlockCount()>=4&&
-    stableBlockCount()>=8&&
-    protectedTicks>1500;
+    science.importedNow>=4&&
+    usefulProtectionTicks>1500;
 
   if(usefulCandidate){
     alert.style.display="block";
     alert.textContent=
-      "⚠ זוהה מועמד למבנה שימושי: כמה Somik-ים תרמו לאשכול, חלק מהבלוקים נמצאים באזור הסכנה ויש כבר זמן מוגן משמעותי. זה עדיין לא הוכחה לבנייה מכוונת.";
+      "⚠ זוהה מועמד למבנה שימושי: בלוקים שה-Somik-ים הזיזו הגיעו לאזור הסכנה, כמה פרטים תרמו לקבוצה ונוצרה הגנה מדידה. זו עדות מעניינת — עדיין לא הוכחה לכוונה מודעת.";
   }else{
     alert.style.display="none";
   }
@@ -1276,7 +1662,7 @@ function drawInspector(){
 
   if(!s){
     badge.textContent="לחץ על Somik";
-    info.innerHTML="לחץ על Somik כדי לראות אם הוא חש סכנה, בלוקים ומה המוח מחליט.";
+    info.innerHTML="לחץ על Somik כדי לראות את חייו, השושלת שלו, החושים וההחלטות שלו.";
     sensors.innerHTML="";
 
     bctx.clearRect(0,0,brainCanvas.width,brainCanvas.height);
@@ -1292,31 +1678,44 @@ function drawInspector(){
 
   info.innerHTML=
     `דור: <b>${s.generation}</b><br>`+
-    `גיל: <b>${s.age.toLocaleString("he-IL")}</b><br>`+
+    `זמן חיים: <b>${s.age.toLocaleString("he-IL")}</b> (ללא גיל מקסימלי)<br>`+
+    `שושלת: <b>#${s.lineageId}</b><br>`+
+    `הורה: <b>${s.parentId===null?"מייסד":"#"+s.parentId}</b><br>`+
+    `צאצאים: <b>${s.childrenCount}</b><br>`+
+    `אוכל שאכל: <b>${s.foodEaten}</b><br>`+
     `אנרגיה: <b>${s.energy.toFixed(1)}</b><br>`+
-    `נושא בלוק: <b>${s.carrying?"כן":"לא"}</b><br>`+
-    `נזק סכנה עכשיו: <b>${s.lastHazardDamage.toFixed(3)}</b><br>`+
-    `TURN: <b>${s.lastDecision.turn.toFixed(2)}</b><br>`+
-    `MOVE: <b>${s.lastDecision.thrust.toFixed(2)}</b><br>`+
-    `PICK: <b>${s.lastDecision.pick.toFixed(2)}</b><br>`+
-    `DROP: <b>${s.lastDecision.drop.toFixed(2)}</b>`;
+    `זמן מוגן בחייו: <b>${s.protectedLifeTicks.toLocaleString("he-IL")}</b><br>`+
+    `נזק מהסכנה בחייו: <b>${s.hazardDamageTaken.toFixed(1)}</b><br>`+
+    `בלוקים שהרים: <b>${s.blocksPicked}</b><br>`+
+    `בלוקים שהניח: <b>${s.blocksDropped}</b><br>`+
+    `נושא בלוק עכשיו: <b>${s.carrying?"כן":"לא"}</b><br>`+
+    `זיכרון M1: <b>${s.memory[0].toFixed(2)}</b><br>`+
+    `זיכרון M2: <b>${s.memory[1].toFixed(2)}</b><br>`+
+    `פנייה: <b>${s.lastDecision.turn.toFixed(2)}</b><br>`+
+    `תנועה: <b>${s.lastDecision.thrust.toFixed(2)}</b><br>`+
+    `הרם בלוק: <b>${s.lastDecision.pick.toFixed(2)}</b><br>`+
+    `הנח בלוק: <b>${s.lastDecision.drop.toFixed(2)}</b><br>`+
+    `כתיבה ל-M1: <b>${s.lastDecision.memory1Value.toFixed(2)}</b> · שער: <b>${s.lastDecision.memory1Gate.toFixed(2)}</b><br>`+
+    `כתיבה ל-M2: <b>${s.lastDecision.memory2Value.toFixed(2)}</b> · שער: <b>${s.lastDecision.memory2Gate.toFixed(2)}</b>`;
 
   const x=s.lastSensors;
 
   sensors.innerHTML=
-    sensorHtml("אנרגיה",x.energy)+
-    sensorHtml("אוכל קרוב",x.foodNear)+
-    sensorHtml("אוכל קדימה / אחורה",x.foodAhead,true)+
-    sensorHtml("אוכל ימין / שמאל",x.foodSide,true)+
-    sensorHtml("Somik קרוב",x.neighborNear)+
-    sensorHtml("בלוק קרוב",x.blockNear)+
-    sensorHtml("בלוק קדימה / אחורה",x.blockAhead,true)+
-    sensorHtml("בלוק ימין / שמאל",x.blockSide,true)+
-    sensorHtml("נושא בלוק",x.carrying)+
-    sensorHtml("בתוך סכנה",x.hazardHere)+
-    sensorHtml("סכנה קדימה",x.hazardAhead)+
-    sensorHtml("הגנת בלוק",x.protection)+
-    sensorHtml("רעש פנימי",x.noise,true);
+    sensorHtml("רמת אנרגיה",x.energy)+
+    sensorHtml("כמה אוכל קרוב",x.foodNear)+
+    sensorHtml("כיוון האוכל: קדימה / אחורה",x.foodAhead,true)+
+    sensorHtml("כיוון האוכל: ימין / שמאל",x.foodSide,true)+
+    sensorHtml("Somik אחר קרוב",x.neighborNear)+
+    sensorHtml("כמה בלוק קרוב",x.blockNear)+
+    sensorHtml("כיוון הבלוק: קדימה / אחורה",x.blockAhead,true)+
+    sensorHtml("כיוון הבלוק: ימין / שמאל",x.blockSide,true)+
+    sensorHtml("נושא בלוק עכשיו",x.carrying)+
+    sensorHtml("נמצא באזור המסוכן",x.hazardHere)+
+    sensorHtml("סכנה בכיוון התנועה",x.hazardAhead)+
+    sensorHtml("רמת הגנה מבלוק",x.protection)+
+    sensorHtml("דחף אקראי",x.noise,true)+
+    sensorHtml("זיכרון פנימי M1",s.memory[0],true)+
+    sensorHtml("זיכרון פנימי M2",s.memory[1],true);
 
   drawBrain(s.brain);
 }
@@ -1383,10 +1782,14 @@ function drawBrain(brain){
   inPos.forEach((p,i)=>node(p,brain.lastInputs[i],"I"+(i+1)));
   hidPos.forEach((p,i)=>node(p,brain.lastHidden[i],""));
 
-  node(outPos[0],brain.lastOutputs[0],"TURN");
-  node(outPos[1],brain.lastOutputs[1]*2-1,"MOVE");
-  node(outPos[2],brain.lastOutputs[2]*2-1,"PICK");
-  node(outPos[3],brain.lastOutputs[3]*2-1,"DROP");
+  node(outPos[0],brain.lastOutputs[0],"פנה");
+  node(outPos[1],brain.lastOutputs[1]*2-1,"זוז");
+  node(outPos[2],brain.lastOutputs[2]*2-1,"הרם");
+  node(outPos[3],brain.lastOutputs[3]*2-1,"הנח");
+  node(outPos[4],brain.lastOutputs[4],"M1");
+  node(outPos[5],brain.lastOutputs[5]*2-1,"G1");
+  node(outPos[6],brain.lastOutputs[6],"M2");
+  node(outPos[7],brain.lastOutputs[7]*2-1,"G2");
 }
 
 worldCanvas.addEventListener("pointerdown",e=>{
@@ -1414,7 +1817,7 @@ document.getElementById("pauseBtn").onclick=()=>{
 };
 
 document.getElementById("resetBtn").onclick=()=>{
-  const ok=confirm("למחוק את העולם השמור ולהתחיל עולם חדש?");
+  const ok=confirm("להתחיל עולם חדש? השמירה של v0.5 תוחלף. גיבוי v0.4.1 הישן לא יימחק.");
   if(!ok)return;
   clearSavedGame();
   resetWorld();
@@ -1427,6 +1830,13 @@ document.getElementById("speedBtn").onclick=()=>{
 };
 
 document.getElementById("saveBtn").onclick=saveGame;
+document.getElementById("exportBtn").onclick=exportSave;
+document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();
+document.getElementById("importFile").addEventListener("change",e=>{
+  const file=e.target.files&&e.target.files[0];
+  if(file)importSaveFile(file);
+  e.target.value="";
+});
 
 window.addEventListener("pagehide",saveGame);
 document.addEventListener("visibilitychange",()=>{
