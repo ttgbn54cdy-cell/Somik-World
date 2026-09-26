@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Somik World v0.5 — Natural World + Memory</title>
+<title>Somik World v0.5 — Natural World + Memory Metrics</title>
 <style>
 :root{
   --bg:#111827;
@@ -131,6 +131,24 @@ button{
     </div>
 
     <div class="card">
+      <h3>מדדי זיכרון</h3>
+      <div class="row"><span>כתיבה בפועל לזיכרון</span><b id="memWriteRate">—</b></div>
+      <div class="row"><span>יציבות אחרי כניסה לסכנה</span><b id="memStableHazard">—</b></div>
+      <div class="row"><span>יציבות אחרי אכילת אוכל</span><b id="memStableFood">—</b></div>
+      <div class="row"><span>שערים אחרי סכנה / מצב רגיל</span><b id="memGateHazard">—</b></div>
+      <div class="row"><span>שערים אחרי אוכל / מצב רגיל</span><b id="memGateFood">—</b></div>
+      <div class="row"><span>אירועים שנמדדו</span><b id="memEvents">—</b></div>
+      <div class="row"><span>המדידה התחילה בזמן עולם</span><b id="memStartedAt">—</b></div>
+      <div class="small" style="margin-top:8px">
+        “כתיבה” = שינוי אמיתי של לפחות 0.03 בתא הזיכרון.
+        “שער פתוח” = Gate של 0.65 ומעלה.
+        אחרי סכנה/אוכל נבדק חלון של 120 צעדי זמן.
+        יציבות נמדדת עד שינוי מצטבר של 0.08, עד מקסימום 300 צעדים.
+        אירוע אוכל הוא אכילה בפועל.
+      </div>
+    </div>
+
+    <div class="card">
       <h3>Somik נבחר <span class="badge" id="selectedBadge">לחץ על Somik</span></h3>
       <div id="selectedInfo" class="small">לחץ על Somik כדי לראות את חייו, השושלת שלו, החושים וההחלטות שלו.</div>
     </div>
@@ -227,20 +245,254 @@ let usefulProtectionTicks=0;
 let hazardDamageTotal=0;
 let populationHistory=[];
 let lastHistoryTick=0;
+let memoryMetrics=makeMemoryStats(0);
 let nextId=1;
 let nextBlockId=1;
 let selectedId=null;
 
 const SAVE_KEY="somik-world-v05-autosave";
 const PRE_MEMORY_SAVE_KEY="somik-world-v05-pre-memory-backup";
+const PRE_METRICS_SAVE_KEY="somik-world-v05-pre-memory-metrics-backup";
 const LEGACY_SAVE_KEY="somik-world-v04-autosave";
-const SAVE_VERSION=3;
+const SAVE_VERSION=4;
+
+const MEMORY_GATE_OPEN=0.65;
+const MEMORY_WRITE_DELTA=0.03;
+const MEMORY_EVENT_WINDOW=120;
+const MEMORY_STABLE_EPS=0.08;
+const MEMORY_STABLE_MAX=300;
 let lastAutosaveAt=0;
 
 const rnd=(a,b)=>Math.random()*(b-a)+a;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const sigmoid=x=>1/(1+Math.exp(-x));
 const sq=x=>x*x;
+
+
+function makeMemoryStats(startedAt=ticks){
+  return{
+    startedAtTick:startedAt,
+    totalTicks:0,
+    writes:[0,0],
+    gateOpen:[0,0],
+    contexts:{
+      hazard:{ticks:0,gateOpen:[0,0]},
+      food:{ticks:0,gateOpen:[0,0]},
+      baseline:{ticks:0,gateOpen:[0,0]}
+    },
+    stability:{
+      hazard:[{sum:0,count:0},{sum:0,count:0}],
+      food:[{sum:0,count:0},{sum:0,count:0}]
+    },
+    events:{hazard:0,food:0}
+  };
+}
+
+function normalizePair(v,def=[0,0]){
+  return Array.isArray(v)&&v.length>=2
+    ? [Number(v[0])||0,Number(v[1])||0]
+    : def.slice();
+}
+
+function normalizeMemoryStats(data,startedAt=ticks){
+  const m=makeMemoryStats(startedAt);
+  if(!data||typeof data!=="object")return m;
+
+  m.startedAtTick=data.startedAtTick??startedAt;
+  m.totalTicks=data.totalTicks??0;
+  m.writes=normalizePair(data.writes);
+  m.gateOpen=normalizePair(data.gateOpen);
+
+  for(const name of ["hazard","food","baseline"]){
+    const src=data.contexts?.[name];
+    if(src){
+      m.contexts[name].ticks=src.ticks??0;
+      m.contexts[name].gateOpen=normalizePair(src.gateOpen);
+    }
+  }
+
+  for(const name of ["hazard","food"]){
+    for(let i=0;i<2;i++){
+      const src=data.stability?.[name]?.[i];
+      if(src){
+        m.stability[name][i].sum=src.sum??0;
+        m.stability[name][i].count=src.count??0;
+      }
+    }
+  }
+
+  m.events.hazard=data.events?.hazard??0;
+  m.events.food=data.events?.food??0;
+  return m;
+}
+
+function makeMemoryTracker(x,y,startedAt=ticks){
+  return{
+    stats:makeMemoryStats(startedAt),
+    prevInHazard:insideHazard(x,y),
+    hazardWindow:0,
+    foodWindow:0,
+    tests:{hazard:null,food:null}
+  };
+}
+
+function normalizeMemoryTracker(data,x,y){
+  const t=makeMemoryTracker(x,y,ticks);
+  if(!data||typeof data!=="object")return t;
+
+  t.stats=normalizeMemoryStats(data.stats,ticks);
+  t.prevInHazard=insideHazard(x,y);
+
+  // חלונות אירוע פעילים לא נשמרים בכוונה.
+  // אחרי טעינה מתחילה מדידה נקייה מהמצב הנוכחי.
+  t.hazardWindow=0;
+  t.foodWindow=0;
+  t.tests={hazard:null,food:null};
+  return t;
+}
+
+function memoryTargets(s){
+  return[memoryMetrics,s.memoryTracker.stats];
+}
+
+function addStabilitySample(s,type,index,duration){
+  for(const target of memoryTargets(s)){
+    const bucket=target.stability[type][index];
+    bucket.sum+=duration;
+    bucket.count++;
+  }
+}
+
+function startMemoryEvent(s,type){
+  const tracker=s.memoryTracker;
+  tracker[type+"Window"]=MEMORY_EVENT_WINDOW;
+  tracker.tests[type]={
+    age:0,
+    start:s.memory.slice(),
+    active:[true,true]
+  };
+
+  for(const target of memoryTargets(s)){
+    target.events[type]++;
+  }
+}
+
+function recordMemoryTick(s,previousMemory,decision){
+  const tracker=s.memoryTracker;
+  const gates=[decision.memory1Gate,decision.memory2Gate];
+
+  for(const target of memoryTargets(s)){
+    target.totalTicks++;
+
+    for(let i=0;i<2;i++){
+      if(Math.abs(s.memory[i]-previousMemory[i])>=MEMORY_WRITE_DELTA){
+        target.writes[i]++;
+      }
+      if(gates[i]>=MEMORY_GATE_OPEN){
+        target.gateOpen[i]++;
+      }
+    }
+  }
+
+  const hazardActive=tracker.hazardWindow>0;
+  const foodActive=tracker.foodWindow>0;
+
+  for(const target of memoryTargets(s)){
+    if(hazardActive){
+      target.contexts.hazard.ticks++;
+      for(let i=0;i<2;i++){
+        if(gates[i]>=MEMORY_GATE_OPEN)target.contexts.hazard.gateOpen[i]++;
+      }
+    }
+
+    if(foodActive){
+      target.contexts.food.ticks++;
+      for(let i=0;i<2;i++){
+        if(gates[i]>=MEMORY_GATE_OPEN)target.contexts.food.gateOpen[i]++;
+      }
+    }
+
+    if(!hazardActive&&!foodActive){
+      target.contexts.baseline.ticks++;
+      for(let i=0;i<2;i++){
+        if(gates[i]>=MEMORY_GATE_OPEN)target.contexts.baseline.gateOpen[i]++;
+      }
+    }
+  }
+
+  for(const type of ["hazard","food"]){
+    const test=tracker.tests[type];
+    if(!test)continue;
+
+    test.age++;
+
+    for(let i=0;i<2;i++){
+      if(!test.active[i])continue;
+
+      if(Math.abs(s.memory[i]-test.start[i])>=MEMORY_STABLE_EPS){
+        addStabilitySample(s,type,i,test.age);
+        test.active[i]=false;
+      }else if(test.age>=MEMORY_STABLE_MAX){
+        addStabilitySample(s,type,i,MEMORY_STABLE_MAX);
+        test.active[i]=false;
+      }
+    }
+
+    if(!test.active[0]&&!test.active[1]){
+      tracker.tests[type]=null;
+    }
+  }
+
+  if(tracker.hazardWindow>0)tracker.hazardWindow--;
+  if(tracker.foodWindow>0)tracker.foodWindow--;
+}
+
+function pct(n,d){
+  return d>0?(100*n/d):0;
+}
+
+function avgStable(bucket){
+  return bucket.count>0?bucket.sum/bucket.count:null;
+}
+
+function formatStablePair(type){
+  const a=memoryMetrics.stability[type];
+  const m1=avgStable(a[0]);
+  const m2=avgStable(a[1]);
+
+  const one=(v,b)=>{
+    if(v===null)return "—";
+    const shown=v>=MEMORY_STABLE_MAX-0.5
+      ? MEMORY_STABLE_MAX+"+"
+      : Math.round(v).toLocaleString("he-IL");
+    return shown+" (n="+b.count.toLocaleString("he-IL")+")";
+  };
+
+  return "M1 "+one(m1,a[0])+" · M2 "+one(m2,a[1]);
+}
+
+function formatGateComparison(type){
+  const special=memoryMetrics.contexts[type];
+  const base=memoryMetrics.contexts.baseline;
+
+  const one=i=>{
+    if(special.ticks===0||base.ticks===0)return "—";
+    const s=pct(special.gateOpen[i],special.ticks);
+    const b=pct(base.gateOpen[i],base.ticks);
+    const ratio=b>0?s/b:null;
+    return Math.round(s)+"%/"+Math.round(b)+"%"+
+      (ratio===null?"":" ×"+ratio.toFixed(2));
+  };
+
+  return "M1 "+one(0)+" · M2 "+one(1);
+}
+
+function personalWriteRates(s){
+  const st=s.memoryTracker?.stats;
+  if(!st||st.totalTicks===0)return "—";
+  return "M1 "+pct(st.writes[0],st.totalTicks).toFixed(1)+"% · M2 "+
+    pct(st.writes[1],st.totalTicks).toFixed(1)+"%";
+}
 
 function angleDiff(a,b){
   let d=a-b;
@@ -434,6 +686,7 @@ class Somik{
 
     // שני תאי זיכרון. צאצא חדש תמיד מתחיל ללא זיכרונות.
     this.memory=[0,0];
+    this.memoryTracker=makeMemoryTracker(this.x,this.y,ticks);
 
     this.carrying=null;
     this.actionCooldown=0;
@@ -713,6 +966,8 @@ class Somik{
     const decision=this.brain.think(inputs);
     this.lastDecision=decision;
 
+    const previousMemory=this.memory.slice();
+
     // gate=0: שומר את הזיכרון הישן. gate=1: מחליף בערך החדש.
     // הערך החדש ישפיע על ההחלטה החל מה-tick הבא.
     this.memory[0]=clamp(
@@ -723,6 +978,8 @@ class Somik{
       this.memory[1]*(1-decision.memory2Gate)+decision.memory2Value*decision.memory2Gate,
       -1,1
     );
+
+    recordMemoryTick(this,previousMemory,decision);
 
     this.dir+=decision.turn*0.17;
 
@@ -751,6 +1008,8 @@ class Somik{
 
     this.applyHazard();
 
+    let ateFoodThisTick=false;
+
     for(let i=foods.length-1;i>=0;i--){
       const f=foods[i];
       const dx=this.x-f.x,dy=this.y-f.y;
@@ -759,8 +1018,19 @@ class Somik{
         this.energy=Math.min(180,this.energy+42);
         this.foodEaten++;
         foods.splice(i,1);
+        ateFoodThisTick=true;
         break;
       }
+    }
+
+    const nowInHazard=insideHazard(this.x,this.y);
+    if(nowInHazard&&!this.memoryTracker.prevInHazard){
+      startMemoryEvent(this,"hazard");
+    }
+    this.memoryTracker.prevInHazard=nowInHazard;
+
+    if(ateFoodThisTick){
+      startMemoryEvent(this,"food");
     }
 
     if(decision.pick>0.73&&decision.pick>decision.drop){
@@ -975,6 +1245,7 @@ function serializeSomik(s){
     protectedLifeTicks:s.protectedLifeTicks,
     hazardDamageTaken:s.hazardDamageTaken,
     memory:s.memory.slice(),
+    memoryTracker:s.memoryTracker,
     carrying:s.carrying?serializeBlock(s.carrying):null,
     actionCooldown:s.actionCooldown,
     lastSensors:s.lastSensors,
@@ -1008,6 +1279,7 @@ function deserializeSomik(data){
   s.memory=Array.isArray(data.memory)&&data.memory.length>=2
     ? [clamp(data.memory[0],-1,1),clamp(data.memory[1],-1,1)]
     : [0,0];
+  s.memoryTracker=normalizeMemoryTracker(data.memoryTracker,s.x,s.y);
 
   s.carrying=data.carrying?deserializeBlock(data.carrying):null;
   s.actionCooldown=data.actionCooldown ?? 0;
@@ -1052,6 +1324,7 @@ function stateObject(){
     hazardDamageTotal,
     populationHistory,
     lastHistoryTick,
+    memoryMetrics,
     nextId,
     nextBlockId,
     selectedId,
@@ -1080,7 +1353,7 @@ function saveGame(){
 
 function restoreState(state){
   if(!state||typeof state!=="object")return false;
-  if(state.version!==1&&state.version!==2&&state.version!==3)return false;
+  if(state.version!==1&&state.version!==2&&state.version!==3&&state.version!==4)return false;
 
   ticks=state.ticks ?? 0;
   births=state.births ?? 0;
@@ -1094,6 +1367,7 @@ function restoreState(state){
 
   populationHistory=Array.isArray(state.populationHistory)?state.populationHistory:[];
   lastHistoryTick=state.lastHistoryTick ?? ticks;
+  memoryMetrics=normalizeMemoryStats(state.memoryMetrics,ticks);
 
   foods=Array.isArray(state.foods)?state.foods:[];
   blocks=Array.isArray(state.blocks)?state.blocks.map(deserializeBlock):[];
@@ -1133,6 +1407,9 @@ function loadGame(){
 
       if((state.version??0)<3&&!localStorage.getItem(PRE_MEMORY_SAVE_KEY)){
         localStorage.setItem(PRE_MEMORY_SAVE_KEY,raw);
+      }
+      if((state.version??0)<4&&!localStorage.getItem(PRE_METRICS_SAVE_KEY)){
+        localStorage.setItem(PRE_METRICS_SAVE_KEY,raw);
       }
 
       if(restoreState(state)){
@@ -1314,6 +1591,7 @@ function resetWorld(){
   hazardDamageTotal=0;
   populationHistory=[];
   lastHistoryTick=0;
+  memoryMetrics=makeMemoryStats(0);
 
   nextId=1;
   nextBlockId=1;
@@ -1609,6 +1887,22 @@ function drawWorld(){
   document.getElementById("oldestAge").textContent=oldest.toLocaleString("he-IL");
   document.getElementById("livingLineages").textContent=new Set(somiks.map(s=>s.lineageId)).size.toLocaleString("he-IL");
 
+  const writeRate=memoryMetrics.totalTicks>0
+    ? "M1 "+pct(memoryMetrics.writes[0],memoryMetrics.totalTicks).toFixed(1)+"% · M2 "+
+      pct(memoryMetrics.writes[1],memoryMetrics.totalTicks).toFixed(1)+"%"
+    : "—";
+
+  document.getElementById("memWriteRate").textContent=writeRate;
+  document.getElementById("memStableHazard").textContent=formatStablePair("hazard");
+  document.getElementById("memStableFood").textContent=formatStablePair("food");
+  document.getElementById("memGateHazard").textContent=formatGateComparison("hazard");
+  document.getElementById("memGateFood").textContent=formatGateComparison("food");
+  document.getElementById("memEvents").textContent=
+    "סכנה "+memoryMetrics.events.hazard.toLocaleString("he-IL")+
+    " · אוכל "+memoryMetrics.events.food.toLocaleString("he-IL");
+  document.getElementById("memStartedAt").textContent=
+    memoryMetrics.startedAtTick.toLocaleString("he-IL");
+
   const cluster=clusterData();
   const movedClusterData=clusterData(b=>!!b.everMoved);
   document.getElementById("largestCluster").textContent=cluster.largest;
@@ -1691,6 +1985,7 @@ function drawInspector(){
     `נושא בלוק עכשיו: <b>${s.carrying?"כן":"לא"}</b><br>`+
     `זיכרון M1: <b>${s.memory[0].toFixed(2)}</b><br>`+
     `זיכרון M2: <b>${s.memory[1].toFixed(2)}</b><br>`+
+    `כתיבה בפועל M1/M2: <b>${personalWriteRates(s)}</b><br>`+
     `פנייה: <b>${s.lastDecision.turn.toFixed(2)}</b><br>`+
     `תנועה: <b>${s.lastDecision.thrust.toFixed(2)}</b><br>`+
     `הרם בלוק: <b>${s.lastDecision.pick.toFixed(2)}</b><br>`+
