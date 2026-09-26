@@ -131,21 +131,28 @@ button{
     </div>
 
     <div class="card">
-      <h3>מדדי זיכרון</h3>
-      <div class="row"><span>כתיבה בפועל לזיכרון</span><b id="memWriteRate">—</b></div>
-      <div class="row"><span>יציבות אחרי כניסה לסכנה</span><b id="memStableHazard">—</b></div>
-      <div class="row"><span>יציבות אחרי אכילת אוכל</span><b id="memStableFood">—</b></div>
-      <div class="row"><span>שערים אחרי סכנה / מצב רגיל</span><b id="memGateHazard">—</b></div>
-      <div class="row"><span>שערים אחרי אוכל / מצב רגיל</span><b id="memGateFood">—</b></div>
-      <div class="row"><span>אירועים שנמדדו</span><b id="memEvents">—</b></div>
-      <div class="row"><span>המדידה התחילה בזמן עולם</span><b id="memStartedAt">—</b></div>
-      <div class="small" style="margin-top:8px">
-        “כתיבה” = שינוי אמיתי של לפחות 0.03 בתא הזיכרון.
-        “שער פתוח” = Gate של 0.65 ומעלה.
-        אחרי סכנה/אוכל נבדק חלון של 120 צעדי זמן.
-        יציבות נמדדת עד שינוי מצטבר של 0.08, עד מקסימום 300 צעדים.
-        אירוע אוכל הוא אכילה בפועל.
-      </div>
+      <h3>מה קורה עם הזיכרון?</h3>
+      <div class="row"><span>M1 — כמה משתמש בו</span><b id="memM1Use">—</b></div>
+      <div class="row"><span>M1 — תגובה לסכנה</span><b id="memM1Hazard">—</b></div>
+      <div class="row"><span>M1 — תגובה לאוכל</span><b id="memM1Food">—</b></div>
+      <div class="row"><span>M1 — כמה זמן הוא זוכר</span><b id="memM1Hold">—</b></div>
+
+      <div class="row"><span>M2 — כמה משתמש בו</span><b id="memM2Use">—</b></div>
+      <div class="row"><span>M2 — תגובה לסכנה</span><b id="memM2Hazard">—</b></div>
+      <div class="row"><span>M2 — תגובה לאוכל</span><b id="memM2Food">—</b></div>
+      <div class="row"><span>M2 — כמה זמן הוא זוכר</span><b id="memM2Hold">—</b></div>
+
+      <div class="alert" id="memoryVerdict" style="display:block;margin-top:12px"></div>
+      <div class="small" id="memorySamples" style="margin-top:8px"></div>
+
+      <details style="margin-top:10px">
+        <summary class="small" style="cursor:pointer">נתונים מתקדמים</summary>
+        <div class="small" style="margin-top:8px">
+          כתיבה נחשבת כשערך הזיכרון משתנה לפחות ב־0.03.
+          תגובה לאירוע נבדקת במשך 120 צעדי זמן.
+          “זוכר” נמדד עד שהערך משתנה ב־0.08.
+        </div>
+      </details>
     </div>
 
     <div class="card">
@@ -453,6 +460,74 @@ function pct(n,d){
 
 function avgStable(bucket){
   return bucket.count>0?bucket.sum/bucket.count:null;
+}
+
+function useLabel(rate){
+  if(rate<5)return "כמעט לא משתמש";
+  if(rate<20)return "שימוש נמוך";
+  if(rate<50)return "שימוש בינוני";
+  return "שימוש גבוה";
+}
+
+function holdLabel(v){
+  if(v===null)return "אין מספיק נתונים";
+  if(v<5)return "קצר מאוד";
+  if(v<20)return "קצר";
+  if(v<80)return "בינוני";
+  if(v<200)return "ארוך";
+  return "ארוך מאוד";
+}
+
+function reactionRatio(type,index){
+  const special=memoryMetrics.contexts[type];
+  const base=memoryMetrics.contexts.baseline;
+  if(!special||!base||special.ticks===0||base.ticks===0)return null;
+
+  const specialRate=pct(special.gateOpen[index],special.ticks);
+  const baseRate=pct(base.gateOpen[index],base.ticks);
+
+  if(baseRate<=0)return specialRate>0?2:null;
+  return specialRate/baseRate;
+}
+
+function reactionLabel(ratio){
+  if(ratio===null)return "אין מספיק נתונים";
+  if(ratio<1.10)return "אין תגובה ברורה";
+  if(ratio<1.25)return "תגובה חלשה";
+  if(ratio<1.50)return "תגובה בינונית";
+  return "תגובה חזקה";
+}
+
+function memoryOverallVerdict(){
+  const h1=avgStable(memoryMetrics.stability.hazard[0]);
+  const h2=avgStable(memoryMetrics.stability.hazard[1]);
+  const f1=avgStable(memoryMetrics.stability.food[0]);
+  const f2=avgStable(memoryMetrics.stability.food[1]);
+
+  const vals=[h1,h2,f1,f2].filter(v=>v!==null);
+  if(vals.length===0)return "עדיין אין מספיק נתונים כדי להבין אם הזיכרון שימושי.";
+
+  const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+  const strongest=Math.max(
+    reactionRatio("hazard",0)??0,
+    reactionRatio("hazard",1)??0,
+    reactionRatio("food",0)??0,
+    reactionRatio("food",1)??0
+  );
+
+  if(avg<5 && strongest>=1.25){
+    return "הזיכרון פעיל ומגיב לאירועים, אבל כרגע נשמר לזמן קצר מאוד.";
+  }
+  if(avg<5){
+    return "הזיכרון משתנה הרבה, אבל כרגע הוא נראה בעיקר תגובתי ולא זיכרון מתמשך.";
+  }
+  if(avg<20 && strongest>=1.25){
+    return "מתחיל להופיע דפוס זיכרון: תגובה לאירועים ושמירה קצרה של מידע.";
+  }
+  if(avg>=20 && strongest>=1.25){
+    return "יש סימן מעניין לזיכרון מתמשך: המידע נשמר וגם קשור לאירועים בעולם.";
+  }
+  return "יש שמירה של מידע, אבל עדיין לא ברור אם היא קשורה לאירועים שימושיים.";
 }
 
 function formatStablePair(type){
@@ -1887,21 +1962,56 @@ function drawWorld(){
   document.getElementById("oldestAge").textContent=oldest.toLocaleString("he-IL");
   document.getElementById("livingLineages").textContent=new Set(somiks.map(s=>s.lineageId)).size.toLocaleString("he-IL");
 
-  const writeRate=memoryMetrics.totalTicks>0
-    ? "M1 "+pct(memoryMetrics.writes[0],memoryMetrics.totalTicks).toFixed(1)+"% · M2 "+
-      pct(memoryMetrics.writes[1],memoryMetrics.totalTicks).toFixed(1)+"%"
-    : "—";
+  const m1UseRate=memoryMetrics.totalTicks>0
+    ? pct(memoryMetrics.writes[0],memoryMetrics.totalTicks)
+    : 0;
+  const m2UseRate=memoryMetrics.totalTicks>0
+    ? pct(memoryMetrics.writes[1],memoryMetrics.totalTicks)
+    : 0;
 
-  document.getElementById("memWriteRate").textContent=writeRate;
-  document.getElementById("memStableHazard").textContent=formatStablePair("hazard");
-  document.getElementById("memStableFood").textContent=formatStablePair("food");
-  document.getElementById("memGateHazard").textContent=formatGateComparison("hazard");
-  document.getElementById("memGateFood").textContent=formatGateComparison("food");
-  document.getElementById("memEvents").textContent=
-    "סכנה "+memoryMetrics.events.hazard.toLocaleString("he-IL")+
-    " · אוכל "+memoryMetrics.events.food.toLocaleString("he-IL");
-  document.getElementById("memStartedAt").textContent=
-    memoryMetrics.startedAtTick.toLocaleString("he-IL");
+  const m1HoldValues=[
+    avgStable(memoryMetrics.stability.hazard[0]),
+    avgStable(memoryMetrics.stability.food[0])
+  ].filter(v=>v!==null);
+  const m2HoldValues=[
+    avgStable(memoryMetrics.stability.hazard[1]),
+    avgStable(memoryMetrics.stability.food[1])
+  ].filter(v=>v!==null);
+
+  const m1Hold=m1HoldValues.length
+    ? m1HoldValues.reduce((a,b)=>a+b,0)/m1HoldValues.length
+    : null;
+  const m2Hold=m2HoldValues.length
+    ? m2HoldValues.reduce((a,b)=>a+b,0)/m2HoldValues.length
+    : null;
+
+  document.getElementById("memM1Use").textContent=
+    useLabel(m1UseRate)+" ("+m1UseRate.toFixed(0)+"%)";
+  document.getElementById("memM2Use").textContent=
+    useLabel(m2UseRate)+" ("+m2UseRate.toFixed(0)+"%)";
+
+  document.getElementById("memM1Hazard").textContent=
+    reactionLabel(reactionRatio("hazard",0));
+  document.getElementById("memM2Hazard").textContent=
+    reactionLabel(reactionRatio("hazard",1));
+
+  document.getElementById("memM1Food").textContent=
+    reactionLabel(reactionRatio("food",0));
+  document.getElementById("memM2Food").textContent=
+    reactionLabel(reactionRatio("food",1));
+
+  document.getElementById("memM1Hold").textContent=
+    holdLabel(m1Hold)+(m1Hold===null?"":" (≈"+Math.round(m1Hold)+" צעדים)");
+  document.getElementById("memM2Hold").textContent=
+    holdLabel(m2Hold)+(m2Hold===null?"":" (≈"+Math.round(m2Hold)+" צעדים)");
+
+  document.getElementById("memoryVerdict").textContent=
+    "🧠 "+memoryOverallVerdict();
+
+  document.getElementById("memorySamples").textContent=
+    "נבדקו "+
+    memoryMetrics.events.hazard.toLocaleString("he-IL")+" כניסות לסכנה ו־"+
+    memoryMetrics.events.food.toLocaleString("he-IL")+" אירועי אכילה.";
 
   const cluster=clusterData();
   const movedClusterData=clusterData(b=>!!b.everMoved);
