@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Somik World v0.3 — Building</title>
+<title>Somik World v0.4 — Useful World</title>
 <style>
 :root{
   --bg:#111827;
@@ -18,7 +18,7 @@ html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-f
 .app{
   min-height:100vh;
   display:grid;
-  grid-template-columns:minmax(0,1fr) 320px;
+  grid-template-columns:minmax(0,1fr) 340px;
   direction:ltr;
 }
 main,aside{direction:rtl}
@@ -61,6 +61,7 @@ button{
 .badge{display:inline-block;padding:2px 6px;border:1px solid #475569;border-radius:999px;font-size:11px;color:#dbeafe}
 .legend{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:var(--muted)}
 .swatch{display:inline-block;width:12px;height:12px;margin-left:5px;vertical-align:-1px}
+.alert{margin-top:10px;padding:9px;border-radius:9px;border:1px solid #7c2d12;background:#431407;color:#fed7aa;font-size:12px;display:none}
 @media(max-width:800px) and (orientation:portrait){
   .app{display:flex;flex-direction:column}
   main{padding:9px}
@@ -75,8 +76,8 @@ button{
 <body>
 <div class="app">
   <main>
-    <h1>Somik World v0.3</h1>
-    <div class="subtitle">Building — Somik יכול לקחת ולהניח בלוק. הוא עדיין לא יודע מה זה קיר או בית.</div>
+    <h1>Somik World v0.4</h1>
+    <div class="subtitle">Useful World — בלוקים יכולים להפחית סכנה. Somik עדיין לא יודע מהו קיר, גשר או מחסה.</div>
 
     <div class="toolbar">
       <button id="pauseBtn">⏸ עצור</button>
@@ -94,19 +95,26 @@ button{
     <div class="row"><span>Somik-ים</span><b id="pop">0</b></div>
     <div class="row"><span>אוכל</span><b id="foodCount">0</b></div>
     <div class="row"><span>בלוקים בעולם</span><b id="blockCount">0</b></div>
+    <div class="row"><span>בלוקים באזור סכנה</span><b id="hazardBlocks">0</b></div>
+    <div class="row"><span>בלוקים יציבים</span><b id="stableBlocks">0</b></div>
     <div class="row"><span>בלוקים בנשיאה</span><b id="carriedCount">0</b></div>
     <div class="row"><span>Pick מוצלחים</span><b id="pickups">0</b></div>
     <div class="row"><span>Drop מוצלחים</span><b id="drops">0</b></div>
     <div class="row"><span>אשכול בלוקים גדול</span><b id="largestCluster">0</b></div>
+    <div class="row"><span>תורמים לאשכול הגדול</span><b id="clusterContributors">0</b></div>
+    <div class="row"><span>Ticks מוגנים</span><b id="protectedTicks">0</b></div>
+    <div class="row"><span>נזק סכנה כולל</span><b id="hazardDamage">0</b></div>
     <div class="row"><span>לידות</span><b id="births">0</b></div>
     <div class="row"><span>מוות</span><b id="deaths">0</b></div>
     <div class="row"><span>דור מקסימלי</span><b id="maxGen">0</b></div>
     <div class="row"><span>הכחדות</span><b id="extinctions">0</b></div>
     <div class="row"><span>Ticks</span><b id="ticks">0</b></div>
 
+    <div class="alert" id="structureAlert"></div>
+
     <div class="card">
       <h3>Somik נבחר <span class="badge" id="selectedBadge">לחץ על Somik</span></h3>
-      <div id="selectedInfo" class="small">לחץ על Somik כדי לראות את החושים, המוח והחלטות PICK/DROP שלו.</div>
+      <div id="selectedInfo" class="small">לחץ על Somik כדי לראות אם הוא חש סכנה, בלוקים ומה המוח מחליט.</div>
     </div>
 
     <div class="card">
@@ -116,11 +124,10 @@ button{
 
     <div class="card">
       <h3>המוח</h3>
-      <canvas id="brainCanvas" width="300" height="300"></canvas>
+      <canvas id="brainCanvas" width="320" height="330"></canvas>
       <div class="small" style="margin-top:7px">
-        10 קלטים → 8 נוירונים פנימיים → 4 יציאות:
+        13 קלטים → 9 נוירונים פנימיים → 4 יציאות:
         TURN, MOVE, PICK, DROP.
-        כל המשקלים עוברים לצאצאים עם מוטציות.
       </div>
     </div>
 
@@ -130,14 +137,14 @@ button{
         <div><span class="swatch" style="background:#ef4444;border-radius:50%"></span>אוכל</div>
         <div><span class="swatch" style="background:#a8b3c2"></span>בלוק</div>
         <div><span class="swatch" style="background:#fbbf24"></span>בלוק בנשיאה</div>
-        <div><span class="swatch" style="background:#fff;border-radius:50%"></span>Somik נבחר</div>
+        <div><span class="swatch" style="background:#7f1d1d"></span>אזור סכנה</div>
       </div>
     </div>
 
     <div class="card small">
-      <b>החוק נשמר:</b> אין בקוד BUILD, WALL, HOUSE או COOPERATE.
-      העולם יודע רק שבלוק הוא עצם מוצק, ו-Somik יכול להרים ולהניח אותו.
-      אם בעתיד יופיע מבנה חוזר — הוא לא תוכנת מראש.
+      <b>כלל העולם החדש:</b> בתוך האזור האדום Somik מאבד אנרגיה מהר יותר.
+      בלוק שנמצא באזור הסכנה מפחית את הנזק ברדיוס קטן סביבו.
+      המערכת לא אומרת ל-Somik להניח שם בלוק — היא רק מעניקה לבלוק תכונה פיזית שימושית.
     </div>
   </aside>
 </div>
@@ -145,43 +152,56 @@ button{
 <script>
 "use strict";
 
-const worldCanvas = document.getElementById("world");
-const ctx = worldCanvas.getContext("2d");
-const brainCanvas = document.getElementById("brainCanvas");
-const bctx = brainCanvas.getContext("2d");
+const worldCanvas=document.getElementById("world");
+const ctx=worldCanvas.getContext("2d");
+const brainCanvas=document.getElementById("brainCanvas");
+const bctx=brainCanvas.getContext("2d");
 
-const W = worldCanvas.width;
-const H = worldCanvas.height;
+const W=worldCanvas.width;
+const H=worldCanvas.height;
 
-const VISION = 180;
-const BLOCK_VISION = 135;
-const BLOCK_SIZE = 22;
-const BLOCK_GRID = 25;
-const MAX_POP = 170;
-const INITIAL_BLOCKS = 95;
+const VISION=180;
+const BLOCK_VISION=140;
+const BLOCK_SIZE=22;
+const BLOCK_GRID=25;
+const MAX_POP=170;
+const INITIAL_BLOCKS=100;
 
-const COLORS = ["#60a5fa","#f59e0b","#a78bfa","#34d399","#f472b6","#facc15","#22d3ee"];
+const HAZARD={
+  x:430,
+  y:0,
+  w:170,
+  h:H
+};
 
-let somiks = [];
-let foods = [];
-let blocks = [];
+const HAZARD_DAMAGE=0.11;
+const BLOCK_PROTECT_RADIUS=48;
+const STABLE_TICKS=1200;
 
-let running = true;
-let speed = 1;
-let ticks = 0;
-let births = 0;
-let deaths = 0;
-let extinctions = 0;
-let pickups = 0;
-let drops = 0;
-let nextId = 1;
-let nextBlockId = 1;
-let selectedId = null;
+const COLORS=["#60a5fa","#f59e0b","#a78bfa","#34d399","#f472b6","#facc15","#22d3ee"];
 
-const rnd = (a,b)=>Math.random()*(b-a)+a;
-const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
-const sigmoid = x=>1/(1+Math.exp(-x));
-const sq = x=>x*x;
+let somiks=[];
+let foods=[];
+let blocks=[];
+
+let running=true;
+let speed=1;
+let ticks=0;
+let births=0;
+let deaths=0;
+let extinctions=0;
+let pickups=0;
+let drops=0;
+let protectedTicks=0;
+let hazardDamageTotal=0;
+let nextId=1;
+let nextBlockId=1;
+let selectedId=null;
+
+const rnd=(a,b)=>Math.random()*(b-a)+a;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const sigmoid=x=>1/(1+Math.exp(-x));
+const sq=x=>x*x;
 
 function angleDiff(a,b){
   let d=a-b;
@@ -190,16 +210,49 @@ function angleDiff(a,b){
   return d;
 }
 
-function mutateValue(v, chance=0.13, amount=0.34){
-  if(Math.random()>=chance) return v;
+function mutateValue(v,chance=0.13,amount=0.34){
+  if(Math.random()>=chance)return v;
   const approxGaussian=(Math.random()+Math.random()+Math.random()-1.5);
   return v+approxGaussian*amount;
 }
 
+function insideHazard(x,y){
+  return x>=HAZARD.x && x<=HAZARD.x+HAZARD.w && y>=HAZARD.y && y<=HAZARD.y+HAZARD.h;
+}
+
+function distanceToHazard(x,y){
+  if(insideHazard(x,y))return 0;
+  let dx=0;
+  if(x<HAZARD.x)dx=HAZARD.x-x;
+  else if(x>HAZARD.x+HAZARD.w)dx=x-(HAZARD.x+HAZARD.w);
+
+  let dy=0;
+  if(y<HAZARD.y)dy=HAZARD.y-y;
+  else if(y>HAZARD.y+HAZARD.h)dy=y-(HAZARD.y+HAZARD.h);
+
+  return Math.sqrt(dx*dx+dy*dy);
+}
+
+function hazardProtectionAt(x,y){
+  let best=0;
+
+  for(const b of blocks){
+    if(!insideHazard(b.x,b.y))continue;
+    const dx=x-b.x,dy=y-b.y;
+    const d=Math.sqrt(dx*dx+dy*dy);
+
+    if(d<BLOCK_PROTECT_RADIUS){
+      const p=1-d/BLOCK_PROTECT_RADIUS;
+      if(p>best)best=p;
+    }
+  }
+  return best;
+}
+
 class Brain{
   constructor(parent=null){
-    this.inputN=10;
-    this.hiddenN=8;
+    this.inputN=13;
+    this.hiddenN=9;
     this.outputN=4;
 
     if(parent){
@@ -260,13 +313,24 @@ class Block{
     this.x=x;
     this.y=y;
     this.size=BLOCK_SIZE;
+    this.lastMovedTick=0;
+    this.lastDroppedBy=null;
   }
 
   draw(){
     const half=this.size/2;
-    ctx.fillStyle="#a8b3c2";
+    const inDanger=insideHazard(this.x,this.y);
+
+    if(inDanger){
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,BLOCK_PROTECT_RADIUS,0,Math.PI*2);
+      ctx.fillStyle="rgba(250,204,21,.08)";
+      ctx.fill();
+    }
+
+    ctx.fillStyle=inDanger?"#d8c48f":"#a8b3c2";
     ctx.fillRect(this.x-half,this.y-half,this.size,this.size);
-    ctx.strokeStyle="#475569";
+    ctx.strokeStyle=inDanger?"#854d0e":"#475569";
     ctx.lineWidth=2;
     ctx.strokeRect(this.x-half,this.y-half,this.size,this.size);
 
@@ -305,12 +369,16 @@ class Somik{
       blockAhead:0,
       blockSide:0,
       carrying:0,
+      hazardHere:0,
+      hazardAhead:0,
+      protection:0,
       noise:0
     };
 
     this.lastDecision={turn:0,thrust:0,pick:0,drop:0};
     this.nearestFood=null;
     this.nearestBlock=null;
+    this.lastHazardDamage=0;
   }
 
   sense(){
@@ -373,6 +441,7 @@ class Somik{
     }
 
     let nearestNeighbor=Infinity;
+
     for(const other of somiks){
       if(other===this)continue;
       const dx=other.x-this.x,dy=other.y-this.y;
@@ -388,11 +457,27 @@ class Somik{
 
     const energy=clamp(this.energy/180,0,1);
     const carrying=this.carrying?1:0;
+
+    const hazardHere=insideHazard(this.x,this.y)?1:0;
+
+    const lookX=this.x+Math.cos(this.dir)*55;
+    const lookY=this.y+Math.sin(this.dir)*55;
+    let hazardAhead=0;
+
+    if(insideHazard(lookX,lookY)){
+      hazardAhead=1;
+    }else{
+      const d=distanceToHazard(lookX,lookY);
+      hazardAhead=clamp(1-d/100,0,1);
+    }
+
+    const protection=hazardProtectionAt(this.x,this.y);
     const noise=rnd(-1,1);
 
     this.lastSensors={
       energy,foodNear,foodAhead,foodSide,neighborNear,
-      blockNear,blockAhead,blockSide,carrying,noise
+      blockNear,blockAhead,blockSide,carrying,
+      hazardHere,hazardAhead,protection,noise
     };
 
     return[
@@ -405,12 +490,15 @@ class Somik{
       blockAhead,
       blockSide,
       carrying,
+      hazardHere,
+      hazardAhead,
+      protection,
       noise
     ];
   }
 
   tryPick(){
-    if(this.carrying || this.actionCooldown>0) return false;
+    if(this.carrying||this.actionCooldown>0)return false;
 
     let bestIndex=-1;
     let bestD2=Infinity;
@@ -420,7 +508,8 @@ class Somik{
       const b=blocks[i];
       const dx=b.x-this.x,dy=b.y-this.y;
       const d2=dx*dx+dy*dy;
-      if(d2<bestD2 && d2<maxD*maxD){
+
+      if(d2<bestD2&&d2<maxD*maxD){
         bestD2=d2;
         bestIndex=i;
       }
@@ -428,16 +517,18 @@ class Somik{
 
     if(bestIndex>=0){
       this.carrying=blocks.splice(bestIndex,1)[0];
+      this.carrying.lastMovedTick=ticks;
       this.energy-=0.55;
       this.actionCooldown=20;
       pickups++;
       return true;
     }
+
     return false;
   }
 
   tryDrop(){
-    if(!this.carrying || this.actionCooldown>0) return false;
+    if(!this.carrying||this.actionCooldown>0)return false;
 
     const distance=28;
     const rawX=this.x+Math.cos(this.dir)*distance;
@@ -447,9 +538,9 @@ class Somik{
     const y=Math.round(rawY/BLOCK_GRID)*BLOCK_GRID;
 
     if(
-      x<BLOCK_SIZE || x>W-BLOCK_SIZE ||
-      y<BLOCK_SIZE || y>H-BLOCK_SIZE
-    ) return false;
+      x<BLOCK_SIZE||x>W-BLOCK_SIZE||
+      y<BLOCK_SIZE||y>H-BLOCK_SIZE
+    )return false;
 
     for(const b of blocks){
       if(sq(b.x-x)+sq(b.y-y)<sq(BLOCK_SIZE*0.9))return false;
@@ -462,11 +553,16 @@ class Somik{
 
     this.carrying.x=x;
     this.carrying.y=y;
+    this.carrying.lastMovedTick=ticks;
+    this.carrying.lastDroppedBy=this.id;
+
     blocks.push(this.carrying);
     this.carrying=null;
+
     this.energy-=0.35;
     this.actionCooldown=18;
     drops++;
+
     return true;
   }
 
@@ -476,9 +572,27 @@ class Somik{
       const nearestX=clamp(nx,b.x-half,b.x+half);
       const nearestY=clamp(ny,b.y-half,b.y+half);
       const dx=nx-nearestX,dy=ny-nearestY;
-      if(dx*dx+dy*dy < this.r*this.r) return true;
+
+      if(dx*dx+dy*dy<this.r*this.r)return true;
     }
     return false;
+  }
+
+  applyHazard(){
+    this.lastHazardDamage=0;
+
+    if(!insideHazard(this.x,this.y))return;
+
+    const protection=hazardProtectionAt(this.x,this.y);
+    const damage=HAZARD_DAMAGE*(1-protection*0.92);
+
+    this.energy-=damage;
+    this.lastHazardDamage=damage;
+    hazardDamageTotal+=damage;
+
+    if(protection>0.15){
+      protectedTicks++;
+    }
   }
 
   update(){
@@ -511,38 +625,43 @@ class Somik{
     const metabolism=0.018;
     const movementCost=0.035*decision.thrust;
     const carryingCost=this.carrying?0.012:0;
+
     this.energy-=metabolism+movementCost+carryingCost;
+
+    this.applyHazard();
 
     for(let i=foods.length-1;i>=0;i--){
       const f=foods[i];
       const dx=this.x-f.x,dy=this.y-f.y;
-      if(dx*dx+dy*dy < sq(this.r+f.r)){
+
+      if(dx*dx+dy*dy<sq(this.r+f.r)){
         this.energy=Math.min(180,this.energy+42);
         foods.splice(i,1);
         break;
       }
     }
 
-    // פעולות מניפולציה. אין שום "BUILD".
-    if(decision.pick>0.73 && decision.pick>decision.drop){
+    if(decision.pick>0.73&&decision.pick>decision.drop){
       this.tryPick();
-    }else if(decision.drop>0.73 && decision.drop>decision.pick){
+    }else if(decision.drop>0.73&&decision.drop>decision.pick){
       this.tryDrop();
     }
 
     if(
-      this.energy>148 &&
-      this.age>280 &&
-      somiks.length<MAX_POP &&
+      this.energy>148&&
+      this.age>280&&
+      somiks.length<MAX_POP&&
       Math.random()<0.00065
     ){
       this.energy-=62;
+
       const child=new Somik(
         clamp(this.x+rnd(-16,16),15,W-15),
         clamp(this.y+rnd(-16,16),15,H-15),
         this.generation+1,
         this
       );
+
       somiks.push(child);
       births++;
     }
@@ -553,6 +672,7 @@ class Somik{
     ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
     ctx.fillStyle=this.color;
     ctx.fill();
+
     ctx.strokeStyle=this.id===selectedId?"#fff":"#111827";
     ctx.lineWidth=this.id===selectedId?4:2;
     ctx.stroke();
@@ -569,11 +689,21 @@ class Somik{
     if(this.carrying){
       const bx=this.x+Math.cos(this.dir)*15;
       const by=this.y+Math.sin(this.dir)*15;
+
       ctx.fillStyle="#fbbf24";
       ctx.fillRect(bx-6,by-6,12,12);
+
       ctx.strokeStyle="#78350f";
       ctx.lineWidth=1.5;
       ctx.strokeRect(bx-6,by-6,12,12);
+    }
+
+    if(this.lastHazardDamage>0){
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,this.r+5,0,Math.PI*2);
+      ctx.strokeStyle="rgba(248,113,113,.7)";
+      ctx.lineWidth=2;
+      ctx.stroke();
     }
 
     if(this.id===selectedId){
@@ -604,11 +734,32 @@ class Somik{
   }
 }
 
+function pointInsideBlock(x,y,pad=0){
+  for(const b of blocks){
+    if(
+      Math.abs(x-b.x)<b.size/2+pad&&
+      Math.abs(y-b.y)<b.size/2+pad
+    )return true;
+  }
+  return false;
+}
+
 function addFood(n){
   for(let i=0;i<n;i++){
     let tries=0;
-    while(tries++<30){
-      const x=rnd(12,W-12),y=rnd(12,H-12);
+
+    while(tries++<40){
+      let x,y;
+
+      // 52% מהמזון מופיע באזור הסכנה: יש תמריץ אמיתי להיכנס.
+      if(Math.random()<0.52){
+        x=rnd(HAZARD.x+12,HAZARD.x+HAZARD.w-12);
+        y=rnd(12,H-12);
+      }else{
+        x=rnd(12,W-12);
+        y=rnd(12,H-12);
+      }
+
       if(!pointInsideBlock(x,y,5)){
         foods.push({x,y,r:5});
         break;
@@ -617,30 +768,31 @@ function addFood(n){
   }
 }
 
-function pointInsideBlock(x,y,pad=0){
-  for(const b of blocks){
-    if(
-      Math.abs(x-b.x)<b.size/2+pad &&
-      Math.abs(y-b.y)<b.size/2+pad
-    ) return true;
-  }
-  return false;
-}
-
 function addBlocks(n){
   let placed=0,tries=0;
 
-  while(placed<n && tries<n*80){
+  while(placed<n&&tries<n*100){
     tries++;
 
-    const x=Math.round(rnd(2,W/BLOCK_GRID-2))*BLOCK_GRID;
+    // רוב הבלוקים מתחילים מחוץ לאזור הסכנה.
+    let x;
+    if(Math.random()<0.78){
+      const left=Math.random()<0.5;
+      x=left
+        ? Math.round(rnd(2,(HAZARD.x-35)/BLOCK_GRID))*BLOCK_GRID
+        : Math.round(rnd((HAZARD.x+HAZARD.w+35)/BLOCK_GRID,W/BLOCK_GRID-2))*BLOCK_GRID;
+    }else{
+      x=Math.round(rnd(2,W/BLOCK_GRID-2))*BLOCK_GRID;
+    }
+
     const y=Math.round(rnd(2,H/BLOCK_GRID-2))*BLOCK_GRID;
 
     let ok=true;
 
     for(const b of blocks){
       if(sq(b.x-x)+sq(b.y-y)<sq(BLOCK_GRID*1.1)){
-        ok=false;break;
+        ok=false;
+        break;
       }
     }
 
@@ -654,8 +806,19 @@ function addBlocks(n){
 function createPopulation(n=20){
   for(let i=0;i<n;i++){
     let created=false;
-    for(let tries=0;tries<50&&!created;tries++){
-      const x=rnd(30,W-30),y=rnd(30,H-30);
+
+    for(let tries=0;tries<60&&!created;tries++){
+      let x;
+
+      // אוכלוסייה ראשונית מתחילה בעיקר משני צדי הסכנה.
+      if(Math.random()<0.5){
+        x=rnd(30,HAZARD.x-35);
+      }else{
+        x=rnd(HAZARD.x+HAZARD.w+35,W-30);
+      }
+
+      const y=rnd(30,H-30);
+
       if(!pointInsideBlock(x,y,20)){
         somiks.push(new Somik(x,y));
         created=true;
@@ -675,6 +838,8 @@ function resetWorld(){
   extinctions=0;
   pickups=0;
   drops=0;
+  protectedTicks=0;
+  hazardDamageTotal=0;
 
   nextId=1;
   nextBlockId=1;
@@ -682,7 +847,7 @@ function resetWorld(){
 
   addBlocks(INITIAL_BLOCKS);
   createPopulation(20);
-  addFood(130);
+  addFood(135);
 }
 
 function updateWorld(){
@@ -691,18 +856,21 @@ function updateWorld(){
   for(const s of [...somiks])s.update();
 
   const alive=[];
+
   for(const s of somiks){
-    if(s.energy>0 && s.age<18000){
+    if(s.energy>0&&s.age<18000){
       alive.push(s);
     }else{
       deaths++;
 
-      // אם Somik מת כשהוא סוחב בלוק — הבלוק נופל במקום.
       if(s.carrying){
         const x=Math.round(s.x/BLOCK_GRID)*BLOCK_GRID;
         const y=Math.round(s.y/BLOCK_GRID)*BLOCK_GRID;
+
         s.carrying.x=clamp(x,BLOCK_SIZE,W-BLOCK_SIZE);
         s.carrying.y=clamp(y,BLOCK_SIZE,H-BLOCK_SIZE);
+        s.carrying.lastMovedTick=ticks;
+
         blocks.push(s.carrying);
         s.carrying=null;
       }
@@ -710,15 +878,19 @@ function updateWorld(){
       if(s.id===selectedId)selectedId=null;
     }
   }
+
   somiks=alive;
 
-  const targetFood=Math.max(120,Math.round(somiks.length*2.0));
-  if(foods.length<targetFood && Math.random()<0.17)addFood(1);
+  const targetFood=Math.max(125,Math.round(somiks.length*1.9));
+
+  if(foods.length<targetFood&&Math.random()<0.18){
+    addFood(1);
+  }
 
   if(somiks.length===0){
     extinctions++;
     createPopulation(20);
-    addFood(Math.max(0,130-foods.length));
+    addFood(Math.max(0,135-foods.length));
   }
 }
 
@@ -733,6 +905,15 @@ function drawBackground(){
     }
   }
 
+  // אזור סכנה.
+  ctx.fillStyle="rgba(127,29,29,.56)";
+  ctx.fillRect(HAZARD.x,HAZARD.y,HAZARD.w,HAZARD.h);
+
+  ctx.fillStyle="rgba(239,68,68,.10)";
+  for(let x=HAZARD.x;x<HAZARD.x+HAZARD.w;x+=25){
+    ctx.fillRect(x,0,12,H);
+  }
+
   ctx.strokeStyle="rgba(0,0,0,.10)";
   ctx.lineWidth=1;
 
@@ -745,11 +926,11 @@ function drawBackground(){
   }
 }
 
-function largestBlockCluster(){
-  if(blocks.length===0)return 0;
+function clusterData(){
+  if(blocks.length===0)return{largest:0,contributors:0,indices:[]};
 
   const visited=new Set();
-  let best=0;
+  let bestIndices=[];
   const linkDist=BLOCK_GRID*1.45;
   const linkD2=linkDist*linkDist;
 
@@ -757,12 +938,12 @@ function largestBlockCluster(){
     if(visited.has(i))continue;
 
     const stack=[i];
+    const current=[];
     visited.add(i);
-    let size=0;
 
     while(stack.length){
       const a=stack.pop();
-      size++;
+      current.push(a);
 
       for(let j=0;j<blocks.length;j++){
         if(visited.has(j))continue;
@@ -776,9 +957,44 @@ function largestBlockCluster(){
         }
       }
     }
-    if(size>best)best=size;
+
+    if(current.length>bestIndices.length){
+      bestIndices=current;
+    }
   }
-  return best;
+
+  const contributors=new Set();
+
+  for(const idx of bestIndices){
+    const id=blocks[idx].lastDroppedBy;
+    if(id!==null)contributors.add(id);
+  }
+
+  return{
+    largest:bestIndices.length,
+    contributors:contributors.size,
+    indices:bestIndices
+  };
+}
+
+function stableBlockCount(){
+  let count=0;
+
+  for(const b of blocks){
+    if(ticks-b.lastMovedTick>=STABLE_TICKS)count++;
+  }
+
+  return count;
+}
+
+function hazardBlockCount(){
+  let count=0;
+
+  for(const b of blocks){
+    if(insideHazard(b.x,b.y))count++;
+  }
+
+  return count;
 }
 
 function drawWorld(){
@@ -809,10 +1025,30 @@ function drawWorld(){
   document.getElementById("ticks").textContent=ticks.toLocaleString("he-IL");
   document.getElementById("extinctions").textContent=extinctions;
   document.getElementById("maxGen").textContent=somiks.reduce((m,s)=>Math.max(m,s.generation),0);
+  document.getElementById("hazardBlocks").textContent=hazardBlockCount();
+  document.getElementById("stableBlocks").textContent=stableBlockCount();
+  document.getElementById("protectedTicks").textContent=protectedTicks.toLocaleString("he-IL");
+  document.getElementById("hazardDamage").textContent=Math.round(hazardDamageTotal).toLocaleString("he-IL");
 
-  // חישוב קצת יותר כבד — רק מדי 15 פריימים חזותיים.
-  if(ticks%15===0 || speed===1){
-    document.getElementById("largestCluster").textContent=largestBlockCluster();
+  const cluster=clusterData();
+  document.getElementById("largestCluster").textContent=cluster.largest;
+  document.getElementById("clusterContributors").textContent=cluster.contributors;
+
+  const alert=document.getElementById("structureAlert");
+
+  const usefulCandidate=
+    cluster.largest>=6&&
+    cluster.contributors>=2&&
+    hazardBlockCount()>=4&&
+    stableBlockCount()>=8&&
+    protectedTicks>1500;
+
+  if(usefulCandidate){
+    alert.style.display="block";
+    alert.textContent=
+      "⚠ זוהה מועמד למבנה שימושי: כמה Somik-ים תרמו לאשכול, חלק מהבלוקים נמצאים באזור הסכנה ויש כבר זמן מוגן משמעותי. זה עדיין לא הוכחה לבנייה מכוונת.";
+  }else{
+    alert.style.display="none";
   }
 
   drawInspector();
@@ -845,13 +1081,15 @@ function drawInspector(){
 
   if(!s){
     badge.textContent="לחץ על Somik";
-    info.innerHTML="לחץ על Somik כדי לראות את החושים, המוח והחלטות PICK/DROP שלו.";
+    info.innerHTML="לחץ על Somik כדי לראות אם הוא חש סכנה, בלוקים ומה המוח מחליט.";
     sensors.innerHTML="";
+
     bctx.clearRect(0,0,brainCanvas.width,brainCanvas.height);
     bctx.fillStyle="#94a3b8";
     bctx.font="14px Arial";
     bctx.textAlign="center";
     bctx.fillText("בחר Somik כדי לראות את המוח",brainCanvas.width/2,brainCanvas.height/2);
+
     return;
   }
 
@@ -862,6 +1100,7 @@ function drawInspector(){
     `גיל: <b>${s.age.toLocaleString("he-IL")}</b><br>`+
     `אנרגיה: <b>${s.energy.toFixed(1)}</b><br>`+
     `נושא בלוק: <b>${s.carrying?"כן":"לא"}</b><br>`+
+    `נזק סכנה עכשיו: <b>${s.lastHazardDamage.toFixed(3)}</b><br>`+
     `TURN: <b>${s.lastDecision.turn.toFixed(2)}</b><br>`+
     `MOVE: <b>${s.lastDecision.thrust.toFixed(2)}</b><br>`+
     `PICK: <b>${s.lastDecision.pick.toFixed(2)}</b><br>`+
@@ -879,20 +1118,23 @@ function drawInspector(){
     sensorHtml("בלוק קדימה / אחורה",x.blockAhead,true)+
     sensorHtml("בלוק ימין / שמאל",x.blockSide,true)+
     sensorHtml("נושא בלוק",x.carrying)+
+    sensorHtml("בתוך סכנה",x.hazardHere)+
+    sensorHtml("סכנה קדימה",x.hazardAhead)+
+    sensorHtml("הגנת בלוק",x.protection)+
     sensorHtml("רעש פנימי",x.noise,true);
 
   drawBrain(s.brain);
 }
 
 function neuronPos(layerIndex,index,count){
-  const xs=[35,150,265];
-  const top=25,bottom=265;
-  const y=count===1?145:top+index*(bottom-top)/(count-1);
+  const xs=[35,160,285];
+  const top=22,bottom=300;
+  const y=count===1?160:top+index*(bottom-top)/(count-1);
   return{x:xs[layerIndex],y};
 }
 
 function weightStyle(w){
-  const a=Math.min(0.72,0.10+Math.abs(w)*0.25);
+  const a=Math.min(0.70,0.08+Math.abs(w)*0.23);
   return w>=0?`rgba(147,197,253,${a})`:`rgba(248,113,113,${a})`;
 }
 
@@ -909,7 +1151,7 @@ function drawBrain(brain){
       bctx.moveTo(inPos[i].x,inPos[i].y);
       bctx.lineTo(hidPos[h].x,hidPos[h].y);
       bctx.strokeStyle=weightStyle(brain.w1[h][i]);
-      bctx.lineWidth=0.85;
+      bctx.lineWidth=0.75;
       bctx.stroke();
     }
   }
@@ -920,7 +1162,7 @@ function drawBrain(brain){
       bctx.moveTo(hidPos[h].x,hidPos[h].y);
       bctx.lineTo(outPos[o].x,outPos[o].y);
       bctx.strokeStyle=weightStyle(brain.w2[o][h]);
-      bctx.lineWidth=1.1;
+      bctx.lineWidth=1;
       bctx.stroke();
     }
   }
@@ -929,7 +1171,7 @@ function drawBrain(brain){
     const intensity=Math.round(105+Math.abs(val)*150);
 
     bctx.beginPath();
-    bctx.arc(p.x,p.y,6.5,0,Math.PI*2);
+    bctx.arc(p.x,p.y,6.2,0,Math.PI*2);
     bctx.fillStyle=`rgb(${intensity},${intensity},${intensity})`;
     bctx.fill();
     bctx.strokeStyle="#0f172a";
@@ -937,9 +1179,9 @@ function drawBrain(brain){
 
     if(label){
       bctx.fillStyle="#cbd5e1";
-      bctx.font="9px Arial";
+      bctx.font="8px Arial";
       bctx.textAlign="center";
-      bctx.fillText(label,p.x,p.y+17);
+      bctx.fillText(label,p.x,p.y+15);
     }
   }
 
@@ -961,13 +1203,14 @@ worldCanvas.addEventListener("pointerdown",e=>{
 
   for(const s of somiks){
     const dx=s.x-x,dy=s.y-y,d2=dx*dx+dy*dy;
+
     if(d2<bestD2){
       bestD2=d2;
       best=s;
     }
   }
 
-  if(best && bestD2<35*35)selectedId=best.id;
+  if(best&&bestD2<35*35)selectedId=best.id;
 });
 
 document.getElementById("pauseBtn").onclick=()=>{
@@ -986,6 +1229,7 @@ function loop(){
   if(running){
     for(let i=0;i<speed;i++)updateWorld();
   }
+
   drawWorld();
   requestAnimationFrame(loop);
 }
