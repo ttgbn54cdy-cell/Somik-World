@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Somik World v0.5 — Natural World + Memory Metrics</title>
+<title>Somik World v0.5 — Free Reproduction</title>
 <style>
 :root{
   --bg:#111827;
@@ -59,6 +59,31 @@ button{
 .bar{height:6px;background:#334155;border-radius:999px;overflow:hidden;margin-top:3px}
 .bar>i{display:block;height:100%;background:#e5e7eb;width:0%}
 .badge{display:inline-block;padding:2px 6px;border:1px solid #475569;border-radius:999px;font-size:11px;color:#dbeafe}
+.leaderBtn{
+  width:100%;
+  text-align:right;
+  margin:4px 0;
+  padding:8px 10px;
+  border:1px solid #374151;
+  border-radius:9px;
+  background:#111827;
+  color:#f8fafc;
+  font-weight:400;
+}
+.leaderBtn b{font-weight:700}
+.eventItem{
+  margin:7px 0;
+  padding:9px 10px;
+  border:1px solid #374151;
+  border-radius:9px;
+  background:#111827;
+}
+.eventItem strong{display:block;margin-bottom:3px}
+.eventTime{font-size:11px;color:#94a3b8}
+.eventItem.emerging{border-color:#a16207}
+.eventItem.unexpected{border-color:#be123c}
+.eventItem.positive{border-color:#047857}
+
 .legend{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:var(--muted)}
 .swatch{display:inline-block;width:12px;height:12px;margin-left:5px;vertical-align:-1px}
 .alert{margin-top:10px;padding:9px;border-radius:9px;border:1px solid #7c2d12;background:#431407;color:#fed7aa;font-size:12px;display:none}
@@ -98,6 +123,14 @@ button{
   <aside>
     <h2>מצב העולם</h2>
     <div class="row"><span>Somik-ים חיים</span><b id="pop">0</b></div>
+    <div class="row"><span>זכרים</span><b id="maleCount">0</b></div>
+    <div class="row"><span>נקבות</span><b id="femaleCount">0</b></div>
+    <div class="row"><span>זכרים שרוצים להתרבות עכשיו</span><b id="readyMales">0</b></div>
+    <div class="row"><span>נקבות שרוצות להתרבות עכשיו</span><b id="readyFemales">0</b></div>
+    <div class="row"><span>זוגות עם רצון הדדי ובמגע</span><b id="availablePairs">0</b></div>
+    <div class="row"><span>מפגשי רבייה הדדיים</span><b id="matingAttempts">0</b></div>
+    <div class="row"><span>לידות מוצלחות</span><b id="successfulMatings">0</b></div>
+    <div class="row"><span>שיעור רבייה מוצלחת</span><b id="matingSuccessRate">—</b></div>
     <div class="row"><span>אוכל זמין</span><b id="foodCount">0</b></div>
     <div class="row"><span>בלוקים על הקרקע</span><b id="blockCount">0</b></div>
     <div class="row"><span>בלוקים באזור המסוכן</span><b id="hazardBlocks">0</b></div>
@@ -155,6 +188,23 @@ button{
       </details>
     </div>
 
+
+    <div class="card">
+      <h3>Somik-ים מובילים</h3>
+      <div id="leadersList" class="small">הנתונים יופיעו כשהעולם יתחיל לרוץ.</div>
+      <div class="small" style="margin-top:8px">
+        לחיצה על Somik תבחר אותו ותציג את כל הפרטים שלו.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>אירועים בעולם</h3>
+      <div id="worldAlerts" class="small">עדיין אין אירוע מיוחד.</div>
+      <div class="small" style="margin-top:8px">
+        ההתראות הן תצפית בלבד — הן לא משנות את חוקי העולם ולא את התנהגות ה-Somik-ים.
+      </div>
+    </div>
+
     <div class="card">
       <h3>Somik נבחר <span class="badge" id="selectedBadge">לחץ על Somik</span></h3>
       <div id="selectedInfo" class="small">לחץ על Somik כדי לראות את חייו, השושלת שלו, החושים וההחלטות שלו.</div>
@@ -169,8 +219,8 @@ button{
       <h3>המוח</h3>
       <canvas id="brainCanvas" width="320" height="330"></canvas>
       <div class="small" style="margin-top:7px">
-        13 חושים + 2 תאי זיכרון → 9 נוירונים פנימיים → 8 יציאות:
-        4 פעולות + ערך ושער עדכון לכל אחד משני תאי הזיכרון.
+        18 חושים + 2 תאי זיכרון → 9 נוירונים פנימיים → 9 יציאות:
+        פנייה, תנועה, בלוקים, 4 יציאות זיכרון ו־רצון להתרבות.
       </div>
     </div>
 
@@ -192,10 +242,10 @@ button{
     </div>
 
     <div class="card small">
-      <b>חוקי החיים:</b> אין מוות מזקנה ואין תקרת אוכלוסייה ביולוגית.
-      Somik מת רק כשהאנרגיה שלו נגמרת. קצב יצירת האוכל קבוע ואינו גדל עם מספר ה-Somik-ים,
-      ולכן האוכל, התחרות, הסכנה והרבייה הם שקובעים את גודל האוכלוסייה.
-      קיימת רק מגבלת חירום טכנית גבוהה כדי למנוע קריסה של הדפדפן.
+      <b>חוקי החיים:</b> אין מוות מזקנה, אין גיל רבייה קבוע ואין תקרת אוכלוסייה ביולוגית.
+      המוח של כל Somik מחליט בעצמו אם הוא רוצה להתרבות. לידה יכולה לקרות כשזכר ונקבה
+      נמצאים במגע קרוב ושניהם בוחרים ברבייה. אין הגרלת לידה. התנאי הפיזי היחיד הוא שלשניהם
+      תהיה מספיק אנרגיה כדי להשקיע בצאצא. האוכל, התחרות, הסכנה וההתנהגות קובעים את האוכלוסייה.
     </div>
   </aside>
 </div>
@@ -218,6 +268,10 @@ const BLOCK_VISION=140;
 const BLOCK_SIZE=22;
 const BLOCK_GRID=25;
 const EMERGENCY_MAX_POP=1000; // לא חוק ביולוגי — רק הגנת דפדפן
+const MATE_VISION=180;
+const MATE_CONTACT_RADIUS=24;
+const REPRO_SIGNAL_THRESHOLD=0.58;
+const REPRO_PARENT_COST=35;
 const FOOD_TARGET=220;
 const FOOD_REGEN_CHANCE=0.18;
 const INITIAL_BLOCKS=100;
@@ -253,6 +307,18 @@ let hazardDamageTotal=0;
 let populationHistory=[];
 let lastHistoryTick=0;
 let memoryMetrics=makeMemoryStats(0);
+
+let worldEventLog=[];
+let alertFlags={};
+
+let matingAttempts=0;
+let successfulMatings=0;
+let alertMilestones={
+  generation:0,
+  oldest:0,
+  populationHigh:0
+};
+
 let nextId=1;
 let nextBlockId=1;
 let selectedId=null;
@@ -261,7 +327,9 @@ const SAVE_KEY="somik-world-v05-autosave";
 const PRE_MEMORY_SAVE_KEY="somik-world-v05-pre-memory-backup";
 const PRE_METRICS_SAVE_KEY="somik-world-v05-pre-memory-metrics-backup";
 const LEGACY_SAVE_KEY="somik-world-v04-autosave";
-const SAVE_VERSION=4;
+const PRE_SEX_SAVE_KEY="somik-world-v05-pre-sex-backup";
+const PRE_FREE_REPRO_SAVE_KEY="somik-world-v05-pre-free-reproduction-backup";
+const SAVE_VERSION=8;
 
 const MEMORY_GATE_OPEN=0.65;
 const MEMORY_WRITE_DELTA=0.03;
@@ -569,6 +637,413 @@ function personalWriteRates(s){
     pct(st.writes[1],st.totalTicks).toFixed(1)+"%";
 }
 
+
+function pushWorldEvent(key,title,textMsg,type="emerging",cooldown=50000){
+  const last=alertFlags[key]??-Infinity;
+  if(ticks-last<cooldown)return;
+
+  alertFlags[key]=ticks;
+  worldEventLog.unshift({
+    tick:ticks,
+    title,
+    text:textMsg,
+    type
+  });
+
+  if(worldEventLog.length>30)worldEventLog.length=30;
+}
+
+function median(values){
+  if(!values.length)return 0;
+  const a=values.slice().sort((x,y)=>x-y);
+  const mid=Math.floor(a.length/2);
+  return a.length%2?a[mid]:(a[mid-1]+a[mid])/2;
+}
+
+function avg(values){
+  if(!values.length)return 0;
+  return values.reduce((a,b)=>a+b,0)/values.length;
+}
+
+function getLeaders(){
+  if(!somiks.length)return[];
+
+  const pick=(label,scoreFn,valueFn)=>{
+    let best=somiks[0];
+    let bestScore=scoreFn(best);
+
+    for(let i=1;i<somiks.length;i++){
+      const score=scoreFn(somiks[i]);
+      if(score>bestScore){
+        best=somiks[i];
+        bestScore=score;
+      }
+    }
+
+    return{
+      label,
+      somik:best,
+      value:valueFn(best)
+    };
+  };
+
+  return[
+    pick("הכי מבוגר",s=>s.age,s=>s.age.toLocaleString("he-IL")+" זמן חיים"),
+    pick("הכי הרבה צאצאים",s=>s.childrenCount,s=>s.childrenCount.toLocaleString("he-IL")+" צאצאים"),
+    pick("אכל הכי הרבה",s=>s.foodEaten,s=>s.foodEaten.toLocaleString("he-IL")+" יחידות אוכל"),
+    pick(
+      "הזיז הכי הרבה בלוקים",
+      s=>(s.blocksPicked||0)+(s.blocksDropped||0),
+      s=>((s.blocksPicked||0)+(s.blocksDropped||0)).toLocaleString("he-IL")+" פעולות בלוק"
+    ),
+    pick(
+      "הכי הרבה זמן מוגן",
+      s=>s.protectedLifeTicks||0,
+      s=>(s.protectedLifeTicks||0).toLocaleString("he-IL")+" זמן מוגן"
+    ),
+    pick("הדור הכי מתקדם",s=>s.generation,s=>"דור "+s.generation)
+  ];
+}
+
+function renderLeaders(){
+  const el=document.getElementById("leadersList");
+  if(!el)return;
+
+  const leaders=getLeaders();
+  if(!leaders.length){
+    el.textContent="אין כרגע Somik-ים חיים.";
+    return;
+  }
+
+  el.innerHTML=leaders.map(item=>`
+    <button class="leaderBtn" data-somik-id="${item.somik.id}">
+      <b>${item.label}:</b> #${item.somik.id} · ${item.value}
+    </button>
+  `).join("");
+
+  el.querySelectorAll(".leaderBtn").forEach(btn=>{
+    btn.onclick=()=>{
+      selectedId=Number(btn.dataset.somikId);
+      const s=somiks.find(x=>x.id===selectedId);
+      if(s){
+        const rect=worldCanvas.getBoundingClientRect();
+        window.scrollTo({top:0,behavior:"smooth"});
+      }
+    };
+  });
+}
+
+
+function matingStats(){
+  let males=0;
+  let females=0;
+  const willingM=[];
+  const willingF=[];
+
+  for(const s of somiks){
+    if(s.sex==="male")males++;
+    else females++;
+
+    if((s.lastDecision.reproduce??0)>=REPRO_SIGNAL_THRESHOLD){
+      if(s.sex==="male")willingM.push(s);
+      else willingF.push(s);
+    }
+  }
+
+  let nearbyPairs=0;
+  const contactD2=MATE_CONTACT_RADIUS*MATE_CONTACT_RADIUS;
+
+  for(const f of willingF){
+    for(const m of willingM){
+      const dx=f.x-m.x;
+      const dy=f.y-m.y;
+      if(dx*dx+dy*dy<=contactD2)nearbyPairs++;
+    }
+  }
+
+  return{
+    males,
+    females,
+    readyMales:willingM.length,
+    readyFemales:willingF.length,
+    nearbyPairs
+  };
+}
+function livingLineageShares(){
+  const counts=new Map();
+  for(const s of somiks){
+    counts.set(s.lineageId,(counts.get(s.lineageId)||0)+1);
+  }
+  const total=somiks.length||1;
+  let bestId=null,bestCount=0;
+
+  for(const [id,count] of counts){
+    if(count>bestCount){
+      bestId=id;
+      bestCount=count;
+    }
+  }
+
+  return{
+    id:bestId,
+    count:bestCount,
+    share:bestCount/total
+  };
+}
+
+function currentMemorySignal(){
+  const holds=[
+    avgStable(memoryMetrics.stability.hazard[0]),
+    avgStable(memoryMetrics.stability.hazard[1]),
+    avgStable(memoryMetrics.stability.food[0]),
+    avgStable(memoryMetrics.stability.food[1])
+  ].filter(v=>v!==null);
+
+  const hold=holds.length?avg(holds):0;
+  const reactions=[
+    reactionRatio("hazard",0),
+    reactionRatio("hazard",1),
+    reactionRatio("food",0),
+    reactionRatio("food",1)
+  ].filter(v=>v!==null);
+
+  const strongest=reactions.length?Math.max(...reactions):0;
+  return{hold,strongest};
+}
+
+function evaluateWorldAlerts(){
+  if(ticks%250!==0)return;
+  if(!somiks.length)return;
+
+  const pop=somiks.length;
+  const recent=populationHistory.slice(-20).map(d=>d.p);
+  const baseline=recent.length>=5?median(recent):pop;
+  const food=foods.length;
+
+  // Food crisis / surplus
+  if(food<=Math.max(3,Math.floor(pop*0.03))){
+    pushWorldEvent(
+      "food-crisis",
+      "מחסור חריף באוכל",
+      `נשארו רק ${food} יחידות אוכל עבור ${pop} Somik-ים.`,
+      "unexpected",
+      30000
+    );
+  }else if(food>=FOOD_TARGET*0.9 && pop<baseline*0.7){
+    pushWorldEvent(
+      "food-surplus",
+      "האוכל מצטבר",
+      `האוכל כמעט מלא (${food}), בזמן שהאוכלוסייה נמוכה יחסית.`,
+      "emerging",
+      50000
+    );
+  }
+
+  // Population deviations from recent baseline.
+  if(recent.length>=8 && pop>baseline*1.35){
+    pushWorldEvent(
+      "population-boom",
+      "זינוק באוכלוסייה",
+      `האוכלוסייה עלתה ל-${pop}, הרבה מעל הרמה הרגילה האחרונה (${Math.round(baseline)}).`,
+      "unexpected",
+      50000
+    );
+  }
+  if(recent.length>=8 && pop<baseline*0.65){
+    pushWorldEvent(
+      "population-crash",
+      "קריסה באוכלוסייה",
+      `האוכלוסייה ירדה ל-${pop}, הרבה מתחת לרמה הרגילה האחרונה (${Math.round(baseline)}).`,
+      "unexpected",
+      50000
+    );
+  }
+
+  // Male/female balance and mate availability.
+  const mating=matingStats();
+  const sexTotal=mating.males+mating.females;
+
+  if(sexTotal>=20){
+    const minority=Math.min(mating.males,mating.females);
+    const minorityShare=minority/sexTotal;
+
+    if(minorityShare<=0.15){
+      const rare=mating.males<mating.females?"זכרים":"נקבות";
+      pushWorldEvent(
+        "sex-imbalance-critical",
+        "חוסר איזון גדול בין זכרים לנקבות",
+        `${rare} הם רק ${Math.round(minorityShare*100)}% מהאוכלוסייה (${mating.males} זכרים, ${mating.females} נקבות).`,
+        "unexpected",
+        50000
+      );
+    }else if(minorityShare<=0.30){
+      const rare=mating.males<mating.females?"זכרים":"נקבות";
+      pushWorldEvent(
+        "sex-imbalance",
+        "חוסר איזון בין זכרים לנקבות",
+        `${rare} ירדו ל-${Math.round(minorityShare*100)}% מהאוכלוסייה (${mating.males} זכרים, ${mating.females} נקבות).`,
+        "emerging",
+        75000
+      );
+    }
+  }
+
+  const readyTotal=mating.readyMales+mating.readyFemales;
+
+  if(readyTotal>=8){
+    if(mating.readyMales===0 || mating.readyFemales===0){
+      pushWorldEvent(
+        "no-fertile-opposite-sex",
+        "אין רצון הדדי לרבייה",
+        `רוצים להתרבות עכשיו: ${mating.readyMales} זכרים ו-${mating.readyFemales} נקבות.`,
+        "unexpected",
+        30000
+      );
+    }else if(mating.nearbyPairs===0){
+      pushWorldEvent(
+        "no-nearby-mates",
+        "מי שרוצים להתרבות רחוקים מדי",
+        `יש Somik-ים משני המינים שרוצים להתרבות, אבל הם לא נמצאים במגע קרוב.`,
+        "unexpected",
+        30000
+      );
+    }else{
+      const possibleSide=Math.min(mating.readyMales,mating.readyFemales);
+      if(possibleSide>=5 && mating.nearbyPairs<Math.max(1,Math.floor(possibleSide*0.15))){
+        pushWorldEvent(
+          "few-nearby-mates",
+          "מעט בני זוג זמינים בקרבה",
+          `רק ${mating.nearbyPairs} זוגות מתאימים נמצאים כרגע קרובים מספיק לרבייה.`,
+          "emerging",
+          50000
+        );
+      }
+    }
+  }
+
+  // Lineage dominance.
+  const lineage=livingLineageShares();
+  if(lineage.share>=0.70 && lineage.count>=20){
+    pushWorldEvent(
+      "lineage-dominance",
+      "שושלת דומיננטית",
+      `שושלת #${lineage.id} מהווה ${Math.round(lineage.share*100)}% מה-Somik-ים החיים.`,
+      "emerging",
+      100000
+    );
+  }
+
+  // Exceptionally old living Somik relative to current population.
+  const ages=somiks.map(s=>s.age);
+  const medAge=median(ages);
+  const oldest=somiks.reduce((a,b)=>a.age>b.age?a:b);
+  if(medAge>0 && oldest.age>=medAge*8 && oldest.age>=10000){
+    pushWorldEvent(
+      "exceptional-old",
+      "Somik חריג באורך החיים",
+      `#${oldest.id} חי ${oldest.age.toLocaleString("he-IL")} צעדים — יותר מפי 8 מהגיל החציוני.`,
+      "positive",
+      100000
+    );
+  }
+
+  // Prolific parent.
+  const prolific=somiks.reduce((a,b)=>(a.childrenCount||0)>(b.childrenCount||0)?a:b);
+  if((prolific.childrenCount||0)>=12){
+    pushWorldEvent(
+      "prolific-parent",
+      "Somik עם הרבה צאצאים",
+      `#${prolific.id} כבר השאיר ${prolific.childrenCount} צאצאים.`,
+      "positive",
+      100000
+    );
+  }
+
+  // Useful moved-block structure.
+  const science=blockScience();
+  const movedClusterData=clusterData(b=>!!b.everMoved);
+  if(
+    movedClusterData.largest>=10 &&
+    science.importedNow>=8 &&
+    usefulProtectionTicks>5000
+  ){
+    pushWorldEvent(
+      "structure-growing",
+      "מבנה שימושי מתחזק",
+      `קבוצה של ${movedClusterData.largest} בלוקים שהוזזו קשורה להגנה באזור המסוכן.`,
+      "positive",
+      100000
+    );
+  }
+
+  // Memory emergence.
+  const mem=currentMemorySignal();
+  if(mem.hold>=20 && mem.strongest>=1.25){
+    pushWorldEvent(
+      "memory-emergence",
+      "סימן לזיכרון מתמשך",
+      `הזיכרון נשמר בממוצע כ-${Math.round(mem.hold)} צעדים ומגיב לאירועים בעולם.`,
+      "positive",
+      150000
+    );
+  }
+
+  // Milestones.
+  const maxGen=somiks.reduce((m,s)=>Math.max(m,s.generation),0);
+  const genMilestone=Math.floor(maxGen/100)*100;
+  if(genMilestone>=100 && genMilestone>alertMilestones.generation){
+    alertMilestones.generation=genMilestone;
+    pushWorldEvent(
+      "generation-"+genMilestone,
+      "אבן דרך אבולוציונית",
+      `העולם הגיע לדור ${genMilestone}.`,
+      "positive",
+      0
+    );
+  }
+
+  const oldMilestone=Math.floor(oldest.age/25000)*25000;
+  if(oldMilestone>=25000 && oldMilestone>alertMilestones.oldest){
+    alertMilestones.oldest=oldMilestone;
+    pushWorldEvent(
+      "oldest-"+oldMilestone,
+      "שיא אורך חיים",
+      `Somik חי עבר ${oldMilestone.toLocaleString("he-IL")} צעדי חיים.`,
+      "positive",
+      0
+    );
+  }
+
+  if(pop>alertMilestones.populationHigh+25){
+    alertMilestones.populationHigh=pop;
+    pushWorldEvent(
+      "population-record-"+pop,
+      "שיא אוכלוסייה חדש",
+      `האוכלוסייה הגיעה ל-${pop} Somik-ים חיים.`,
+      "positive",
+      0
+    );
+  }
+}
+
+function renderWorldAlerts(){
+  const el=document.getElementById("worldAlerts");
+  if(!el)return;
+
+  if(!worldEventLog.length){
+    el.textContent="עדיין אין אירוע מיוחד.";
+    return;
+  }
+
+  el.innerHTML=worldEventLog.slice(0,8).map(ev=>`
+    <div class="eventItem ${ev.type||"emerging"}">
+      <strong>${ev.title}</strong>
+      <div>${ev.text}</div>
+      <div class="eventTime">זמן עולם ${Number(ev.tick).toLocaleString("he-IL")}</div>
+    </div>
+  `).join("");
+}
+
 function angleDiff(a,b){
   let d=a-b;
   while(d>Math.PI)d-=Math.PI*2;
@@ -625,12 +1100,25 @@ function hazardProtectionAt(x,y){
 }
 
 class Brain{
-  constructor(parent=null){
-    this.inputN=15;
+  constructor(parent=null,parent2=null){
+    this.inputN=20;
     this.hiddenN=9;
-    this.outputN=8;
+    this.outputN=9;
 
-    if(parent){
+    if(parent&&parent2){
+      this.w1=parent.w1.map((row,i)=>row.map((v,j)=>
+        mutateValue(Math.random()<0.5?v:parent2.w1[i][j])
+      ));
+      this.b1=parent.b1.map((v,i)=>
+        mutateValue(Math.random()<0.5?v:parent2.b1[i])
+      );
+      this.w2=parent.w2.map((row,i)=>row.map((v,j)=>
+        mutateValue(Math.random()<0.5?v:parent2.w2[i][j])
+      ));
+      this.b2=parent.b2.map((v,i)=>
+        mutateValue(Math.random()<0.5?v:parent2.b2[i])
+      );
+    }else if(parent){
       this.w1=parent.w1.map(row=>row.map(v=>mutateValue(v)));
       this.b1=parent.b1.map(v=>mutateValue(v));
       this.w2=parent.w2.map(row=>row.map(v=>mutateValue(v)));
@@ -671,7 +1159,8 @@ class Brain{
       Math.tanh(raw[4]),
       sigmoid(raw[5]),
       Math.tanh(raw[6]),
-      sigmoid(raw[7])
+      sigmoid(raw[7]),
+      sigmoid(raw[8])
     ];
 
     this.lastHidden=hidden.slice();
@@ -685,7 +1174,8 @@ class Brain{
       memory1Value:outputs[4],
       memory1Gate:outputs[5],
       memory2Value:outputs[6],
-      memory2Gate:outputs[7]
+      memory2Gate:outputs[7],
+      reproduce:outputs[8]
     };
   }
 }
@@ -737,7 +1227,7 @@ class Block{
 }
 
 class Somik{
-  constructor(x=rnd(30,W-30),y=rnd(30,H-30),generation=0,parent=null){
+  constructor(x=rnd(30,W-30),y=rnd(30,H-30),generation=0,parent=null,parent2=null){
     this.id=nextId++;
     this.x=x;
     this.y=y;
@@ -746,10 +1236,14 @@ class Somik{
     this.energy=parent?78:100;
     this.age=0;
     this.generation=generation;
-    this.color=parent?parent.color:COLORS[Math.floor(Math.random()*COLORS.length)];
-    this.brain=new Brain(parent?parent.brain:null);
+    this.sex=Math.random()<0.5?"male":"female";
+    this.color=parent
+      ? (parent2&&Math.random()<0.5?parent2.color:parent.color)
+      : COLORS[Math.floor(Math.random()*COLORS.length)];
+    this.brain=new Brain(parent?parent.brain:null,parent2?parent2.brain:null);
 
     this.parentId=parent?parent.id:null;
+    this.secondParentId=parent2?parent2.id:null;
     this.lineageId=parent?parent.lineageId:this.id;
     this.birthTick=ticks;
     this.childrenCount=0;
@@ -785,7 +1279,8 @@ class Somik{
     this.lastDecision={
       turn:0,thrust:0,pick:0,drop:0,
       memory1Value:0,memory1Gate:0,
-      memory2Value:0,memory2Gate:0
+      memory2Value:0,memory2Gate:0,
+      reproduce:0
     };
     this.nearestFood=null;
     this.nearestBlock=null;
@@ -852,12 +1347,20 @@ class Somik{
     }
 
     let nearestNeighbor=Infinity;
+    let nearestMate=null;
+    let nearestMateD2=Infinity;
 
     for(const other of somiks){
       if(other===this)continue;
       const dx=other.x-this.x,dy=other.y-this.y;
       const d2=dx*dx+dy*dy;
+
       if(d2<nearestNeighbor)nearestNeighbor=d2;
+
+      if(other.sex!==this.sex && d2<nearestMateD2){
+        nearestMate=other;
+        nearestMateD2=d2;
+      }
     }
 
     let neighborNear=0;
@@ -866,8 +1369,23 @@ class Somik{
       if(d<100)neighborNear=1-d/100;
     }
 
+    let mateNear=0,mateAhead=0,mateSide=0;
+    if(nearestMate){
+      const d=Math.sqrt(nearestMateD2);
+      if(d<=MATE_VISION){
+        const closeness=1-d/MATE_VISION;
+        const abs=Math.atan2(nearestMate.y-this.y,nearestMate.x-this.x);
+        const rel=angleDiff(abs,this.dir);
+        mateNear=closeness;
+        mateAhead=Math.cos(rel)*closeness;
+        mateSide=Math.sin(rel)*closeness;
+      }
+    }
+
     const energy=clamp(this.energy/180,0,1);
     const carrying=this.carrying?1:0;
+    const sexSignal=this.sex==="male"?-1:1;
+    const ageSignal=1-Math.exp(-this.age/2500);
 
     const hazardHere=insideHazard(this.x,this.y)?1:0;
 
@@ -888,7 +1406,8 @@ class Somik{
     this.lastSensors={
       energy,foodNear,foodAhead,foodSide,neighborNear,
       blockNear,blockAhead,blockSide,carrying,
-      hazardHere,hazardAhead,protection,noise
+      hazardHere,hazardAhead,protection,noise,
+      sexSignal,ageSignal,mateNear,mateAhead,mateSide
     };
 
     return[
@@ -905,6 +1424,11 @@ class Somik{
       hazardAhead,
       protection,
       noise,
+      sexSignal,
+      ageSignal,
+      mateNear,
+      mateAhead,
+      mateSide,
       this.memory[0],
       this.memory[1]
     ];
@@ -1114,25 +1638,6 @@ class Somik{
       this.tryDrop();
     }
 
-    if(
-      this.energy>148&&
-      this.age>280&&
-      somiks.length<EMERGENCY_MAX_POP&&
-      Math.random()<0.00065
-    ){
-      this.energy-=62;
-      this.childrenCount++;
-
-      const child=new Somik(
-        clamp(this.x+rnd(-16,16),15,W-15),
-        clamp(this.y+rnd(-16,16),15,H-15),
-        this.generation+1,
-        this
-      );
-
-      somiks.push(child);
-      births++;
-    }
   }
 
   draw(){
@@ -1217,37 +1722,41 @@ function serializeBrain(brain){
 
 function deserializeBrain(data){
   const brain=Object.create(Brain.prototype);
+  const oldInputN=data.inputN??13;
   const oldOutputN=data.outputN??4;
 
-  brain.inputN=15;
+  brain.inputN=20;
   brain.hiddenN=data.hiddenN??9;
-  brain.outputN=8;
+  brain.outputN=9;
 
-  // מוח ישן נשמר בדיוק בארבעת הפעולות הישנות.
-  // שני קלטי הזיכרון מתחילים במשקל 0 כדי שהשדרוג לא ישנה מיד את ההתנהגות.
+  // שומרים את כל הקלטים הישנים במיקומם ומוסיפים 5 קלטים חדשים.
   brain.w1=data.w1.map(row=>{
-    const r=row.slice(0,13);
-    while(r.length<13)r.push(0);
-    r.push(0,0);
+    const r=row.slice(0,Math.min(oldInputN,20));
+    while(r.length<20)r.push(0);
     return r;
   });
   brain.b1=data.b1.slice();
 
-  brain.w2=data.w2.slice(0,4).map(row=>row.slice());
-  brain.b2=data.b2.slice(0,4);
+  brain.w2=[];
+  brain.b2=[];
 
-  if(oldOutputN>=8){
-    for(let i=4;i<8;i++){
-      brain.w2.push(data.w2[i].slice());
-      brain.b2.push(data.b2[i]??0);
-    }
-  }else{
-    // יציאות כתיבת הזיכרון חדשות. האבולוציה תצטרך לפתח גם
-    // קשרים מהזיכרון בחזרה לפעולות כדי להפוך אותו למועיל.
-    for(let i=4;i<8;i++){
-      brain.w2.push(Array.from({length:brain.hiddenN},()=>rnd(-0.45,0.45)));
-      brain.b2.push(rnd(-0.2,0.2));
-    }
+  const preserve=Math.min(oldOutputN,9);
+  for(let i=0;i<preserve;i++){
+    brain.w2.push(data.w2[i].slice());
+    brain.b2.push(data.b2[i]??0);
+  }
+
+  // אם שמירה ישנה חסרה יציאות זיכרון, יוצרים אותן כמו בעבר.
+  while(brain.w2.length<8){
+    brain.w2.push(Array.from({length:brain.hiddenN},()=>rnd(-0.45,0.45)));
+    brain.b2.push(rnd(-0.2,0.2));
+  }
+
+  // יציאת "רצון להתרבות" חדשה. היא מתחילה ניטרלית;
+  // אין פקודת רבייה מוכנה והאבולוציה יכולה לחזק/להחליש אותה.
+  if(brain.w2.length<9){
+    brain.w2.push(Array.from({length:brain.hiddenN},()=>rnd(-0.35,0.35)));
+    brain.b2.push(rnd(-0.15,0.15));
   }
 
   brain.lastInputs=Array(brain.inputN).fill(0);
@@ -1255,7 +1764,6 @@ function deserializeBrain(data){
   brain.lastOutputs=Array(brain.outputN).fill(0);
   return brain;
 }
-
 function serializeBlock(block){
   return{
     id:block.id,
@@ -1308,9 +1816,11 @@ function serializeSomik(s){
     energy:s.energy,
     age:s.age,
     generation:s.generation,
+    sex:s.sex,
     color:s.color,
     brain:serializeBrain(s.brain),
     parentId:s.parentId,
+    secondParentId:s.secondParentId,
     lineageId:s.lineageId,
     birthTick:s.birthTick,
     childrenCount:s.childrenCount,
@@ -1339,10 +1849,15 @@ function deserializeSomik(data){
   s.energy=data.energy;
   s.age=data.age;
   s.generation=data.generation;
+  // שמירות ישנות מקבלות חלוקה יציבה ומאוזנת לפי ID.
+  s.sex=data.sex==="male"||data.sex==="female"
+    ? data.sex
+    : (data.id%2===0?"male":"female");
   s.color=data.color;
   s.brain=deserializeBrain(data.brain);
 
   s.parentId=data.parentId ?? null;
+  s.secondParentId=data.secondParentId ?? null;
   s.lineageId=data.lineageId ?? data.id;
   s.birthTick=data.birthTick ?? Math.max(0,ticks-(data.age??0));
   s.childrenCount=data.childrenCount ?? 0;
@@ -1361,7 +1876,10 @@ function deserializeSomik(data){
   s.lastSensors=data.lastSensors ?? {
     energy:0,foodNear:0,foodAhead:0,foodSide:0,neighborNear:0,
     blockNear:0,blockAhead:0,blockSide:0,carrying:0,
-    hazardHere:0,hazardAhead:0,protection:0,noise:0
+    hazardHere:0,hazardAhead:0,protection:0,noise:0,
+    sexSignal:s.sex==="male"?-1:1,
+    ageSignal:1-Math.exp(-(s.age??0)/2500),
+    mateNear:0,mateAhead:0,mateSide:0
   };
   s.lastDecision={
     turn:data.lastDecision?.turn ?? 0,
@@ -1371,7 +1889,8 @@ function deserializeSomik(data){
     memory1Value:data.lastDecision?.memory1Value ?? 0,
     memory1Gate:data.lastDecision?.memory1Gate ?? 0,
     memory2Value:data.lastDecision?.memory2Value ?? 0,
-    memory2Gate:data.lastDecision?.memory2Gate ?? 0
+    memory2Gate:data.lastDecision?.memory2Gate ?? 0,
+    reproduce:data.lastDecision?.reproduce ?? 0
   };
   s.lastHazardDamage=data.lastHazardDamage ?? 0;
   s.nearestFood=null;
@@ -1400,6 +1919,11 @@ function stateObject(){
     populationHistory,
     lastHistoryTick,
     memoryMetrics,
+    worldEventLog,
+    alertFlags,
+    alertMilestones,
+    matingAttempts,
+    successfulMatings,
     nextId,
     nextBlockId,
     selectedId,
@@ -1428,7 +1952,7 @@ function saveGame(){
 
 function restoreState(state){
   if(!state||typeof state!=="object")return false;
-  if(state.version!==1&&state.version!==2&&state.version!==3&&state.version!==4)return false;
+  if(state.version!==1&&state.version!==2&&state.version!==3&&state.version!==4&&state.version!==5&&state.version!==6&&state.version!==7&&state.version!==8)return false;
 
   ticks=state.ticks ?? 0;
   births=state.births ?? 0;
@@ -1443,6 +1967,18 @@ function restoreState(state){
   populationHistory=Array.isArray(state.populationHistory)?state.populationHistory:[];
   lastHistoryTick=state.lastHistoryTick ?? ticks;
   memoryMetrics=normalizeMemoryStats(state.memoryMetrics,ticks);
+  worldEventLog=Array.isArray(state.worldEventLog)?state.worldEventLog:[];
+  alertFlags=state.alertFlags&&typeof state.alertFlags==="object"?state.alertFlags:{};
+  alertMilestones=state.alertMilestones&&typeof state.alertMilestones==="object"
+    ? {
+        generation:state.alertMilestones.generation??0,
+        oldest:state.alertMilestones.oldest??0,
+        populationHigh:state.alertMilestones.populationHigh??0
+      }
+    : {generation:0,oldest:0,populationHigh:0};
+
+  matingAttempts=state.matingAttempts??0;
+  successfulMatings=state.successfulMatings??0;
 
   foods=Array.isArray(state.foods)?state.foods:[];
   blocks=Array.isArray(state.blocks)?state.blocks.map(deserializeBlock):[];
@@ -1486,6 +2022,12 @@ function loadGame(){
       if((state.version??0)<4&&!localStorage.getItem(PRE_METRICS_SAVE_KEY)){
         localStorage.setItem(PRE_METRICS_SAVE_KEY,raw);
       }
+      if((state.version??0)<6&&!localStorage.getItem(PRE_SEX_SAVE_KEY)){
+        localStorage.setItem(PRE_SEX_SAVE_KEY,raw);
+      }
+      if((state.version??0)<8&&!localStorage.getItem(PRE_FREE_REPRO_SAVE_KEY)){
+        localStorage.setItem(PRE_FREE_REPRO_SAVE_KEY,raw);
+      }
 
       if(restoreState(state)){
         setSaveStatus("🧠 המשך מהשמירה של v0.5 עם זיכרון פנימי");
@@ -1527,7 +2069,7 @@ function exportSave(){
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
     a.href=url;
-    a.download="somik-world-v05-memory-"+ticks+"-world-time.json";
+    a.download="somik-world-v05-free-reproduction-"+ticks+"-world-time.json";
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -1667,6 +2209,11 @@ function resetWorld(){
   populationHistory=[];
   lastHistoryTick=0;
   memoryMetrics=makeMemoryStats(0);
+  worldEventLog=[];
+  alertFlags={};
+  alertMilestones={generation:0,oldest:0,populationHigh:0};
+  matingAttempts=0;
+  successfulMatings=0;
 
   nextId=1;
   nextBlockId=1;
@@ -1678,10 +2225,92 @@ function resetWorld(){
   populationHistory.push({t:0,p:somiks.length,f:foods.length,g:0});
 }
 
+function processFreeReproduction(){
+  if(somiks.length>=EMERGENCY_MAX_POP)return;
+
+  const willingMales=somiks.filter(s=>
+    s.sex==="male" &&
+    s.energy>0 &&
+    (s.lastDecision.reproduce??0)>=REPRO_SIGNAL_THRESHOLD
+  );
+
+  const willingFemales=somiks.filter(s=>
+    s.sex==="female" &&
+    s.energy>0 &&
+    (s.lastDecision.reproduce??0)>=REPRO_SIGNAL_THRESHOLD
+  );
+
+  if(!willingMales.length||!willingFemales.length)return;
+
+  const used=new Set();
+  const contactD2=MATE_CONTACT_RADIUS*MATE_CONTACT_RADIUS;
+
+  // אין הגרלה ואין "גיל מותר".
+  // פרט שרוצה רבייה צריך לפגוש פרט מהמין השני שגם רוצה רבייה.
+  // אם יש כמה מועמדים, המפגש הקרוב ביותר קובע.
+  for(const female of willingFemales){
+    if(used.has(female.id))continue;
+
+    let mate=null;
+    let bestD2=Infinity;
+
+    for(const male of willingMales){
+      if(used.has(male.id))continue;
+
+      const dx=male.x-female.x;
+      const dy=male.y-female.y;
+      const d2=dx*dx+dy*dy;
+
+      if(d2<=contactD2&&d2<bestD2){
+        mate=male;
+        bestD2=d2;
+      }
+    }
+
+    if(!mate)continue;
+
+    matingAttempts++;
+    used.add(female.id);
+    used.add(mate.id);
+
+    // זהו חוק שימור משאבים, לא החלטת התנהגות:
+    // אי אפשר ליצור צאצא אם אין להורים אנרגיה להשקיע בו.
+    if(
+      female.energy<=REPRO_PARENT_COST ||
+      mate.energy<=REPRO_PARENT_COST ||
+      somiks.length>=EMERGENCY_MAX_POP
+    ){
+      continue;
+    }
+
+    female.energy-=REPRO_PARENT_COST;
+    mate.energy-=REPRO_PARENT_COST;
+    female.childrenCount++;
+    mate.childrenCount++;
+
+    const child=new Somik(
+      clamp((female.x+mate.x)/2+rnd(-8,8),15,W-15),
+      clamp((female.y+mate.y)/2+rnd(-8,8),15,H-15),
+      Math.max(female.generation,mate.generation)+1,
+      female,
+      mate
+    );
+
+    // האנרגיה של הצאצא מגיעה ישירות מההשקעה של שני ההורים.
+    child.energy=REPRO_PARENT_COST*2;
+
+    somiks.push(child);
+    births++;
+    successfulMatings++;
+  }
+}
+
 function updateWorld(){
   ticks++;
 
   for(const s of [...somiks])s.update();
+
+  processFreeReproduction();
 
   const alive=[];
 
@@ -1713,6 +2342,8 @@ function updateWorld(){
   if(foods.length<FOOD_TARGET&&Math.random()<FOOD_REGEN_CHANCE){
     addFood(1);
   }
+
+  evaluateWorldAlerts();
 
   if(ticks-lastHistoryTick>=2500){
     populationHistory.push({
@@ -1937,6 +2568,20 @@ function drawWorld(){
   for(const s of somiks)s.draw();
 
   document.getElementById("pop").textContent=somiks.length;
+
+  const mating=matingStats();
+  document.getElementById("maleCount").textContent=mating.males;
+  document.getElementById("femaleCount").textContent=mating.females;
+  document.getElementById("readyMales").textContent=mating.readyMales;
+  document.getElementById("readyFemales").textContent=mating.readyFemales;
+  document.getElementById("availablePairs").textContent=mating.nearbyPairs;
+  document.getElementById("matingAttempts").textContent=matingAttempts.toLocaleString("he-IL");
+  document.getElementById("successfulMatings").textContent=successfulMatings.toLocaleString("he-IL");
+  document.getElementById("matingSuccessRate").textContent=
+    matingAttempts>0
+      ? ((successfulMatings/matingAttempts)*100).toFixed(1)+"%"
+      : "—";
+
   document.getElementById("foodCount").textContent=foods.length;
   document.getElementById("blockCount").textContent=blocks.length;
   document.getElementById("carriedCount").textContent=somiks.filter(s=>s.carrying).length;
@@ -2019,6 +2664,8 @@ function drawWorld(){
   document.getElementById("movedCluster").textContent=movedClusterData.largest;
   document.getElementById("clusterContributors").textContent=cluster.contributors;
   drawPopulationChart();
+  renderLeaders();
+  renderWorldAlerts();
 
   const alert=document.getElementById("structureAlert");
 
@@ -2081,10 +2728,12 @@ function drawInspector(){
   badge.textContent="#"+s.id;
 
   info.innerHTML=
+    `מין: <b>${s.sex==="male"?"זכר ♂":"נקבה ♀"}</b><br>`+
     `דור: <b>${s.generation}</b><br>`+
     `זמן חיים: <b>${s.age.toLocaleString("he-IL")}</b> (ללא גיל מקסימלי)<br>`+
     `שושלת: <b>#${s.lineageId}</b><br>`+
-    `הורה: <b>${s.parentId===null?"מייסד":"#"+s.parentId}</b><br>`+
+    `הורה 1: <b>${s.parentId===null?"מייסד":"#"+s.parentId}</b><br>`+
+    `הורה 2: <b>${s.secondParentId===null?"—":"#"+s.secondParentId}</b><br>`+
     `צאצאים: <b>${s.childrenCount}</b><br>`+
     `אוכל שאכל: <b>${s.foodEaten}</b><br>`+
     `אנרגיה: <b>${s.energy.toFixed(1)}</b><br>`+
@@ -2100,6 +2749,7 @@ function drawInspector(){
     `תנועה: <b>${s.lastDecision.thrust.toFixed(2)}</b><br>`+
     `הרם בלוק: <b>${s.lastDecision.pick.toFixed(2)}</b><br>`+
     `הנח בלוק: <b>${s.lastDecision.drop.toFixed(2)}</b><br>`+
+    `רצון להתרבות: <b>${(s.lastDecision.reproduce??0).toFixed(2)}</b><br>`+
     `כתיבה ל-M1: <b>${s.lastDecision.memory1Value.toFixed(2)}</b> · שער: <b>${s.lastDecision.memory1Gate.toFixed(2)}</b><br>`+
     `כתיבה ל-M2: <b>${s.lastDecision.memory2Value.toFixed(2)}</b> · שער: <b>${s.lastDecision.memory2Gate.toFixed(2)}</b>`;
 
@@ -2111,6 +2761,11 @@ function drawInspector(){
     sensorHtml("כיוון האוכל: קדימה / אחורה",x.foodAhead,true)+
     sensorHtml("כיוון האוכל: ימין / שמאל",x.foodSide,true)+
     sensorHtml("Somik אחר קרוב",x.neighborNear)+
+    sensorHtml("בן/בת המין השני קרוב",x.mateNear??0)+
+    sensorHtml("כיוון בן/בת זוג: קדימה / אחורה",x.mateAhead??0,true)+
+    sensorHtml("כיוון בן/בת זוג: ימין / שמאל",x.mateSide??0,true)+
+    sensorHtml("גיל פנימי",x.ageSignal??0)+
+    sensorHtml("המין שלי",x.sexSignal??0,true)+
     sensorHtml("כמה בלוק קרוב",x.blockNear)+
     sensorHtml("כיוון הבלוק: קדימה / אחורה",x.blockAhead,true)+
     sensorHtml("כיוון הבלוק: ימין / שמאל",x.blockSide,true)+
@@ -2195,6 +2850,7 @@ function drawBrain(brain){
   node(outPos[5],brain.lastOutputs[5]*2-1,"G1");
   node(outPos[6],brain.lastOutputs[6],"M2");
   node(outPos[7],brain.lastOutputs[7]*2-1,"G2");
+  node(outPos[8],brain.lastOutputs[8]*2-1,"רבייה");
 }
 
 worldCanvas.addEventListener("pointerdown",e=>{
