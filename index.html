@@ -1,0 +1,1459 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Somik World v0.4.1 — AutoSave</title>
+<style>
+:root{
+  --bg:#111827;
+  --panel:#1f2937;
+  --line:#374151;
+  --text:#f9fafb;
+  --muted:#cbd5e1;
+  --grass:#4b9b4f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+.app{
+  min-height:100vh;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 340px;
+  direction:ltr;
+}
+main,aside{direction:rtl}
+main{padding:14px;min-width:0}
+aside{background:var(--panel);padding:16px;border-left:1px solid var(--line);overflow:auto}
+h1{margin:0 0 8px;font-size:clamp(28px,3.5vw,48px)}
+.subtitle{color:var(--muted);font-size:13px;margin-bottom:10px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+button{
+  padding:9px 13px;
+  border:0;
+  border-radius:9px;
+  font-weight:700;
+  cursor:pointer;
+}
+.canvasWrap{
+  width:100%;
+  background:#0b1220;
+  border:2px solid var(--line);
+  border-radius:12px;
+  overflow:hidden;
+}
+#world{
+  width:100%;
+  height:auto;
+  display:block;
+  background:var(--grass);
+  touch-action:manipulation;
+}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.row span{color:var(--muted)}
+.card{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:11px;background:#182233}
+.card h3{margin:0 0 8px}
+.small{font-size:13px;line-height:1.45;color:var(--muted)}
+#brainCanvas{width:100%;height:auto;background:#101827;border:1px solid var(--line);border-radius:8px;display:block}
+.sensor{margin:7px 0}
+.sensorLine{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.bar{height:6px;background:#334155;border-radius:999px;overflow:hidden;margin-top:3px}
+.bar>i{display:block;height:100%;background:#e5e7eb;width:0%}
+.badge{display:inline-block;padding:2px 6px;border:1px solid #475569;border-radius:999px;font-size:11px;color:#dbeafe}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:var(--muted)}
+.swatch{display:inline-block;width:12px;height:12px;margin-left:5px;vertical-align:-1px}
+.alert{margin-top:10px;padding:9px;border-radius:9px;border:1px solid #7c2d12;background:#431407;color:#fed7aa;font-size:12px;display:none}
+@media(max-width:800px) and (orientation:portrait){
+  .app{display:flex;flex-direction:column}
+  main{padding:9px}
+  aside{border-left:0;border-top:1px solid var(--line);padding:12px}
+  h1{text-align:center;font-size:28px}
+  .subtitle{text-align:center}
+  .toolbar{justify-content:center}
+  .canvasWrap{border-radius:8px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <main>
+    <h1>Somik World v0.4.1</h1>
+    <div class="subtitle">Useful World — בלוקים יכולים להפחית סכנה. Somik עדיין לא יודע מהו קיר, גשר או מחסה.</div>
+
+    <div class="toolbar">
+      <button id="pauseBtn">⏸ עצור</button>
+      <button id="resetBtn">↻ עולם חדש</button>
+      <button id="speedBtn">⚡ x1</button>
+      <button id="saveBtn">💾 שמור עכשיו</button>
+    </div>
+    <div id="saveStatus" class="subtitle">שמירה אוטומטית פעילה</div>
+
+    <div class="canvasWrap">
+      <canvas id="world" width="1000" height="650"></canvas>
+    </div>
+  </main>
+
+  <aside>
+    <h2>מצב העולם</h2>
+    <div class="row"><span>Somik-ים</span><b id="pop">0</b></div>
+    <div class="row"><span>אוכל</span><b id="foodCount">0</b></div>
+    <div class="row"><span>בלוקים בעולם</span><b id="blockCount">0</b></div>
+    <div class="row"><span>בלוקים באזור סכנה</span><b id="hazardBlocks">0</b></div>
+    <div class="row"><span>בלוקים יציבים</span><b id="stableBlocks">0</b></div>
+    <div class="row"><span>בלוקים בנשיאה</span><b id="carriedCount">0</b></div>
+    <div class="row"><span>Pick מוצלחים</span><b id="pickups">0</b></div>
+    <div class="row"><span>Drop מוצלחים</span><b id="drops">0</b></div>
+    <div class="row"><span>אשכול בלוקים גדול</span><b id="largestCluster">0</b></div>
+    <div class="row"><span>תורמים לאשכול הגדול</span><b id="clusterContributors">0</b></div>
+    <div class="row"><span>Ticks מוגנים</span><b id="protectedTicks">0</b></div>
+    <div class="row"><span>נזק סכנה כולל</span><b id="hazardDamage">0</b></div>
+    <div class="row"><span>לידות</span><b id="births">0</b></div>
+    <div class="row"><span>מוות</span><b id="deaths">0</b></div>
+    <div class="row"><span>דור מקסימלי</span><b id="maxGen">0</b></div>
+    <div class="row"><span>הכחדות</span><b id="extinctions">0</b></div>
+    <div class="row"><span>Ticks</span><b id="ticks">0</b></div>
+
+    <div class="alert" id="structureAlert"></div>
+
+    <div class="card">
+      <h3>Somik נבחר <span class="badge" id="selectedBadge">לחץ על Somik</span></h3>
+      <div id="selectedInfo" class="small">לחץ על Somik כדי לראות אם הוא חש סכנה, בלוקים ומה המוח מחליט.</div>
+    </div>
+
+    <div class="card">
+      <h3>חיישנים</h3>
+      <div id="sensors"></div>
+    </div>
+
+    <div class="card">
+      <h3>המוח</h3>
+      <canvas id="brainCanvas" width="320" height="330"></canvas>
+      <div class="small" style="margin-top:7px">
+        13 קלטים → 9 נוירונים פנימיים → 4 יציאות:
+        TURN, MOVE, PICK, DROP.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>מקרא</h3>
+      <div class="legend">
+        <div><span class="swatch" style="background:#ef4444;border-radius:50%"></span>אוכל</div>
+        <div><span class="swatch" style="background:#a8b3c2"></span>בלוק</div>
+        <div><span class="swatch" style="background:#fbbf24"></span>בלוק בנשיאה</div>
+        <div><span class="swatch" style="background:#7f1d1d"></span>אזור סכנה</div>
+      </div>
+    </div>
+
+    <div class="card small">
+      <b>כלל העולם החדש:</b> בתוך האזור האדום Somik מאבד אנרגיה מהר יותר.
+      בלוק שנמצא באזור הסכנה מפחית את הנזק ברדיוס קטן סביבו.
+      המערכת לא אומרת ל-Somik להניח שם בלוק — היא רק מעניקה לבלוק תכונה פיזית שימושית.
+    </div>
+  </aside>
+</div>
+
+<script>
+"use strict";
+
+const worldCanvas=document.getElementById("world");
+const ctx=worldCanvas.getContext("2d");
+const brainCanvas=document.getElementById("brainCanvas");
+const bctx=brainCanvas.getContext("2d");
+
+const W=worldCanvas.width;
+const H=worldCanvas.height;
+
+const VISION=180;
+const BLOCK_VISION=140;
+const BLOCK_SIZE=22;
+const BLOCK_GRID=25;
+const MAX_POP=170;
+const INITIAL_BLOCKS=100;
+
+const HAZARD={
+  x:430,
+  y:0,
+  w:170,
+  h:H
+};
+
+const HAZARD_DAMAGE=0.11;
+const BLOCK_PROTECT_RADIUS=48;
+const STABLE_TICKS=1200;
+
+const COLORS=["#60a5fa","#f59e0b","#a78bfa","#34d399","#f472b6","#facc15","#22d3ee"];
+
+let somiks=[];
+let foods=[];
+let blocks=[];
+
+let running=true;
+let speed=1;
+let ticks=0;
+let births=0;
+let deaths=0;
+let extinctions=0;
+let pickups=0;
+let drops=0;
+let protectedTicks=0;
+let hazardDamageTotal=0;
+let nextId=1;
+let nextBlockId=1;
+let selectedId=null;
+
+const SAVE_KEY="somik-world-v04-autosave";
+const SAVE_VERSION=1;
+let lastAutosaveAt=0;
+
+const rnd=(a,b)=>Math.random()*(b-a)+a;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const sigmoid=x=>1/(1+Math.exp(-x));
+const sq=x=>x*x;
+
+function angleDiff(a,b){
+  let d=a-b;
+  while(d>Math.PI)d-=Math.PI*2;
+  while(d<-Math.PI)d+=Math.PI*2;
+  return d;
+}
+
+function mutateValue(v,chance=0.13,amount=0.34){
+  if(Math.random()>=chance)return v;
+  const approxGaussian=(Math.random()+Math.random()+Math.random()-1.5);
+  return v+approxGaussian*amount;
+}
+
+function insideHazard(x,y){
+  return x>=HAZARD.x && x<=HAZARD.x+HAZARD.w && y>=HAZARD.y && y<=HAZARD.y+HAZARD.h;
+}
+
+function distanceToHazard(x,y){
+  if(insideHazard(x,y))return 0;
+  let dx=0;
+  if(x<HAZARD.x)dx=HAZARD.x-x;
+  else if(x>HAZARD.x+HAZARD.w)dx=x-(HAZARD.x+HAZARD.w);
+
+  let dy=0;
+  if(y<HAZARD.y)dy=HAZARD.y-y;
+  else if(y>HAZARD.y+HAZARD.h)dy=y-(HAZARD.y+HAZARD.h);
+
+  return Math.sqrt(dx*dx+dy*dy);
+}
+
+function hazardProtectionAt(x,y){
+  let best=0;
+
+  for(const b of blocks){
+    if(!insideHazard(b.x,b.y))continue;
+    const dx=x-b.x,dy=y-b.y;
+    const d=Math.sqrt(dx*dx+dy*dy);
+
+    if(d<BLOCK_PROTECT_RADIUS){
+      const p=1-d/BLOCK_PROTECT_RADIUS;
+      if(p>best)best=p;
+    }
+  }
+  return best;
+}
+
+class Brain{
+  constructor(parent=null){
+    this.inputN=13;
+    this.hiddenN=9;
+    this.outputN=4;
+
+    if(parent){
+      this.w1=parent.w1.map(row=>row.map(v=>mutateValue(v)));
+      this.b1=parent.b1.map(v=>mutateValue(v));
+      this.w2=parent.w2.map(row=>row.map(v=>mutateValue(v)));
+      this.b2=parent.b2.map(v=>mutateValue(v));
+    }else{
+      this.w1=Array.from({length:this.hiddenN},()=>Array.from({length:this.inputN},()=>rnd(-1,1)));
+      this.b1=Array.from({length:this.hiddenN},()=>rnd(-0.4,0.4));
+      this.w2=Array.from({length:this.outputN},()=>Array.from({length:this.hiddenN},()=>rnd(-1,1)));
+      this.b2=Array.from({length:this.outputN},()=>rnd(-0.4,0.4));
+    }
+
+    this.lastInputs=Array(this.inputN).fill(0);
+    this.lastHidden=Array(this.hiddenN).fill(0);
+    this.lastOutputs=Array(this.outputN).fill(0);
+  }
+
+  think(inputs){
+    this.lastInputs=inputs.slice();
+
+    const hidden=this.w1.map((row,i)=>{
+      let sum=this.b1[i];
+      for(let j=0;j<row.length;j++)sum+=row[j]*inputs[j];
+      return Math.tanh(sum);
+    });
+
+    const raw=[];
+    for(let o=0;o<this.outputN;o++){
+      let sum=this.b2[o];
+      for(let h=0;h<this.hiddenN;h++)sum+=this.w2[o][h]*hidden[h];
+      raw.push(sum);
+    }
+
+    const outputs=[
+      Math.tanh(raw[0]),
+      sigmoid(raw[1]),
+      sigmoid(raw[2]),
+      sigmoid(raw[3])
+    ];
+
+    this.lastHidden=hidden.slice();
+    this.lastOutputs=outputs.slice();
+
+    return{
+      turn:outputs[0],
+      thrust:outputs[1],
+      pick:outputs[2],
+      drop:outputs[3]
+    };
+  }
+}
+
+class Block{
+  constructor(x,y){
+    this.id=nextBlockId++;
+    this.x=x;
+    this.y=y;
+    this.size=BLOCK_SIZE;
+    this.lastMovedTick=0;
+    this.lastDroppedBy=null;
+  }
+
+  draw(){
+    const half=this.size/2;
+    const inDanger=insideHazard(this.x,this.y);
+
+    if(inDanger){
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,BLOCK_PROTECT_RADIUS,0,Math.PI*2);
+      ctx.fillStyle="rgba(250,204,21,.08)";
+      ctx.fill();
+    }
+
+    ctx.fillStyle=inDanger?"#d8c48f":"#a8b3c2";
+    ctx.fillRect(this.x-half,this.y-half,this.size,this.size);
+    ctx.strokeStyle=inDanger?"#854d0e":"#475569";
+    ctx.lineWidth=2;
+    ctx.strokeRect(this.x-half,this.y-half,this.size,this.size);
+
+    ctx.strokeStyle="rgba(255,255,255,.16)";
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(this.x-half+3,this.y-half+4);
+    ctx.lineTo(this.x+half-3,this.y-half+4);
+    ctx.stroke();
+  }
+}
+
+class Somik{
+  constructor(x=rnd(30,W-30),y=rnd(30,H-30),generation=0,parent=null){
+    this.id=nextId++;
+    this.x=x;
+    this.y=y;
+    this.r=9;
+    this.dir=rnd(0,Math.PI*2);
+    this.energy=parent?78:100;
+    this.age=0;
+    this.generation=generation;
+    this.color=parent?parent.color:COLORS[Math.floor(Math.random()*COLORS.length)];
+    this.brain=new Brain(parent?parent.brain:null);
+
+    this.carrying=null;
+    this.actionCooldown=0;
+
+    this.lastSensors={
+      energy:0,
+      foodNear:0,
+      foodAhead:0,
+      foodSide:0,
+      neighborNear:0,
+      blockNear:0,
+      blockAhead:0,
+      blockSide:0,
+      carrying:0,
+      hazardHere:0,
+      hazardAhead:0,
+      protection:0,
+      noise:0
+    };
+
+    this.lastDecision={turn:0,thrust:0,pick:0,drop:0};
+    this.nearestFood=null;
+    this.nearestBlock=null;
+    this.lastHazardDamage=0;
+  }
+
+  sense(){
+    let bestFood=null;
+    let bestFoodD2=Infinity;
+
+    for(const f of foods){
+      const dx=f.x-this.x,dy=f.y-this.y;
+      const d2=dx*dx+dy*dy;
+      if(d2<bestFoodD2){
+        bestFoodD2=d2;
+        bestFood=f;
+      }
+    }
+
+    let foodNear=0,foodAhead=0,foodSide=0;
+    this.nearestFood=null;
+
+    if(bestFood){
+      const d=Math.sqrt(bestFoodD2);
+      if(d<=VISION){
+        const closeness=1-d/VISION;
+        const abs=Math.atan2(bestFood.y-this.y,bestFood.x-this.x);
+        const rel=angleDiff(abs,this.dir);
+
+        foodNear=closeness;
+        foodAhead=Math.cos(rel)*closeness;
+        foodSide=Math.sin(rel)*closeness;
+        this.nearestFood=bestFood;
+      }
+    }
+
+    let bestBlock=null;
+    let bestBlockD2=Infinity;
+
+    for(const b of blocks){
+      const dx=b.x-this.x,dy=b.y-this.y;
+      const d2=dx*dx+dy*dy;
+      if(d2<bestBlockD2){
+        bestBlockD2=d2;
+        bestBlock=b;
+      }
+    }
+
+    let blockNear=0,blockAhead=0,blockSide=0;
+    this.nearestBlock=null;
+
+    if(bestBlock){
+      const d=Math.sqrt(bestBlockD2);
+      if(d<=BLOCK_VISION){
+        const closeness=1-d/BLOCK_VISION;
+        const abs=Math.atan2(bestBlock.y-this.y,bestBlock.x-this.x);
+        const rel=angleDiff(abs,this.dir);
+
+        blockNear=closeness;
+        blockAhead=Math.cos(rel)*closeness;
+        blockSide=Math.sin(rel)*closeness;
+        this.nearestBlock=bestBlock;
+      }
+    }
+
+    let nearestNeighbor=Infinity;
+
+    for(const other of somiks){
+      if(other===this)continue;
+      const dx=other.x-this.x,dy=other.y-this.y;
+      const d2=dx*dx+dy*dy;
+      if(d2<nearestNeighbor)nearestNeighbor=d2;
+    }
+
+    let neighborNear=0;
+    if(nearestNeighbor<Infinity){
+      const d=Math.sqrt(nearestNeighbor);
+      if(d<100)neighborNear=1-d/100;
+    }
+
+    const energy=clamp(this.energy/180,0,1);
+    const carrying=this.carrying?1:0;
+
+    const hazardHere=insideHazard(this.x,this.y)?1:0;
+
+    const lookX=this.x+Math.cos(this.dir)*55;
+    const lookY=this.y+Math.sin(this.dir)*55;
+    let hazardAhead=0;
+
+    if(insideHazard(lookX,lookY)){
+      hazardAhead=1;
+    }else{
+      const d=distanceToHazard(lookX,lookY);
+      hazardAhead=clamp(1-d/100,0,1);
+    }
+
+    const protection=hazardProtectionAt(this.x,this.y);
+    const noise=rnd(-1,1);
+
+    this.lastSensors={
+      energy,foodNear,foodAhead,foodSide,neighborNear,
+      blockNear,blockAhead,blockSide,carrying,
+      hazardHere,hazardAhead,protection,noise
+    };
+
+    return[
+      energy,
+      foodNear,
+      foodAhead,
+      foodSide,
+      neighborNear,
+      blockNear,
+      blockAhead,
+      blockSide,
+      carrying,
+      hazardHere,
+      hazardAhead,
+      protection,
+      noise
+    ];
+  }
+
+  tryPick(){
+    if(this.carrying||this.actionCooldown>0)return false;
+
+    let bestIndex=-1;
+    let bestD2=Infinity;
+    const maxD=28;
+
+    for(let i=0;i<blocks.length;i++){
+      const b=blocks[i];
+      const dx=b.x-this.x,dy=b.y-this.y;
+      const d2=dx*dx+dy*dy;
+
+      if(d2<bestD2&&d2<maxD*maxD){
+        bestD2=d2;
+        bestIndex=i;
+      }
+    }
+
+    if(bestIndex>=0){
+      this.carrying=blocks.splice(bestIndex,1)[0];
+      this.carrying.lastMovedTick=ticks;
+      this.energy-=0.55;
+      this.actionCooldown=20;
+      pickups++;
+      return true;
+    }
+
+    return false;
+  }
+
+  tryDrop(){
+    if(!this.carrying||this.actionCooldown>0)return false;
+
+    const distance=28;
+    const rawX=this.x+Math.cos(this.dir)*distance;
+    const rawY=this.y+Math.sin(this.dir)*distance;
+
+    const x=Math.round(rawX/BLOCK_GRID)*BLOCK_GRID;
+    const y=Math.round(rawY/BLOCK_GRID)*BLOCK_GRID;
+
+    if(
+      x<BLOCK_SIZE||x>W-BLOCK_SIZE||
+      y<BLOCK_SIZE||y>H-BLOCK_SIZE
+    )return false;
+
+    for(const b of blocks){
+      if(sq(b.x-x)+sq(b.y-y)<sq(BLOCK_SIZE*0.9))return false;
+    }
+
+    for(const s of somiks){
+      if(s===this)continue;
+      if(sq(s.x-x)+sq(s.y-y)<sq(BLOCK_SIZE))return false;
+    }
+
+    this.carrying.x=x;
+    this.carrying.y=y;
+    this.carrying.lastMovedTick=ticks;
+    this.carrying.lastDroppedBy=this.id;
+
+    blocks.push(this.carrying);
+    this.carrying=null;
+
+    this.energy-=0.35;
+    this.actionCooldown=18;
+    drops++;
+
+    return true;
+  }
+
+  collidesAt(nx,ny){
+    for(const b of blocks){
+      const half=b.size/2;
+      const nearestX=clamp(nx,b.x-half,b.x+half);
+      const nearestY=clamp(ny,b.y-half,b.y+half);
+      const dx=nx-nearestX,dy=ny-nearestY;
+
+      if(dx*dx+dy*dy<this.r*this.r)return true;
+    }
+    return false;
+  }
+
+  applyHazard(){
+    this.lastHazardDamage=0;
+
+    if(!insideHazard(this.x,this.y))return;
+
+    const protection=hazardProtectionAt(this.x,this.y);
+    const damage=HAZARD_DAMAGE*(1-protection*0.92);
+
+    this.energy-=damage;
+    this.lastHazardDamage=damage;
+    hazardDamageTotal+=damage;
+
+    if(protection>0.15){
+      protectedTicks++;
+    }
+  }
+
+  update(){
+    this.age++;
+    if(this.actionCooldown>0)this.actionCooldown--;
+
+    const inputs=this.sense();
+    const decision=this.brain.think(inputs);
+    this.lastDecision=decision;
+
+    this.dir+=decision.turn*0.17;
+
+    const moveSpeed=0.25+decision.thrust*1.75;
+    const nx=this.x+Math.cos(this.dir)*moveSpeed;
+    const ny=this.y+Math.sin(this.dir)*moveSpeed;
+
+    if(!this.collidesAt(nx,ny)){
+      this.x=nx;
+      this.y=ny;
+    }else{
+      this.dir+=Math.PI*(0.55+rnd(-0.12,0.12));
+      this.energy-=0.015;
+    }
+
+    if(this.x<this.r){this.x=this.r;this.dir=Math.PI-this.dir;}
+    if(this.x>W-this.r){this.x=W-this.r;this.dir=Math.PI-this.dir;}
+    if(this.y<this.r){this.y=this.r;this.dir=-this.dir;}
+    if(this.y>H-this.r){this.y=H-this.r;this.dir=-this.dir;}
+
+    const metabolism=0.018;
+    const movementCost=0.035*decision.thrust;
+    const carryingCost=this.carrying?0.012:0;
+
+    this.energy-=metabolism+movementCost+carryingCost;
+
+    this.applyHazard();
+
+    for(let i=foods.length-1;i>=0;i--){
+      const f=foods[i];
+      const dx=this.x-f.x,dy=this.y-f.y;
+
+      if(dx*dx+dy*dy<sq(this.r+f.r)){
+        this.energy=Math.min(180,this.energy+42);
+        foods.splice(i,1);
+        break;
+      }
+    }
+
+    if(decision.pick>0.73&&decision.pick>decision.drop){
+      this.tryPick();
+    }else if(decision.drop>0.73&&decision.drop>decision.pick){
+      this.tryDrop();
+    }
+
+    if(
+      this.energy>148&&
+      this.age>280&&
+      somiks.length<MAX_POP&&
+      Math.random()<0.00065
+    ){
+      this.energy-=62;
+
+      const child=new Somik(
+        clamp(this.x+rnd(-16,16),15,W-15),
+        clamp(this.y+rnd(-16,16),15,H-15),
+        this.generation+1,
+        this
+      );
+
+      somiks.push(child);
+      births++;
+    }
+  }
+
+  draw(){
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    ctx.fillStyle=this.color;
+    ctx.fill();
+
+    ctx.strokeStyle=this.id===selectedId?"#fff":"#111827";
+    ctx.lineWidth=this.id===selectedId?4:2;
+    ctx.stroke();
+
+    const fx=Math.cos(this.dir)*5;
+    const fy=Math.sin(this.dir)*5;
+    const px=-Math.sin(this.dir)*2.3;
+    const py=Math.cos(this.dir)*2.3;
+
+    ctx.fillStyle="#fff";
+    ctx.beginPath();ctx.arc(this.x+fx+px,this.y+fy+py,2.1,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(this.x+fx-px,this.y+fy-py,2.1,0,Math.PI*2);ctx.fill();
+
+    if(this.carrying){
+      const bx=this.x+Math.cos(this.dir)*15;
+      const by=this.y+Math.sin(this.dir)*15;
+
+      ctx.fillStyle="#fbbf24";
+      ctx.fillRect(bx-6,by-6,12,12);
+
+      ctx.strokeStyle="#78350f";
+      ctx.lineWidth=1.5;
+      ctx.strokeRect(bx-6,by-6,12,12);
+    }
+
+    if(this.lastHazardDamage>0){
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,this.r+5,0,Math.PI*2);
+      ctx.strokeStyle="rgba(248,113,113,.7)";
+      ctx.lineWidth=2;
+      ctx.stroke();
+    }
+
+    if(this.id===selectedId){
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,VISION,0,Math.PI*2);
+      ctx.strokeStyle="rgba(255,255,255,.20)";
+      ctx.lineWidth=2;
+      ctx.stroke();
+
+      if(this.nearestFood){
+        ctx.beginPath();
+        ctx.moveTo(this.x,this.y);
+        ctx.lineTo(this.nearestFood.x,this.nearestFood.y);
+        ctx.strokeStyle="rgba(239,68,68,.6)";
+        ctx.lineWidth=1.2;
+        ctx.stroke();
+      }
+
+      if(this.nearestBlock){
+        ctx.beginPath();
+        ctx.moveTo(this.x,this.y);
+        ctx.lineTo(this.nearestBlock.x,this.nearestBlock.y);
+        ctx.strokeStyle="rgba(203,213,225,.65)";
+        ctx.lineWidth=1.2;
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+
+function serializeBrain(brain){
+  return{
+    inputN:brain.inputN,
+    hiddenN:brain.hiddenN,
+    outputN:brain.outputN,
+    w1:brain.w1,
+    b1:brain.b1,
+    w2:brain.w2,
+    b2:brain.b2
+  };
+}
+
+function deserializeBrain(data){
+  const brain=Object.create(Brain.prototype);
+  brain.inputN=data.inputN;
+  brain.hiddenN=data.hiddenN;
+  brain.outputN=data.outputN;
+  brain.w1=data.w1;
+  brain.b1=data.b1;
+  brain.w2=data.w2;
+  brain.b2=data.b2;
+  brain.lastInputs=Array(brain.inputN).fill(0);
+  brain.lastHidden=Array(brain.hiddenN).fill(0);
+  brain.lastOutputs=Array(brain.outputN).fill(0);
+  return brain;
+}
+
+function serializeBlock(block){
+  return{
+    id:block.id,
+    x:block.x,
+    y:block.y,
+    size:block.size,
+    lastMovedTick:block.lastMovedTick,
+    lastDroppedBy:block.lastDroppedBy
+  };
+}
+
+function deserializeBlock(data){
+  const block=Object.create(Block.prototype);
+  block.id=data.id;
+  block.x=data.x;
+  block.y=data.y;
+  block.size=data.size ?? BLOCK_SIZE;
+  block.lastMovedTick=data.lastMovedTick ?? 0;
+  block.lastDroppedBy=data.lastDroppedBy ?? null;
+  return block;
+}
+
+function serializeSomik(s){
+  return{
+    id:s.id,
+    x:s.x,
+    y:s.y,
+    r:s.r,
+    dir:s.dir,
+    energy:s.energy,
+    age:s.age,
+    generation:s.generation,
+    color:s.color,
+    brain:serializeBrain(s.brain),
+    carrying:s.carrying?serializeBlock(s.carrying):null,
+    actionCooldown:s.actionCooldown,
+    lastSensors:s.lastSensors,
+    lastDecision:s.lastDecision,
+    lastHazardDamage:s.lastHazardDamage
+  };
+}
+
+function deserializeSomik(data){
+  const s=Object.create(Somik.prototype);
+  s.id=data.id;
+  s.x=data.x;
+  s.y=data.y;
+  s.r=data.r ?? 9;
+  s.dir=data.dir;
+  s.energy=data.energy;
+  s.age=data.age;
+  s.generation=data.generation;
+  s.color=data.color;
+  s.brain=deserializeBrain(data.brain);
+  s.carrying=data.carrying?deserializeBlock(data.carrying):null;
+  s.actionCooldown=data.actionCooldown ?? 0;
+  s.lastSensors=data.lastSensors ?? {
+    energy:0,foodNear:0,foodAhead:0,foodSide:0,neighborNear:0,
+    blockNear:0,blockAhead:0,blockSide:0,carrying:0,
+    hazardHere:0,hazardAhead:0,protection:0,noise:0
+  };
+  s.lastDecision=data.lastDecision ?? {turn:0,thrust:0,pick:0,drop:0};
+  s.lastHazardDamage=data.lastHazardDamage ?? 0;
+  s.nearestFood=null;
+  s.nearestBlock=null;
+  return s;
+}
+
+function setSaveStatus(text){
+  const el=document.getElementById("saveStatus");
+  if(el)el.textContent=text;
+}
+
+function saveGame(){
+  try{
+    const state={
+      version:SAVE_VERSION,
+      savedAt:Date.now(),
+      ticks,
+      births,
+      deaths,
+      extinctions,
+      pickups,
+      drops,
+      protectedTicks,
+      hazardDamageTotal,
+      nextId,
+      nextBlockId,
+      selectedId,
+      speed,
+      foods,
+      blocks:blocks.map(serializeBlock),
+      somiks:somiks.map(serializeSomik)
+    };
+
+    localStorage.setItem(SAVE_KEY,JSON.stringify(state));
+
+    const t=new Date();
+    setSaveStatus(
+      "✅ נשמר אוטומטית "+t.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit",second:"2-digit"})
+    );
+    return true;
+  }catch(err){
+    console.error("Save failed",err);
+    setSaveStatus("⚠️ השמירה נכשלה");
+    return false;
+  }
+}
+
+function loadGame(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw)return false;
+
+    const state=JSON.parse(raw);
+    if(!state || state.version!==SAVE_VERSION)return false;
+
+    ticks=state.ticks ?? 0;
+    births=state.births ?? 0;
+    deaths=state.deaths ?? 0;
+    extinctions=state.extinctions ?? 0;
+    pickups=state.pickups ?? 0;
+    drops=state.drops ?? 0;
+    protectedTicks=state.protectedTicks ?? 0;
+    hazardDamageTotal=state.hazardDamageTotal ?? 0;
+
+    foods=Array.isArray(state.foods)?state.foods:[];
+    blocks=Array.isArray(state.blocks)?state.blocks.map(deserializeBlock):[];
+    somiks=Array.isArray(state.somiks)?state.somiks.map(deserializeSomik):[];
+
+    nextId=state.nextId ?? (somiks.reduce((m,s)=>Math.max(m,s.id),0)+1);
+    const allBlockIds=[
+      ...blocks.map(b=>b.id),
+      ...somiks.filter(s=>s.carrying).map(s=>s.carrying.id)
+    ];
+    nextBlockId=state.nextBlockId ?? ((allBlockIds.length?Math.max(...allBlockIds):0)+1);
+
+    selectedId=state.selectedId ?? null;
+    if(!somiks.some(s=>s.id===selectedId))selectedId=null;
+
+    speed=[1,5,20,100].includes(state.speed)?state.speed:1;
+
+    document.getElementById("speedBtn").textContent="⚡ x"+speed;
+    setSaveStatus("▶ המשך משמירה קודמת");
+
+    return somiks.length>0;
+  }catch(err){
+    console.error("Load failed",err);
+    setSaveStatus("⚠️ לא ניתן לטעון שמירה קודמת");
+    return false;
+  }
+}
+
+function clearSavedGame(){
+  try{
+    localStorage.removeItem(SAVE_KEY);
+  }catch(err){
+    console.error(err);
+  }
+}
+
+function pointInsideBlock(x,y,pad=0){
+  for(const b of blocks){
+    if(
+      Math.abs(x-b.x)<b.size/2+pad&&
+      Math.abs(y-b.y)<b.size/2+pad
+    )return true;
+  }
+  return false;
+}
+
+function addFood(n){
+  for(let i=0;i<n;i++){
+    let tries=0;
+
+    while(tries++<40){
+      let x,y;
+
+      // 52% מהמזון מופיע באזור הסכנה: יש תמריץ אמיתי להיכנס.
+      if(Math.random()<0.52){
+        x=rnd(HAZARD.x+12,HAZARD.x+HAZARD.w-12);
+        y=rnd(12,H-12);
+      }else{
+        x=rnd(12,W-12);
+        y=rnd(12,H-12);
+      }
+
+      if(!pointInsideBlock(x,y,5)){
+        foods.push({x,y,r:5});
+        break;
+      }
+    }
+  }
+}
+
+function addBlocks(n){
+  let placed=0,tries=0;
+
+  while(placed<n&&tries<n*100){
+    tries++;
+
+    // רוב הבלוקים מתחילים מחוץ לאזור הסכנה.
+    let x;
+    if(Math.random()<0.78){
+      const left=Math.random()<0.5;
+      x=left
+        ? Math.round(rnd(2,(HAZARD.x-35)/BLOCK_GRID))*BLOCK_GRID
+        : Math.round(rnd((HAZARD.x+HAZARD.w+35)/BLOCK_GRID,W/BLOCK_GRID-2))*BLOCK_GRID;
+    }else{
+      x=Math.round(rnd(2,W/BLOCK_GRID-2))*BLOCK_GRID;
+    }
+
+    const y=Math.round(rnd(2,H/BLOCK_GRID-2))*BLOCK_GRID;
+
+    let ok=true;
+
+    for(const b of blocks){
+      if(sq(b.x-x)+sq(b.y-y)<sq(BLOCK_GRID*1.1)){
+        ok=false;
+        break;
+      }
+    }
+
+    if(ok){
+      blocks.push(new Block(x,y));
+      placed++;
+    }
+  }
+}
+
+function createPopulation(n=20){
+  for(let i=0;i<n;i++){
+    let created=false;
+
+    for(let tries=0;tries<60&&!created;tries++){
+      let x;
+
+      // אוכלוסייה ראשונית מתחילה בעיקר משני צדי הסכנה.
+      if(Math.random()<0.5){
+        x=rnd(30,HAZARD.x-35);
+      }else{
+        x=rnd(HAZARD.x+HAZARD.w+35,W-30);
+      }
+
+      const y=rnd(30,H-30);
+
+      if(!pointInsideBlock(x,y,20)){
+        somiks.push(new Somik(x,y));
+        created=true;
+      }
+    }
+  }
+}
+
+function resetWorld(){
+  somiks=[];
+  foods=[];
+  blocks=[];
+
+  ticks=0;
+  births=0;
+  deaths=0;
+  extinctions=0;
+  pickups=0;
+  drops=0;
+  protectedTicks=0;
+  hazardDamageTotal=0;
+
+  nextId=1;
+  nextBlockId=1;
+  selectedId=null;
+
+  addBlocks(INITIAL_BLOCKS);
+  createPopulation(20);
+  addFood(135);
+}
+
+function updateWorld(){
+  ticks++;
+
+  for(const s of [...somiks])s.update();
+
+  const alive=[];
+
+  for(const s of somiks){
+    if(s.energy>0&&s.age<18000){
+      alive.push(s);
+    }else{
+      deaths++;
+
+      if(s.carrying){
+        const x=Math.round(s.x/BLOCK_GRID)*BLOCK_GRID;
+        const y=Math.round(s.y/BLOCK_GRID)*BLOCK_GRID;
+
+        s.carrying.x=clamp(x,BLOCK_SIZE,W-BLOCK_SIZE);
+        s.carrying.y=clamp(y,BLOCK_SIZE,H-BLOCK_SIZE);
+        s.carrying.lastMovedTick=ticks;
+
+        blocks.push(s.carrying);
+        s.carrying=null;
+      }
+
+      if(s.id===selectedId)selectedId=null;
+    }
+  }
+
+  somiks=alive;
+
+  const targetFood=Math.max(125,Math.round(somiks.length*1.9));
+
+  if(foods.length<targetFood&&Math.random()<0.18){
+    addFood(1);
+  }
+
+  if(somiks.length===0){
+    extinctions++;
+    createPopulation(20);
+    addFood(Math.max(0,135-foods.length));
+  }
+}
+
+function drawBackground(){
+  ctx.fillStyle="#4b9b4f";
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle="rgba(0,0,0,.025)";
+  for(let y=0;y<H;y+=50){
+    for(let x=0;x<W;x+=50){
+      if(((x+y)/50)%2===0)ctx.fillRect(x,y,50,50);
+    }
+  }
+
+  // אזור סכנה.
+  ctx.fillStyle="rgba(127,29,29,.56)";
+  ctx.fillRect(HAZARD.x,HAZARD.y,HAZARD.w,HAZARD.h);
+
+  ctx.fillStyle="rgba(239,68,68,.10)";
+  for(let x=HAZARD.x;x<HAZARD.x+HAZARD.w;x+=25){
+    ctx.fillRect(x,0,12,H);
+  }
+
+  ctx.strokeStyle="rgba(0,0,0,.10)";
+  ctx.lineWidth=1;
+
+  for(let x=0;x<=W;x+=BLOCK_GRID){
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
+  }
+
+  for(let y=0;y<=H;y+=BLOCK_GRID){
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+  }
+}
+
+function clusterData(){
+  if(blocks.length===0)return{largest:0,contributors:0,indices:[]};
+
+  const visited=new Set();
+  let bestIndices=[];
+  const linkDist=BLOCK_GRID*1.45;
+  const linkD2=linkDist*linkDist;
+
+  for(let i=0;i<blocks.length;i++){
+    if(visited.has(i))continue;
+
+    const stack=[i];
+    const current=[];
+    visited.add(i);
+
+    while(stack.length){
+      const a=stack.pop();
+      current.push(a);
+
+      for(let j=0;j<blocks.length;j++){
+        if(visited.has(j))continue;
+
+        const dx=blocks[a].x-blocks[j].x;
+        const dy=blocks[a].y-blocks[j].y;
+
+        if(dx*dx+dy*dy<=linkD2){
+          visited.add(j);
+          stack.push(j);
+        }
+      }
+    }
+
+    if(current.length>bestIndices.length){
+      bestIndices=current;
+    }
+  }
+
+  const contributors=new Set();
+
+  for(const idx of bestIndices){
+    const id=blocks[idx].lastDroppedBy;
+    if(id!==null)contributors.add(id);
+  }
+
+  return{
+    largest:bestIndices.length,
+    contributors:contributors.size,
+    indices:bestIndices
+  };
+}
+
+function stableBlockCount(){
+  let count=0;
+
+  for(const b of blocks){
+    if(ticks-b.lastMovedTick>=STABLE_TICKS)count++;
+  }
+
+  return count;
+}
+
+function hazardBlockCount(){
+  let count=0;
+
+  for(const b of blocks){
+    if(insideHazard(b.x,b.y))count++;
+  }
+
+  return count;
+}
+
+function drawWorld(){
+  drawBackground();
+
+  for(const b of blocks)b.draw();
+
+  for(const f of foods){
+    ctx.beginPath();
+    ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
+    ctx.fillStyle="#ef4444";
+    ctx.fill();
+    ctx.strokeStyle="#7f1d1d";
+    ctx.lineWidth=1.4;
+    ctx.stroke();
+  }
+
+  for(const s of somiks)s.draw();
+
+  document.getElementById("pop").textContent=somiks.length;
+  document.getElementById("foodCount").textContent=foods.length;
+  document.getElementById("blockCount").textContent=blocks.length;
+  document.getElementById("carriedCount").textContent=somiks.filter(s=>s.carrying).length;
+  document.getElementById("pickups").textContent=pickups;
+  document.getElementById("drops").textContent=drops;
+  document.getElementById("births").textContent=births;
+  document.getElementById("deaths").textContent=deaths;
+  document.getElementById("ticks").textContent=ticks.toLocaleString("he-IL");
+  document.getElementById("extinctions").textContent=extinctions;
+  document.getElementById("maxGen").textContent=somiks.reduce((m,s)=>Math.max(m,s.generation),0);
+  document.getElementById("hazardBlocks").textContent=hazardBlockCount();
+  document.getElementById("stableBlocks").textContent=stableBlockCount();
+  document.getElementById("protectedTicks").textContent=protectedTicks.toLocaleString("he-IL");
+  document.getElementById("hazardDamage").textContent=Math.round(hazardDamageTotal).toLocaleString("he-IL");
+
+  const cluster=clusterData();
+  document.getElementById("largestCluster").textContent=cluster.largest;
+  document.getElementById("clusterContributors").textContent=cluster.contributors;
+
+  const alert=document.getElementById("structureAlert");
+
+  const usefulCandidate=
+    cluster.largest>=6&&
+    cluster.contributors>=2&&
+    hazardBlockCount()>=4&&
+    stableBlockCount()>=8&&
+    protectedTicks>1500;
+
+  if(usefulCandidate){
+    alert.style.display="block";
+    alert.textContent=
+      "⚠ זוהה מועמד למבנה שימושי: כמה Somik-ים תרמו לאשכול, חלק מהבלוקים נמצאים באזור הסכנה ויש כבר זמן מוגן משמעותי. זה עדיין לא הוכחה לבנייה מכוונת.";
+  }else{
+    alert.style.display="none";
+  }
+
+  drawInspector();
+}
+
+function selectedSomik(){
+  return somiks.find(s=>s.id===selectedId)||null;
+}
+
+function percentSigned(v){
+  return Math.round((v+1)*50);
+}
+
+function sensorHtml(label,value,signed=false){
+  const pct=signed?percentSigned(value):Math.round(clamp(value,0,1)*100);
+  const text=value.toFixed(2);
+
+  return`
+    <div class="sensor">
+      <div class="sensorLine"><span>${label}</span><b>${text}</b></div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+    </div>`;
+}
+
+function drawInspector(){
+  const s=selectedSomik();
+  const badge=document.getElementById("selectedBadge");
+  const info=document.getElementById("selectedInfo");
+  const sensors=document.getElementById("sensors");
+
+  if(!s){
+    badge.textContent="לחץ על Somik";
+    info.innerHTML="לחץ על Somik כדי לראות אם הוא חש סכנה, בלוקים ומה המוח מחליט.";
+    sensors.innerHTML="";
+
+    bctx.clearRect(0,0,brainCanvas.width,brainCanvas.height);
+    bctx.fillStyle="#94a3b8";
+    bctx.font="14px Arial";
+    bctx.textAlign="center";
+    bctx.fillText("בחר Somik כדי לראות את המוח",brainCanvas.width/2,brainCanvas.height/2);
+
+    return;
+  }
+
+  badge.textContent="#"+s.id;
+
+  info.innerHTML=
+    `דור: <b>${s.generation}</b><br>`+
+    `גיל: <b>${s.age.toLocaleString("he-IL")}</b><br>`+
+    `אנרגיה: <b>${s.energy.toFixed(1)}</b><br>`+
+    `נושא בלוק: <b>${s.carrying?"כן":"לא"}</b><br>`+
+    `נזק סכנה עכשיו: <b>${s.lastHazardDamage.toFixed(3)}</b><br>`+
+    `TURN: <b>${s.lastDecision.turn.toFixed(2)}</b><br>`+
+    `MOVE: <b>${s.lastDecision.thrust.toFixed(2)}</b><br>`+
+    `PICK: <b>${s.lastDecision.pick.toFixed(2)}</b><br>`+
+    `DROP: <b>${s.lastDecision.drop.toFixed(2)}</b>`;
+
+  const x=s.lastSensors;
+
+  sensors.innerHTML=
+    sensorHtml("אנרגיה",x.energy)+
+    sensorHtml("אוכל קרוב",x.foodNear)+
+    sensorHtml("אוכל קדימה / אחורה",x.foodAhead,true)+
+    sensorHtml("אוכל ימין / שמאל",x.foodSide,true)+
+    sensorHtml("Somik קרוב",x.neighborNear)+
+    sensorHtml("בלוק קרוב",x.blockNear)+
+    sensorHtml("בלוק קדימה / אחורה",x.blockAhead,true)+
+    sensorHtml("בלוק ימין / שמאל",x.blockSide,true)+
+    sensorHtml("נושא בלוק",x.carrying)+
+    sensorHtml("בתוך סכנה",x.hazardHere)+
+    sensorHtml("סכנה קדימה",x.hazardAhead)+
+    sensorHtml("הגנת בלוק",x.protection)+
+    sensorHtml("רעש פנימי",x.noise,true);
+
+  drawBrain(s.brain);
+}
+
+function neuronPos(layerIndex,index,count){
+  const xs=[35,160,285];
+  const top=22,bottom=300;
+  const y=count===1?160:top+index*(bottom-top)/(count-1);
+  return{x:xs[layerIndex],y};
+}
+
+function weightStyle(w){
+  const a=Math.min(0.70,0.08+Math.abs(w)*0.23);
+  return w>=0?`rgba(147,197,253,${a})`:`rgba(248,113,113,${a})`;
+}
+
+function drawBrain(brain){
+  bctx.clearRect(0,0,brainCanvas.width,brainCanvas.height);
+
+  const inPos=Array.from({length:brain.inputN},(_,i)=>neuronPos(0,i,brain.inputN));
+  const hidPos=Array.from({length:brain.hiddenN},(_,i)=>neuronPos(1,i,brain.hiddenN));
+  const outPos=Array.from({length:brain.outputN},(_,i)=>neuronPos(2,i,brain.outputN));
+
+  for(let h=0;h<brain.hiddenN;h++){
+    for(let i=0;i<brain.inputN;i++){
+      bctx.beginPath();
+      bctx.moveTo(inPos[i].x,inPos[i].y);
+      bctx.lineTo(hidPos[h].x,hidPos[h].y);
+      bctx.strokeStyle=weightStyle(brain.w1[h][i]);
+      bctx.lineWidth=0.75;
+      bctx.stroke();
+    }
+  }
+
+  for(let o=0;o<brain.outputN;o++){
+    for(let h=0;h<brain.hiddenN;h++){
+      bctx.beginPath();
+      bctx.moveTo(hidPos[h].x,hidPos[h].y);
+      bctx.lineTo(outPos[o].x,outPos[o].y);
+      bctx.strokeStyle=weightStyle(brain.w2[o][h]);
+      bctx.lineWidth=1;
+      bctx.stroke();
+    }
+  }
+
+  function node(p,val,label){
+    const intensity=Math.round(105+Math.abs(val)*150);
+
+    bctx.beginPath();
+    bctx.arc(p.x,p.y,6.2,0,Math.PI*2);
+    bctx.fillStyle=`rgb(${intensity},${intensity},${intensity})`;
+    bctx.fill();
+    bctx.strokeStyle="#0f172a";
+    bctx.stroke();
+
+    if(label){
+      bctx.fillStyle="#cbd5e1";
+      bctx.font="8px Arial";
+      bctx.textAlign="center";
+      bctx.fillText(label,p.x,p.y+15);
+    }
+  }
+
+  inPos.forEach((p,i)=>node(p,brain.lastInputs[i],"I"+(i+1)));
+  hidPos.forEach((p,i)=>node(p,brain.lastHidden[i],""));
+
+  node(outPos[0],brain.lastOutputs[0],"TURN");
+  node(outPos[1],brain.lastOutputs[1]*2-1,"MOVE");
+  node(outPos[2],brain.lastOutputs[2]*2-1,"PICK");
+  node(outPos[3],brain.lastOutputs[3]*2-1,"DROP");
+}
+
+worldCanvas.addEventListener("pointerdown",e=>{
+  const rect=worldCanvas.getBoundingClientRect();
+  const x=(e.clientX-rect.left)*W/rect.width;
+  const y=(e.clientY-rect.top)*H/rect.height;
+
+  let best=null,bestD2=Infinity;
+
+  for(const s of somiks){
+    const dx=s.x-x,dy=s.y-y,d2=dx*dx+dy*dy;
+
+    if(d2<bestD2){
+      bestD2=d2;
+      best=s;
+    }
+  }
+
+  if(best&&bestD2<35*35)selectedId=best.id;
+});
+
+document.getElementById("pauseBtn").onclick=()=>{
+  running=!running;
+  document.getElementById("pauseBtn").textContent=running?"⏸ עצור":"▶ המשך";
+};
+
+document.getElementById("resetBtn").onclick=()=>{
+  const ok=confirm("למחוק את העולם השמור ולהתחיל עולם חדש?");
+  if(!ok)return;
+  clearSavedGame();
+  resetWorld();
+  saveGame();
+};
+
+document.getElementById("speedBtn").onclick=()=>{
+  speed=speed===1?5:speed===5?20:speed===20?100:1;
+  document.getElementById("speedBtn").textContent="⚡ x"+speed;
+};
+
+document.getElementById("saveBtn").onclick=saveGame;
+
+window.addEventListener("pagehide",saveGame);
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="hidden")saveGame();
+});
+
+function loop(){
+  if(running){
+    for(let i=0;i<speed;i++)updateWorld();
+  }
+
+  drawWorld();
+
+  const now=Date.now();
+  if(now-lastAutosaveAt>=5000){
+    saveGame();
+    lastAutosaveAt=now;
+  }
+
+  requestAnimationFrame(loop);
+}
+
+if(!loadGame()){
+  resetWorld();
+  saveGame();
+}
+loop();
+</script>
+</body>
+</html>
