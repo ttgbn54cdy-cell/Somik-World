@@ -113,18 +113,18 @@ button{
 <div class="app">
   <main>
     <h1>Somik World v1.2</h1>
-    <div class="subtitle">סימולציה של חיים מלאכותיים עם פרוטוקול ניסוי v1.2: הפיזיקה קבועה, ההתנהגות חופשית והאבולוציה קובעת את התוצאה. Dashboard מלא, מעקב דורות ושושלות, בדיקת שחזור ו-Multi-Seed — כולם לצופה בלבד.</div>
+    <div class="subtitle">סימולציה של חיים מלאכותיים עם כללי ניסוי v1.2: הפיזיקה קבועה, ההתנהגות חופשית והאבולוציה קובעת את התוצאה. לוח מדדים מלא, מעקב דורות ושושלות ובדיקות שחזור מרובות — כולם לצופה בלבד.</div>
 
     <div class="toolbar">
       <button id="pauseBtn">⏸ עצור</button>
       <button id="resetBtn">↻ עולם חדש</button>
-      <button id="speedBtn">⚡ x1</button>
+      <button id="speedBtn">⚡ ×1</button>
       <button id="saveBtn">💾 שמור עכשיו</button>
       <button id="exportBtn">⬇️ ייצא שמירה</button>
       <button id="importBtn">⬆️ ייבא שמירה</button>
       <input id="importFile" type="file" accept=".json,application/json" style="display:none">
     </div>
-    <div id="saveStatus" class="subtitle">שמירה אוטומטית פעילה — IndexedDB</div>
+    <div id="saveStatus" class="subtitle">שמירה אוטומטית פעילה — אחסון מקומי בדפדפן</div>
 
     <div class="canvasWrap">
       <canvas id="world" width="1000" height="650"></canvas>
@@ -134,16 +134,16 @@ button{
   <aside>
     <h2>מצב העולם</h2>
     <div class="sectionTitle">אוכלוסייה ודמוגרפיה</div>
-    <div class="row"><span>Somik-ים חיים</span><b id="pop">0</b></div>
+    <div class="row"><span>יצורים חיים</span><b id="pop">0</b></div>
     <div class="row"><span>זכרים</span><b id="maleCount">0</b></div>
     <div class="row"><span>נקבות</span><b id="femaleCount">0</b></div>
     <div class="small" style="margin:6px 0 10px">
       מין הוא תכונת תצפית בלבד: זכר כחול · נקבה ורודה. הוא אינו חיישן, אינו מגביל רבייה ואינו משנה הישרדות.
     </div>
     <div class="sectionTitle">רבייה</div>
-    <div class="row"><span>Somik-ים עם pulse מגע גבוה</span><b id="willingCount">0</b></div>
-    <div class="row"><span>זוגות במגע עם pulse הדדי</span><b id="availablePairs">0</b></div>
-    <div class="row"><span>מפגשי pulse הדדי</span><b id="matingAttempts">0</b></div>
+    <div class="row"><span>יצורים עם דחף היצמדות גבוה</span><b id="willingCount">0</b></div>
+    <div class="row"><span>זוגות במגע עם דחף היצמדות הדדי</span><b id="availablePairs">0</b></div>
+    <div class="row"><span>מפגשי היצמדות הדדיים</span><b id="matingAttempts">0</b></div>
     <div class="row"><span>לידות מוצלחות</span><b id="successfulMatings">0</b></div>
     <div class="row"><span>שיעור יצירת צאצא</span><b id="matingSuccessRate">—</b></div>
     <div class="row"><span>אנרגיית צאצא ממוצעת בלידה</span><b id="avgChildBirthEnergy">—</b></div>
@@ -170,13 +170,13 @@ button{
     <div class="row"><span>בלוקים שנושאים עכשיו</span><b id="carriedCount">0</b></div>
     <div class="row"><span>בלוקים שהורמו</span><b id="pickups">0</b></div>
     <div class="row"><span>בלוקים שהונחו</span><b id="drops">0</b></div>
-    <div class="row"><span>בלוקים שלא זזו 1,200+ ticks</span><b id="stableBlocks">0</b></div>
+    <div class="row"><span>בלוקים שלא זזו 1,200+ צעדי עולם</span><b id="stableBlocks">0</b></div>
     <div class="row"><span>מעברי בלוק לתוך אזור הסכנה</span><b id="importEvents">0</b></div>
     <div class="row"><span>מעברי בלוק החוצה מאזור הסכנה</span><b id="exportEvents">0</b></div>
     <div class="row"><span>בלוקים שהובאו ונמצאים כעת בסכנה</span><b id="importedNow">0</b></div>
     <div class="row"><span>אשכול בלוקים הגדול ביותר</span><b id="largestCluster">0</b></div>
     <div class="row"><span>אשכול בלוקים שהוזזו — הגדול ביותר</span><b id="movedCluster">0</b></div>
-    <div class="row"><span>מספר Somik-ים שתרמו לאשכול</span><b id="clusterContributors">0</b></div>
+    <div class="row"><span>מספר יצורים שתרמו לאשכול</span><b id="clusterContributors">0</b></div>
     <div class="row"><span>זמן מוגן מצטבר</span><b id="protectedTicks">0</b></div>
     <div class="row"><span>זמן מוגן ליד בלוק שהובא לסכנה</span><b id="usefulProtection">0</b></div>
     <div class="row"><span>חלק ההגנה מבלוקים שהובאו</span><b id="usefulProtectionShare">—</b></div>
@@ -186,7 +186,7 @@ button{
     <div class="row"><span>לידות</span><b id="births">0</b></div>
     <div class="row"><span>מתים</span><b id="deaths">0</b></div>
     <div class="row"><span>הדור הכי מתקדם</span><b id="maxGen">0</b></div>
-    <div class="row"><span>ה-Somik המבוגר ביותר</span><b id="oldestAge">0</b></div>
+    <div class="row"><span>היצור המבוגר ביותר</span><b id="oldestAge">0</b></div>
     <div class="row"><span>מוצאי מייסדים פעילים</span><b id="livingLineages">0</b></div>
     <div class="row"><span>פעמים שכל האוכלוסייה נעלמה</span><b id="extinctions">0</b></div>
     <div class="row"><span>מצב העולם</span><b id="worldLifeState">חי</b></div>
@@ -209,64 +209,64 @@ button{
     </div>
 
     <div class="card">
-      <h3>רשומות של Somik-ים חיים</h3>
+      <h3>רשומות של יצורים חיים</h3>
       <div id="leadersList" class="small">הנתונים יופיעו כשהעולם יתחיל לרוץ.</div>
       <div class="small" style="margin-top:8px">
-        אלה שיאים מספריים לצופה בלבד. לחיצה על שורה בוחרת את ה-Somik במפקח.
+        אלה שיאים מספריים לצופה בלבד. לחיצה על שורה בוחרת את היצור במפקח.
       </div>
     </div>
 
     <div class="card">
       <h3>דפוסי פעילות והתנהגות</h3>
       <div class="small" id="behaviorWindowNote">חלון נע של 1,000 צעדי עולם.</div>
-      <div class="row"><span>מרחק תנועה ממוצע / tick</span><b id="behaviorMove">—</b></div>
+      <div class="row"><span>מרחק תנועה ממוצע / צעד עולם</span><b id="behaviorMove">—</b></div>
       <div class="row"><span>|פנייה| ממוצעת</span><b id="behaviorTurn">—</b></div>
-      <div class="row"><span>Grip מעל הסף</span><b id="behaviorGrip">—</b></div>
+      <div class="row"><span>אחיזה מעל הסף</span><b id="behaviorGrip">—</b></div>
       <div class="row"><span>פה מעל הסף</span><b id="behaviorMouth">—</b></div>
-      <div class="row"><span>Pulse מגע מעל הסף</span><b id="behaviorPulse">—</b></div>
+      <div class="row"><span>דחף היצמדות מעל הסף</span><b id="behaviorPulse">—</b></div>
       <div class="row"><span>נשיאת עצם</span><b id="behaviorCarry">—</b></div>
       <div class="row"><span>שהייה באזור הסכנה</span><b id="behaviorHazard">—</b></div>
-      <div class="row"><span>קרבה ממוצעת ל-Somik אחר</span><b id="behaviorProximity">—</b></div>
+      <div class="row"><span>קרבה ממוצעת ליצור אחר</span><b id="behaviorProximity">—</b></div>
       <div class="row"><span>|פליטת שדה| ממוצעת</span><b id="behaviorField">—</b></div>
       <div id="behaviorChangeSummary" class="small" style="margin-top:10px">
         נאספות דגימות. שינוי יוצג רק לאחר שני חלונות מלאים.
       </div>
 
-      <div class="row" style="margin-top:10px"><span>סיווג מול baseline אבולוציוני</span><b id="behaviorClassOverall">—</b></div>
-      <div id="behaviorClassList" class="small" style="margin-top:8px">נבנה baseline קבוע מתחילת פרוטוקול v1.2.</div>
-      <div class="row"><span>Baseline</span><b id="behaviorBaselineState">נבנה</b></div>
+      <div class="row" style="margin-top:10px"><span>סיווג מול קו בסיס אבולוציוני</span><b id="behaviorClassOverall">—</b></div>
+      <div id="behaviorClassList" class="small" style="margin-top:8px">נבנה קו בסיס קבוע מתחילת כללי הניסוי של v1.2.</div>
+      <div class="row"><span>קו בסיס</span><b id="behaviorBaselineState">נבנה</b></div>
 
       <div class="small" style="margin-top:8px">
-        “שינוי אחרון” משווה שני חלונות סמוכים. “סיווג” משווה ל-baseline מוקדם שקופא ולא זז עם הזמן.
-        שני המנגנונים Observer-only ואינם מייחסים כוונה כמו הימנעות, שיתוף, בנייה או שפה.
+        “שינוי אחרון” משווה שני חלונות סמוכים. “סיווג” משווה לקו בסיס מוקדם שקופא ולא זז עם הזמן.
+        שני המנגנונים מיועדים לתצפית בלבד ואינם מייחסים כוונה כמו הימנעות, שיתוף, בנייה או שפה.
       </div>
     </div>
 
     <div class="card">
       <h3>זיכרון — מדדים גולמיים</h3>
-      <div class="row"><span>M1 — שיעור שינוי בפועל</span><b id="memM1Use">—</b></div>
-      <div class="row"><span>M1 — שיעור שער פתוח</span><b id="memM1Gate">—</b></div>
-      <div class="row"><span>M1 — |ערך| ממוצע</span><b id="memM1Abs">—</b></div>
-      <div class="row"><span>M2 — שיעור שינוי בפועל</span><b id="memM2Use">—</b></div>
-      <div class="row"><span>M2 — שיעור שער פתוח</span><b id="memM2Gate">—</b></div>
-      <div class="row"><span>M2 — |ערך| ממוצע</span><b id="memM2Abs">—</b></div>
-      <div class="small" style="margin-top:8px">אין חלונות “סכנה/אוכל” ואין verdict אוטומטי.</div>
+      <div class="row"><span>זיכרון 1 — שיעור שינוי בפועל</span><b id="memM1Use">—</b></div>
+      <div class="row"><span>זיכרון 1 — שיעור שער פתוח</span><b id="memM1Gate">—</b></div>
+      <div class="row"><span>זיכרון 1 — |ערך| ממוצע</span><b id="memM1Abs">—</b></div>
+      <div class="row"><span>זיכרון 2 — שיעור שינוי בפועל</span><b id="memM2Use">—</b></div>
+      <div class="row"><span>זיכרון 2 — שיעור שער פתוח</span><b id="memM2Gate">—</b></div>
+      <div class="row"><span>זיכרון 2 — |ערך| ממוצע</span><b id="memM2Abs">—</b></div>
+      <div class="small" style="margin-top:8px">אין חלונות “סכנה/אוכל” ואין מסקנה אוטומטית.</div>
     </div>
 
     <div class="card">
       <h3>אבולוציה לפי דורות ושושלות</h3>
       <div class="row"><span>טווח הדור הפעיל האחרון</span><b id="activeGenBand">—</b></div>
-      <div class="row"><span>Somik-ים בטווח הזה</span><b id="activeGenBandCount">0</b></div>
+      <div class="row"><span>יצורים בטווח הזה</span><b id="activeGenBandCount">0</b></div>
       <div class="row"><span>מוח ממוצע בטווח</span><b id="activeGenBandBrain">—</b></div>
       <div class="row"><span>צאצאים ממוצעים בטווח</span><b id="activeGenBandChildren">—</b></div>
-      <div class="row"><span>Pulse ממוצע בטווח</span><b id="activeGenBandPulse">—</b></div>
+      <div class="row"><span>דחף היצמדות ממוצע בטווח</span><b id="activeGenBandPulse">—</b></div>
       <div class="row"><span>|שדה| ממוצע בטווח</span><b id="activeGenBandField">—</b></div>
       <div class="row"><span>שהייה בסכנה בטווח</span><b id="activeGenBandHazard">—</b></div>
       <div class="row"><span>קבוצת דורות עם נתוני חיים</span><b id="completedCohortBand">—</b></div>
       <div class="row"><span>פרטים שמתו בקבוצה</span><b id="completedCohortN">0</b></div>
       <div class="row"><span>חיים ממוצעים בקבוצה</span><b id="completedCohortLife">—</b></div>
       <div class="row"><span>צאצאים ממוצעים בקבוצה</span><b id="completedCohortChildren">—</b></div>
-      <div class="row"><span>Pulse לאורך החיים בקבוצה</span><b id="completedCohortPulse">—</b></div>
+      <div class="row"><span>דחף היצמדות לאורך החיים בקבוצה</span><b id="completedCohortPulse">—</b></div>
       <div class="row"><span>|שדה| לאורך החיים בקבוצה</span><b id="completedCohortField">—</b></div>
       <div class="row"><span>שהייה בסכנה לאורך החיים</span><b id="completedCohortHazard">—</b></div>
       <div class="row"><span>שושלת מייסד מובילה כרגע</span><b id="topFounderShare">—</b></div>
@@ -274,24 +274,24 @@ button{
     </div>
 
     <div class="card">
-      <h3>🔒 v1.2 — SCIENTIFIC INTEGRITY</h3>
+      <h3>🔒 v1.2 — תקינות מדעית</h3>
       <div class="small">
-        הפרוטוקול קפוא ומסומן ב-SW-V1.2-SCI-1. Pulse הוא כעת adhesion פיזי אמיתי בין גופים ולא רק תנאי רבייה.
-        זרימת המזון שומרת חוב אם אין מקום להצבה במקום למחוק יחידה. זיכרון, שדה, Dashboard וסיווגים נשארים Observer-only.
-        לכל ריצה נשמר baseline אבולוציוני קבוע, נתוני cohort לפי דורות, שושלות, Regression Hash וארכיון מחקר נפרד מקובץ השמירה.
+        כללי הניסוי קפואים. דחף ההיצמדות יוצר היצמדות פיזית אמיתית בין גופים ולא משמש רק כתנאי לרבייה.
+        זרימת המזון שומרת חוב אם אין מקום להצבה במקום למחוק יחידה. זיכרון, שדה, לוח המדדים וסיווגים נשארים לתצפית בלבד.
+        לכל ריצה נשמר קו בסיס אבולוציוני קבוע, נתוני קבוצות דורות, שושלות, חתימת שחזור וארכיון מחקר נפרד מקובץ השמירה.
       </div>
     </div>
 
     <div class="card">
-      <h3>אקולוגיה קבועה — Neutral Placement</h3>
-      <div class="row"><span>קצב מזון מתוזמן</span><b id="foodFlowRate">0.18 / tick</b></div>
-      <div class="row"><span>אנרגיה מתוזמנת</span><b id="foodEnergyFlux">7.56 / tick</b></div>
+      <h3>אקולוגיה קבועה — פיזור ניטרלי</h3>
+      <div class="row"><span>קצב מזון מתוזמן</span><b id="foodFlowRate">0.18 / צעד</b></div>
+      <div class="row"><span>אנרגיה מתוזמנת</span><b id="foodEnergyFlux">7.56 / צעד</b></div>
       <div class="row"><span>התאמה לפי אוכלוסייה</span><b>אין</b></div>
       <div class="row"><span>מזון יכול להישאר באגירה</span><b>כן</b></div>
       <div class="row"><span>חוב הצבת מזון</span><b id="foodFluxDebt">0</b></div>
       <div class="row"><span>כשלי הצבה מצטברים</span><b id="foodPlacementFailures">0</b></div>
       <div class="small" style="margin-top:8px">
-        0.18 יחידות מזון נצברות בכל tick. אם אין מקום פיזי להצבה, היחידה נשארת כחוב ומוצבת מאוחר יותר במקום להיעלם.
+        0.18 יחידות מזון נצברות בכל צעד עולם. אם אין מקום פיזי להצבה, היחידה נשארת כחוב ומוצבת מאוחר יותר במקום להיעלם.
         מזון חדש, בלוקים ומייסדים ממוקמים באופן אחיד במרחב התקף; אין העדפה לאזור הסכנה.
         העולם אינו מגיב לגודל האוכלוסייה ואינו משנה את הזרימה לפי התוצאה.
       </div>
@@ -305,7 +305,7 @@ button{
       <div class="row"><span>|שדה מקומי נקלט| ממוצע</span><b id="avgReceivedField">—</b></div>
       <div class="row"><span>שדה מקומי</span><b id="communicationMode">פעיל</b></div>
       <div class="small" style="margin-top:8px">
-        סיכום מהיר; כל המדדים המפורטים מוצגים בהמשך ה-Dashboard.
+        סיכום מהיר; כל המדדים המפורטים מוצגים בהמשך לוח המדדים.
       </div>
     </div>
 
@@ -331,46 +331,46 @@ button{
         <div class="small" style="margin-top:8px">אין סיווג “חזק”, אין השוואה לסכנה ואין חלוקה ל“משתמשים/אחרים”.</div>
 
         <h3 style="margin-top:16px">ניסוי ניתן לשכפול</h3>
-        <div class="row"><span>Seed של העולם</span><b id="worldSeedDisplay">—</b></div>
-        <div class="row"><span>מצב RNG</span><b id="rngStateDisplay">—</b></div>
-        <div class="row"><span>Regression Hash נוכחי</span><b id="physicsHashDisplay">—</b></div>
-        <div class="row"><span>בדיקת Regression קבועה</span><b id="regressionState">לא נבדק</b></div>
+        <div class="row"><span>מספר ההתחלה של העולם</span><b id="worldSeedDisplay">—</b></div>
+        <div class="row"><span>מצב מחולל האקראיות</span><b id="rngStateDisplay">—</b></div>
+        <div class="row"><span>חתימת השחזור הנוכחית</span><b id="physicsHashDisplay">—</b></div>
+        <div class="row"><span>בדיקת שחזור קבועה</span><b id="regressionState">לא נבדק</b></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-          <button id="sameSeedBtn">🧬 התחל מחדש מאותו Seed</button>
-          <button id="controlCloneBtn">🧪 ייצא Clone בלי שדה</button>
-          <button id="regressionBtn">🧾 בדיקת Regression</button>
-          <button id="multiSeedBtn">🧪 Multi-Seed A/B</button>
+          <button id="sameSeedBtn">🧬 התחל מחדש מאותו מספר התחלה</button>
+          <button id="controlCloneBtn">🧪 ייצא עותק ביקורת בלי שדה</button>
+          <button id="regressionBtn">🧾 בדיקת שחזור</button>
+          <button id="multiSeedBtn">🧪 השוואת כמה התחלות</button>
         </div>
-        <div id="multiSeedStatus" class="small" style="margin-top:8px">Multi-Seed ממתין.</div>
+        <div id="multiSeedStatus" class="small" style="margin-top:8px">בדיקת כמה התחלות ממתינה.</div>
         <div class="small" style="margin-top:8px">
-          Regression מריץ Seed קבוע ומוודא hash צפוי באותו JS runtime; מנועים שונים עשויים לעגל חישובי floating-point מעט אחרת. Multi-Seed מריץ זוגות זהים עם/בלי שדה ומחזיר קובץ תוצאות ניסוי בלי להחליף את העולם הפעיל.
+          בדיקת השחזור מריצה מספר התחלה קבוע ומוודאת חתימה צפויה באותו מנוע דפדפן; מנועים שונים עשויים לעגל חישובים עשרוניים מעט אחרת. בדיקת כמה התחלות מריצה זוגות זהים עם ובלי שדה ומחזירה קובץ תוצאות בלי להחליף את העולם הפעיל.
         </div>
       </div>
     </details>
 
     <div class="card">
-      <h3>🧭 Experimental Integrity</h3>
+      <h3>🧭 תקינות הניסוי</h3>
       <div class="row"><span>דגימות ארכיון מלא</span><b id="longRunSamples">0</b></div>
       <div class="row"><span>עצירת בטיחות</span><b id="computeGuardState">לא</b></div>
-      <div class="row"><span>Checkpoint בדפדפן</span><b id="checkpointState">ממתין</b></div>
+      <div class="row"><span>נקודת שמירה בדפדפן</span><b id="checkpointState">ממתין</b></div>
       <div class="row"><span>מתזמן סימולציה</span><b id="engineClockState">מאתחל</b></div>
-      <div class="row"><span>תחילת פרוטוקול v1.2</span><b id="protocolStartState">tick 0</b></div>
+      <div class="row"><span>תחילת כללי הניסוי v1.2</span><b id="protocolStartState">צעד 0</b></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <button id="checkpointBtn">🛡 שמור Checkpoint</button>
-        <button id="restoreCheckpointBtn">↩ שחזר Checkpoint</button>
-        <button id="abPairBtn">A/B מאותו Seed</button>
+        <button id="checkpointBtn">🛡 שמור נקודת שמירה</button>
+        <button id="restoreCheckpointBtn">↩ שחזר נקודת שמירה</button>
+        <button id="abPairBtn">השווה שתי ריצות מאותה התחלה</button>
       </div>
       <div class="small" style="margin-top:8px">
-        הכלים כאן תצפיתיים בלבד. A/B יוצר שתי נקודות התחלה זהות מאותו Seed — עם השדה ובלעדיו — בלי לשנות את העולם הפעיל.
-        ה-Dashboard המלא רק חושף נתונים קיימים; הוא אינו מזין נתונים בחזרה ל-Somik-ים.
-        עולם שנטען מ-v1.1 מסומן כ-migration; להשוואה מדעית נקייה בין Seeds מומלץ להתחיל עולם v1.2 חדש.
-        תזמון ה-ticks מופרד מהציור באמצעות Worker כשנתמך. חישוב העולם דטרמיניסטי לפי ticks; מערכת ההפעלה עדיין רשאית להשעות דף רקע, ולכן ticks — לא זמן קיר — הם מדד הניסוי.
+        הכלים כאן תצפיתיים בלבד. השוואת שתי ריצות יוצרת שתי נקודות התחלה זהות מאותו מספר התחלה — עם השדה ובלעדיו — בלי לשנות את העולם הפעיל.
+        לוח המדדים המלא רק חושף נתונים קיימים; הוא אינו מזין נתונים בחזרה ליצורים.
+        עולם שנטען מ-v1.1 מסומן כמעבר גרסה; להשוואה מדעית נקייה בין מספרי התחלה מומלץ להתחיל עולם v1.2 חדש.
+        תזמון צעדי העולם מופרד מהציור באמצעות מנגנון רקע כשהוא נתמך. חישוב העולם ניתן לשחזור לפי צעדי העולם; מערכת ההפעלה עדיין רשאית להשעות דף רקע, ולכן צעדי עולם — לא זמן שעון — הם מדד הניסוי.
       </div>
     </div>
 
     <div class="card">
-      <h3>Somik נבחר <span class="badge" id="selectedBadge">לחץ על Somik</span></h3>
-      <div id="selectedInfo" class="small">לחץ על Somik כדי לראות את חייו, השושלת שלו, הערוצים הגולמיים והאקטואטורים שלו.</div>
+      <h3>יצור נבחר <span class="badge" id="selectedBadge">לחץ על יצור</span></h3>
+      <div id="selectedInfo" class="small">לחץ על יצור כדי לראות את חייו, השושלת שלו, הערוצים הגולמיים והפעולות הפיזיות שלו.</div>
     </div>
 
     <div class="card">
@@ -383,14 +383,14 @@ button{
       <canvas id="brainCanvas" width="320" height="330"></canvas>
       <div class="small" style="margin-top:7px">
         14 ערוצים גולמיים → מוח בגודל מתפתח → 10 יציאות כלליות:
-        פנייה, דחף, Grip לעצמים, פה, 4 יציאות זיכרון, pulse מגע ופליטת שדה.
+        פנייה, דחף תנועה, אחיזה בעצמים, פה, ארבע יציאות זיכרון, דחף היצמדות ופליטת שדה.
         אין חיישן שינוי-אנרגיה, סכנה, הגנה, אוכל, בלוק, מין או גיל.
-        Pulse המגע נפרד מ-Grip ומפעיל adhesion פיזי בין גופים; רבייה היא תוצאה אפשרית של מגע הדדי, לא המשמעות היחידה של Pulse.
+        דחף ההיצמדות נפרד מאחיזה בעצמים ומפעיל היצמדות פיזית בין גופים; רבייה היא תוצאה אפשרית של מגע הדדי, לא המשמעות היחידה של הדחף.
       </div>
     </div>
 
     <div class="card small">
-      <b>זיכרון פנימי:</b> M1 ו-M2 מתחילים ב-0 בכל לידה.
+      <b>זיכרון פנימי:</b> תא זיכרון 1 ותא זיכרון 2 מתחילים ב-0 בכל לידה.
       המוח מחליט בכל רגע איזה ערך לכתוב וכמה לעדכן.
       אנחנו לא מגדירים מה משמעות הזיכרון, והזיכרון עצמו לא עובר לצאצא —
       רק המוח שיודע להשתמש בו עובר בתורשה.
@@ -416,17 +416,17 @@ button{
       חוקי הסביבה קבועים מראש ונשארים קבועים לאורך הריצה.
       <br><br>
       <b>חישה:</b> המוח מקבל אנרגיה פנימית, גאומטריה וגודל של העצם הקרוב,
-      גאומטריה של Somik קרוב, מגע פיזי, עומס נשיאה, שני תאי זיכרון, שדה מקומי ורעש.
+      גאומטריה של יצור קרוב, מגע פיזי, עומס נשיאה, שני תאי זיכרון, שדה מקומי ורעש.
       אין נגזרת אנרגיה מוכנה ואין ערוץ שאומר “אוכל”, “בלוק”, “סכנה”, “הגנה”, “מין” או “גיל”.
       <br><br>
-      <b>פעולות:</b> פנייה, דחף, Grip לעצמים, פה, כתיבה לזיכרון, pulse מגע ופליטת שדה.
-      Grip אינו משמש לרבייה. Pulse גבוה יוצר adhesion פיזי בין גופים קרובים; אם המגע ההדדי מתקיים גם בטווח הרבייה, יכול להיווצר גוף חדש.
+      <b>פעולות:</b> פנייה, דחף תנועה, אחיזה בעצמים, פה, כתיבה לזיכרון, דחף היצמדות ופליטת שדה.
+      אחיזה בעצמים אינה משמשת לרבייה. דחף היצמדות גבוה יוצר היצמדות פיזית בין גופים קרובים; אם המגע ההדדי מתקיים גם בטווח הרבייה, יכול להיווצר גוף חדש.
       <br><br>
       <b>אקולוגיה:</b> זרימת המזון קבועה. מזון, בלוקים ומייסדים ממוקמים באופן אחיד במרחב התקף.
       אזור הסכנה עדיין גורם נזק ובלוק בתוכו עדיין מפחית נזק מקומית; אין הכנה מרחבית שמציבה משאב במקום אחד ופתרון במקום אחר.
       <br><br>
-      <b>פרוטוקול קפוא:</b> תוצאה מוזרה, חוסר “למידה”, אי-העברת מזון או אי-שימוש בבלוקים אינם סיבה לשנות חוקים.
-      שינוי עתידי מותר רק כתיקון באג/הטיה ניסויית מתועדת, ויוצר גרסת ניסוי חדשה. טעינת שמירת v1.1 מסומנת כנקודת מעבר לפרוטוקול v1.2 כדי לא לערבב תקופות בלי תיעוד.
+      <b>כללי ניסוי קפואים:</b> תוצאה מוזרה, חוסר “למידה”, אי-העברת מזון או אי-שימוש בבלוקים אינם סיבה לשנות חוקים.
+      שינוי עתידי מותר רק כתיקון באג/הטיה ניסויית מתועדת, ויוצר גרסת ניסוי חדשה. טעינת שמירת v1.1 מסומנת כנקודת מעבר לכללי הניסוי של v1.2 כדי לא לערבב תקופות בלי תיעוד.
     </div>
   </aside>
 </div>
@@ -865,7 +865,7 @@ function pct(n,d){return d>0?(100*n/d):0;}
 function personalWriteRates(s){
   const st=s.memoryTracker?.stats;
   if(!st||st.totalTicks===0)return "—";
-  return "M1 "+pct(st.writes[0],st.totalTicks).toFixed(1)+"% · M2 "+pct(st.writes[1],st.totalTicks).toFixed(1)+"%";
+  return "זיכרון 1 "+pct(st.writes[0],st.totalTicks).toFixed(1)+"% · זיכרון 2 "+pct(st.writes[1],st.totalTicks).toFixed(1)+"%";
 }
 
 function pushWorldEvent(key,title,textMsg,type="emerging",cooldown=50000){
@@ -941,7 +941,7 @@ function renderLeaders(){
 
   const leaders=getLeaders();
   if(!leaders.length){
-    el.textContent="אין כרגע Somik-ים חיים.";
+    el.textContent="אין כרגע יצורים חיים.";
     return;
   }
 
@@ -1098,12 +1098,12 @@ function behaviorMetricLabel(key){
   return({
     move:"מרחק תנועה",
     turn:"|פנייה|",
-    grip:"Grip מעל הסף",
+    grip:"אחיזה מעל הסף",
     mouth:"פה מעל הסף",
-    pulse:"Pulse מגע מעל הסף",
+    pulse:"דחף היצמדות מעל הסף",
     carry:"נשיאת עצם",
     hazard:"שהייה באזור הסכנה",
-    proximity:"קרבה ל-Somik אחר",
+    proximity:"קרבה ליצור אחר",
     field:"|פליטת שדה|"
   })[key]||key;
 }
@@ -1264,7 +1264,7 @@ function evaluateWorldAlerts(){
     pushWorldEvent(
       "food-per-capita-low",
       "מלאי מזון ביחס לאוכלוסייה",
-      `יש ${food} יחידות מזון עבור ${pop} Somik-ים (${foodPerSomik.toFixed(2)} ל-Somik).`,
+      `יש ${food} יחידות מזון עבור ${pop} יצורים (${foodPerSomik.toFixed(2)} לכל יצור).`,
       "neutral",
       30000
     );
@@ -1302,7 +1302,7 @@ function evaluateWorldAlerts(){
     pushWorldEvent(
       "oldest-"+oldMilestone,
       "אבן דרך בזמן חיים",
-      `ה-Somik המבוגר ביותר עבר ${oldMilestone.toLocaleString("he-IL")} צעדי חיים.`,
+      `היצור המבוגר ביותר עבר ${oldMilestone.toLocaleString("he-IL")} צעדי חיים.`,
       "neutral",
       0
     );
@@ -2344,7 +2344,7 @@ async function saveGame(){
 
     const t=new Date();
     setSaveStatus(
-      "✅ נשמר ב-IndexedDB "+t.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit",second:"2-digit"})
+      "✅ נשמר באחסון המקומי "+t.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit",second:"2-digit"})
     );
     return true;
   }catch(err){
@@ -2361,7 +2361,7 @@ async function saveGame(){
       }));
     }catch(_){}
 
-    setSaveStatus("⚠️ שמירת IndexedDB נכשלה — השתמש ב׳ייצא שמירה׳");
+    setSaveStatus("⚠️ השמירה המקומית נכשלה — השתמש ב׳ייצא שמירה׳");
     return false;
   }finally{
     autosaveInFlight=false;
@@ -2477,7 +2477,7 @@ function restoreState(state){
   if(!somiks.some(s=>s.id===selectedId))selectedId=null;
 
   speed=[1,5,20,100].includes(state.speed)?state.speed:1;
-  document.getElementById("speedBtn").textContent="⚡ x"+speed;
+  document.getElementById("speedBtn").textContent="⚡ ×"+speed;
 
   if(populationHistory.length===0){
     populationHistory.push({
@@ -2540,7 +2540,7 @@ async function loadGame(){
   }
 
   if(!candidates.length){
-    setSaveStatus("שמירה אוטומטית פעילה — IndexedDB");
+    setSaveStatus("שמירה אוטומטית פעילה — אחסון מקומי בדפדפן");
     return false;
   }
 
@@ -2557,10 +2557,10 @@ async function loadGame(){
           const pauseBtn=document.getElementById("pauseBtn");
           if(pauseBtn)pauseBtn.textContent=worldExtinct?"☠ העולם נכחד":"⚠ עצירת חישוב";
         }
-        const src=candidate.source==="checkpoint"?"Checkpoint":
-          candidate.source==="v1.1-checkpoint"?"v1.1 Checkpoint":
-          candidate.source==="v1.1-autosave"?"v1.1 IndexedDB":
-          candidate.source==="localStorage"?"שמירה ישנה":"IndexedDB";
+        const src=candidate.source==="checkpoint"?"נקודת שמירה":
+          candidate.source==="v1.1-checkpoint"?"נקודת שמירה מ-v1.1":
+          candidate.source==="v1.1-autosave"?"שמירה מקומית מ-v1.1":
+          candidate.source==="localStorage"?"שמירה ישנה":"אחסון מקומי";
         setSaveStatus("🧠 המשך מהשמירה — "+src);
         return true;
       }
@@ -2684,7 +2684,7 @@ function exportControlClone(){
   downloadStateFile(
     clone,
     "somik-world-v1.2-scientific-integrity-control-no-signal-"+ticks+"-world-time.json",
-    "🧪 Clone ביקורת ללא שדה נוצר"
+    "🧪 עותק ביקורת ללא שדה נוצר"
   );
 }
 
@@ -2696,7 +2696,7 @@ function importSaveFile(file){
       const parsed=JSON.parse(reader.result);
       let state=parsed;
       if(parsed&&(parsed.type==="somik-v1.2-scientific-ab-pair"||parsed.type==="somik-v1-objective-clean-ab-pair")){
-        const chooseA=confirm("קובץ A/B: OK = Run A עם שדה, ביטול = Run B בלי שדה.");
+        const chooseA=confirm("קובץ השוואה: אישור = ריצה עם שדה, ביטול = ריצה בלי שדה.");
         state=chooseA?parsed.runA:parsed.runB;
       }
       if(!restoreState(state))throw new Error("Invalid save");
@@ -2806,8 +2806,8 @@ async function saveCheckpoint(){
 async function restoreCheckpoint(){
   try{
     const state=await getIndexedState(CHECKPOINT_KEY);
-    if(!state){alert("אין Checkpoint שמור בדפדפן הזה.");return false;}
-    if(!confirm("לשחזר את ה-Checkpoint האחרון? מצב העולם הנוכחי יוחלף."))return false;
+    if(!state){alert("אין נקודת שמירה שמורה בדפדפן הזה.");return false;}
+    if(!confirm("לשחזר את נקודת השמירה האחרונה? מצב העולם הנוכחי יוחלף."))return false;
     if(!restoreState(state))throw new Error("Invalid checkpoint");
     running=!worldExtinct&&!computePauseReason;
     saveGame();
@@ -2816,7 +2816,7 @@ async function restoreCheckpoint(){
     return true;
   }catch(err){
     console.error("Restore checkpoint failed",err);
-    alert("לא ניתן לשחזר את ה-Checkpoint.");
+    alert("לא ניתן לשחזר את נקודת השמירה.");
     return false;
   }
 }
@@ -2847,7 +2847,7 @@ function exportABPair(){
     note:"v1.2 Scientific Integrity. Run A = local scalar field active; Run B = field disabled. Both start from the same deterministic seed and identical v1.2 physics.",
     runA,runB
   };
-  downloadStateFile(pack,"somik-world-v1.2-scientific-integrity-ab-seed-"+seed+".json","🧪 זוג A/B מאותו Seed נוצר");
+  downloadStateFile(pack,"somik-world-v1.2-scientific-integrity-ab-seed-"+seed+".json","🧪 זוג ריצות להשוואה נוצר");
 }
 
 function deriveExperimentSeed(base,index){
@@ -2883,7 +2883,7 @@ async function runRegressionSelfTest(calibrate=false){
     const hash=physicsHash();
     if(calibrate)return hash;
     const ok=hash===REGRESSION_EXPECTED_HASH;
-    if(el)el.textContent=ok?`PASS · ${hash}`:`FAIL · ${hash}`;
+    if(el)el.textContent=ok?`הצליח · ${hash}`:`נכשל · ${hash}`;
     return{ok,hash,expected:REGRESSION_EXPECTED_HASH};
   }finally{
     restoreState(snapshot);running=wasRunning;experimentMode=false;batchExperimentRunning=false;drawWorld();
@@ -2899,8 +2899,8 @@ function aggregateExperimentResults(results,condition){
 
 async function runMultiSeedExperiment(){
   if(batchExperimentRunning)return;
-  const nRaw=prompt("כמה Seeds להריץ?", "8");if(nRaw===null)return;
-  const tRaw=prompt("כמה ticks לכל תנאי בכל Seed?", "10000");if(tRaw===null)return;
+  const nRaw=prompt("כמה מספרי התחלה להריץ?", "8");if(nRaw===null)return;
+  const tRaw=prompt("כמה צעדי עולם לכל תנאי בכל מספר התחלה?", "10000");if(tRaw===null)return;
   const n=clamp(Math.floor(Number(nRaw)||0),1,50);
   const targetTicks=clamp(Math.floor(Number(tRaw)||0),500,100000);
   const snapshot=stateObject();const wasRunning=running;const baseSeed=worldSeed;
@@ -2910,16 +2910,16 @@ async function runMultiSeedExperiment(){
   try{
     for(let i=0;i<n;i++){
       const seed=deriveExperimentSeed(baseSeed,i);
-      if(status)status.textContent=`Seed ${i+1}/${n} · שדה פעיל…`;
+      if(status)status.textContent=`התחלה ${i+1}/${n} · שדה פעיל…`;
       results.push(await runHeadlessExperiment(seed,true,targetTicks));
-      if(status)status.textContent=`Seed ${i+1}/${n} · ביקורת ללא שדה…`;
+      if(status)status.textContent=`התחלה ${i+1}/${n} · ביקורת ללא שדה…`;
       results.push(await runHeadlessExperiment(seed,false,targetTicks));
     }
     const pack={type:"somik-world-v1.2-multiseed-ab",createdAt:new Date().toISOString(),protocol:protocolManifest(),baseSeed,seeds:n,targetTicks,results,aggregate:{fieldOn:aggregateExperimentResults(results,"field-on"),fieldOff:aggregateExperimentResults(results,"field-off")}};
     downloadTextFile(JSON.stringify(pack,null,2),`somik-world-v1.2-multiseed-${n}x${targetTicks}-base-${baseSeed}.json`,"application/json");
-    if(status)status.textContent=`הושלם: ${n} Seeds × שני תנאים. קובץ תוצאות הניסוי נוצר.`;
+    if(status)status.textContent=`הושלם: ${n} התחלות × שני תנאים. קובץ תוצאות הניסוי נוצר.`;
   }catch(err){
-    console.error(err);if(status)status.textContent="Multi-Seed נכשל: "+err.message;
+    console.error(err);if(status)status.textContent="בדיקת כמה התחלות נכשלה: "+err.message;
   }finally{
     restoreState(snapshot);running=wasRunning;experimentMode=false;batchExperimentRunning=false;drawWorld();
   }
@@ -3229,7 +3229,7 @@ function updateWorld(){
     pushWorldEvent(
       "true-extinction-"+extinctions,
       "הכחדה מלאה",
-      "ה-Somik האחרון מת. העולם נשאר ריק עד התחלה ידנית של עולם חדש.",
+      "היצור האחרון מת. העולם נשאר ריק עד התחלה ידנית של עולם חדש.",
       "unexpected",
       0
     );
@@ -3429,9 +3429,9 @@ function drawWorld(){
   for(const s of somiks)s.draw();
 
   const foodFlowEl=document.getElementById("foodFlowRate");
-  if(foodFlowEl)foodFlowEl.textContent=FOOD_REGEN_RATE.toFixed(2)+" / tick";
+  if(foodFlowEl)foodFlowEl.textContent=FOOD_REGEN_RATE.toFixed(2)+" / צעד";
   const foodFluxEl=document.getElementById("foodEnergyFlux");
-  if(foodFluxEl)foodFluxEl.textContent=(FOOD_REGEN_RATE*FOOD_ENERGY).toFixed(2)+" / tick";
+  if(foodFluxEl)foodFluxEl.textContent=(FOOD_REGEN_RATE*FOOD_ENERGY).toFixed(2)+" / צעד";
   document.getElementById("foodFluxDebt").textContent=Math.floor(foodSpawnAccumulator).toLocaleString("he-IL");
   document.getElementById("foodPlacementFailures").textContent=foodPlacementFailures.toLocaleString("he-IL");
 
@@ -3568,7 +3568,7 @@ function drawWorld(){
   const classList=document.getElementById("behaviorClassList");
   if(!cls.ready){
     const need=BEHAVIOR_BASELINE_SAMPLES;
-    classList.textContent=`נבנה baseline אבולוציוני: ${behaviorEvolutionBaseline.count}/${need} דגימות.`;
+    classList.textContent=`נבנה קו בסיס אבולוציוני: ${behaviorEvolutionBaseline.count}/${need} דגימות.`;
   }else{
     const shown=cls.items
       .filter(x=>x.state!=="normal")
@@ -3604,7 +3604,7 @@ function drawWorld(){
   document.getElementById("founderBreakdown").textContent=founders.length?founders.map(f=>`#${f.id}: ${(f.share*100).toFixed(1)}%`).join(" · "):"—";
   document.getElementById("physicsHashDisplay").textContent=physicsHashForDisplay();
   document.getElementById("engineClockState").textContent=engineClockMode;
-  document.getElementById("protocolStartState").textContent=protocolMigrationFrom?`tick ${protocolStartTick.toLocaleString("he-IL")} · מ-${protocolMigrationFrom}`:`tick ${protocolStartTick.toLocaleString("he-IL")}`;
+  document.getElementById("protocolStartState").textContent=protocolMigrationFrom?`צעד ${protocolStartTick.toLocaleString("he-IL")} · מ-${protocolMigrationFrom}`:`צעד ${protocolStartTick.toLocaleString("he-IL")}`;
 
   const mt=memoryMetrics.totalTicks||0,m1Write=mt?100*memoryMetrics.writes[0]/mt:0,m2Write=mt?100*memoryMetrics.writes[1]/mt:0,
         m1Gate=mt?100*memoryMetrics.gateOpen[0]/mt:0,m2Gate=mt?100*memoryMetrics.gateOpen[1]/mt:0,
@@ -3649,14 +3649,14 @@ function drawInspector(){
   const sensors=document.getElementById("sensors");
 
   if(!s){
-    badge.textContent="לחץ על Somik";
-    info.innerHTML="לחץ על Somik כדי לראות את חייו, השושלת שלו, הערוצים הגולמיים והאקטואטורים שלו.";
+    badge.textContent="לחץ על יצור";
+    info.innerHTML="לחץ על יצור כדי לראות את חייו, השושלת שלו, הערוצים הגולמיים והפעולות הפיזיות שלו.";
     sensors.innerHTML="";
     bctx.clearRect(0,0,brainCanvas.width,brainCanvas.height);
     bctx.fillStyle="#94a3b8";
     bctx.font="14px Arial";
     bctx.textAlign="center";
-    bctx.fillText("בחר Somik כדי לראות את המוח",brainCanvas.width/2,brainCanvas.height/2);
+    bctx.fillText("בחר יצור כדי לראות את המוח",brainCanvas.width/2,brainCanvas.height/2);
     return;
   }
 
@@ -3683,19 +3683,19 @@ function drawInspector(){
     `עצמים גדולים שהרים: <b>${s.blocksPicked}</b><br>`+
     `עצמים גדולים שהניח: <b>${s.blocksDropped}</b><br>`+
     `נושא עצם גדול עכשיו: <b>${s.carrying?"כן":"לא"}</b><br>`+
-    `זיכרון M1: <b>${s.memory[0].toFixed(2)}</b><br>`+
-    `זיכרון M2: <b>${s.memory[1].toFixed(2)}</b><br>`+
-    `כתיבה בפועל M1/M2: <b>${personalWriteRates(s)}</b><br>`+
+    `זיכרון 1: <b>${s.memory[0].toFixed(2)}</b><br>`+
+    `זיכרון 2: <b>${s.memory[1].toFixed(2)}</b><br>`+
+    `כתיבה בפועל לזיכרון 1/2: <b>${personalWriteRates(s)}</b><br>`+
     `פנייה: <b>${s.lastDecision.turn.toFixed(2)}</b><br>`+
     `דחף: <b>${s.lastDecision.thrust.toFixed(2)}</b><br>`+
-    `Grip לעצמים: <b>${(s.lastDecision.grip??0).toFixed(2)}</b><br>`+
+    `אחיזה בעצמים: <b>${(s.lastDecision.grip??0).toFixed(2)}</b><br>`+
     `פה: <b>${(s.lastDecision.mouth??0).toFixed(2)}</b><br>`+
-    `Pulse מגע: <b>${(s.lastDecision.contactPulse??0).toFixed(2)}</b><br>`+
+    `דחף היצמדות: <b>${(s.lastDecision.contactPulse??0).toFixed(2)}</b><br>`+
     `פליטת שדה: <b>${(s.lastDecision.signal??0).toFixed(2)}</b><br>`+
     `ממוצע |פליטת שדה| בחייו: <b>${((s.signalAbsSum||0)/Math.max(1,s.age||1)).toFixed(3)}</b><br>`+
     `ממוצע |שדה נקלט| בחייו: <b>${((s.signalReceivedAbsSum||0)/Math.max(1,s.age||1)).toFixed(3)}</b><br>`+
-    `כתיבה ל-M1: <b>${s.lastDecision.memory1Value.toFixed(2)}</b> · שער: <b>${s.lastDecision.memory1Gate.toFixed(2)}</b><br>`+
-    `כתיבה ל-M2: <b>${s.lastDecision.memory2Value.toFixed(2)}</b> · שער: <b>${s.lastDecision.memory2Gate.toFixed(2)}</b>`;
+    `כתיבה לזיכרון 1: <b>${s.lastDecision.memory1Value.toFixed(2)}</b> · שער: <b>${s.lastDecision.memory1Gate.toFixed(2)}</b><br>`+
+    `כתיבה לזיכרון 2: <b>${s.lastDecision.memory2Value.toFixed(2)}</b> · שער: <b>${s.lastDecision.memory2Gate.toFixed(2)}</b>`;
 
   const x=s.lastSensors;
   sensors.innerHTML=
@@ -3704,15 +3704,15 @@ function drawInspector(){
     sensorHtml("כיוון עצם: קדימה / אחורה",x.objectAhead??0,true)+
     sensorHtml("כיוון עצם: ימין / שמאל",x.objectSide??0,true)+
     sensorHtml("גודל העצם",x.objectSize??0)+
-    sensorHtml("Somik קרוב",x.agentNear??0)+
-    sensorHtml("כיוון Somik: קדימה / אחורה",x.agentAhead??0,true)+
-    sensorHtml("כיוון Somik: ימין / שמאל",x.agentSide??0,true)+
+    sensorHtml("יצור קרוב",x.agentNear??0)+
+    sensorHtml("כיוון יצור: קדימה / אחורה",x.agentAhead??0,true)+
+    sensorHtml("כיוון יצור: ימין / שמאל",x.agentSide??0,true)+
     sensorHtml("מגע פיזי",x.tactile??0)+
     sensorHtml("עומס ביד",x.load??0)+
     sensorHtml("שדה מקומי",x.localField??0,true)+
     sensorHtml("רעש פנימי",x.noise??0,true)+
-    sensorHtml("זיכרון פנימי M1",s.memory[0],true)+
-    sensorHtml("זיכרון פנימי M2",s.memory[1],true);
+    sensorHtml("זיכרון פנימי 1",s.memory[0],true)+
+    sensorHtml("זיכרון פנימי 2",s.memory[1],true);
 
   drawBrain(s.brain);
 }
@@ -3783,11 +3783,11 @@ function drawBrain(brain){
   node(outPos[1],brain.lastOutputs[1]*2-1,"דחף");
   node(outPos[2],brain.lastOutputs[2]*2-1,"אחוז");
   node(outPos[3],brain.lastOutputs[3]*2-1,"פה");
-  node(outPos[4],brain.lastOutputs[4],"M1");
+  node(outPos[4],brain.lastOutputs[4],"זיכרון 1");
   node(outPos[5],brain.lastOutputs[5]*2-1,"G1");
-  node(outPos[6],brain.lastOutputs[6],"M2");
+  node(outPos[6],brain.lastOutputs[6],"זיכרון 2");
   node(outPos[7],brain.lastOutputs[7]*2-1,"G2");
-  node(outPos[8],brain.lastOutputs[8]*2-1,"Pulse");
+  node(outPos[8],brain.lastOutputs[8]*2-1,"היצמדות");
   node(outPos[9],brain.lastOutputs[9],"שדה");
 }
 
@@ -3817,7 +3817,7 @@ document.getElementById("pauseBtn").onclick=()=>{
 };
 
 document.getElementById("resetBtn").onclick=async()=>{
-  const ok=confirm("להתחיל עולם v1.2 חדש עם Seed חדש? השמירה הנוכחית תוחלף.");
+  const ok=confirm("להתחיל עולם v1.2 חדש עם מספר התחלה חדש? השמירה הנוכחית תוחלף.");
   if(!ok)return;
   await clearSavedGame();
   resetWorld({keepSeed:false,communication:true});
@@ -3828,7 +3828,7 @@ document.getElementById("resetBtn").onclick=async()=>{
 };
 
 document.getElementById("sameSeedBtn").onclick=async()=>{
-  const ok=confirm("להתחיל v1.2 מחדש בדיוק מאותו Seed? העולם הנוכחי יוחלף.");
+  const ok=confirm("להתחיל v1.2 מחדש בדיוק מאותו מספר התחלה? העולם הנוכחי יוחלף.");
   if(!ok)return;
   await clearSavedGame();
   resetWorld({keepSeed:true,communication:communicationEnabled});
@@ -3840,7 +3840,7 @@ document.getElementById("sameSeedBtn").onclick=async()=>{
 
 document.getElementById("speedBtn").onclick=()=>{
   speed=speed===1?5:speed===5?20:speed===20?100:1;
-  document.getElementById("speedBtn").textContent="⚡ x"+speed;
+  document.getElementById("speedBtn").textContent="⚡ ×"+speed;
 };
 
 document.getElementById("saveBtn").onclick=async()=>{await saveGame();};
@@ -3884,11 +3884,11 @@ function startSimulationClock(){
     simulationClockWorker.onmessage=()=>simulationPulse();
     simulationClockWorker.postMessage("start");
     setTimeout(()=>URL.revokeObjectURL(url),1000);
-    engineClockMode="Worker scheduler · render נפרד";
+    engineClockMode="מתזמן רקע · ציור נפרד";
   }catch(err){
     console.warn("Worker scheduler unavailable, using timer fallback",err);
     simulationClockFallback=setInterval(simulationPulse,16);
-    engineClockMode="Timer fallback · render נפרד";
+    engineClockMode="מתזמן רגיל · ציור נפרד";
   }
 }
 
