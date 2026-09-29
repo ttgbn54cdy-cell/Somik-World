@@ -3,207 +3,244 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Somik World — Dual Worlds</title>
+<title>Somik World — בחירת עולם</title>
 <style>
 :root{
-  --bg:#0b1220;--panel:#111827;--panel2:#182233;--line:#334155;--text:#f8fafc;--muted:#94a3b8;
+  --bg:#0f172a;
+  --panel:#111827;
+  --card:#182233;
+  --line:#334155;
+  --text:#f8fafc;
+  --muted:#cbd5e1;
+  --accent:#e2e8f0;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif;min-height:100%}
-body{padding:14px}
-h1{margin:0 0 6px;font-size:clamp(26px,4vw,42px)}
-.sub{color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:12px}
-.master,.compare,.worldCard{background:var(--panel);border:1px solid var(--line);border-radius:14px}
-.master{padding:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-button,select{border:1px solid #475569;background:#1e293b;color:var(--text);border-radius:9px;padding:9px 12px;font-weight:700;cursor:pointer}
-button:hover{background:#263449}
-button.primary{background:#14532d;border-color:#166534}
-button.stop{background:#4c1d1d;border-color:#7f1d1d}
-button.save{background:#312e81;border-color:#4338ca}
-.compare{padding:12px;margin-bottom:12px;overflow:auto}
-.compare h2{font-size:18px;margin:0 0 10px}
-table{border-collapse:collapse;width:100%;min-width:620px}
-th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:center;white-space:nowrap}
-th:first-child,td:first-child{text-align:right;color:var(--muted)}
-.statusAlive{color:#86efac}.statusDead{color:#fca5a5}
-.worlds{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
-.worldCard{overflow:hidden}
-.worldHead{padding:10px 12px;border-bottom:1px solid var(--line);background:var(--panel2)}
-.worldTitle{font-size:18px;font-weight:800;margin-bottom:8px}
-.controls{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
-.controls label{font-size:12px;color:var(--muted);display:flex;gap:5px;align-items:center}
-.frameWrap{background:#020617}
-iframe{display:block;width:100%;height:1200px;border:0;background:#111827;transition:height .2s ease}
-.worldCard.compact iframe{height:760px!important}
-.dashboardHint{font-size:11px;color:var(--muted);margin-top:6px}
-.viewBtn{background:#0f172a;border-color:#475569}
-.saveState{font-size:11px;color:var(--muted);margin-top:7px;min-height:15px}
-.note{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
-@media(max-width:1200px){.worlds{grid-template-columns:1fr}}
-@media(max-width:650px){body{padding:8px}.master{gap:6px}button,select{padding:8px 9px}.worldHead{padding:9px}.worldCard.compact iframe{height:680px!important}}
+html,body{
+  margin:0;
+  min-height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial,sans-serif;
+}
+body{min-height:100vh}
+#chooser{
+  min-height:100vh;
+  padding:24px 16px 40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.wrap{width:min(1100px,100%)}
+h1{
+  margin:0;
+  text-align:center;
+  font-size:clamp(34px,6vw,62px);
+}
+.subtitle{
+  margin:10px auto 26px;
+  max-width:760px;
+  text-align:center;
+  color:var(--muted);
+  line-height:1.55;
+}
+.cards{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:18px;
+}
+.card{
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:var(--card);
+  padding:22px;
+  display:flex;
+  flex-direction:column;
+  min-height:360px;
+  box-shadow:0 12px 30px rgba(0,0,0,.18);
+}
+.version{
+  font-size:13px;
+  color:#94a3b8;
+  margin-bottom:5px;
+}
+.card h2{
+  margin:0 0 12px;
+  font-size:28px;
+}
+.tag{
+  align-self:flex-start;
+  border:1px solid #475569;
+  border-radius:999px;
+  padding:5px 9px;
+  font-size:12px;
+  color:#dbeafe;
+  margin-bottom:14px;
+}
+.card p{
+  color:var(--muted);
+  line-height:1.55;
+  margin:0 0 12px;
+}
+.points{
+  margin:4px 0 22px;
+  padding-right:18px;
+  color:#e5e7eb;
+  line-height:1.65;
+}
+.choose{
+  margin-top:auto;
+  width:100%;
+  padding:14px 16px;
+  border:0;
+  border-radius:12px;
+  font-size:17px;
+  font-weight:700;
+  cursor:pointer;
+}
+.note{
+  margin-top:18px;
+  text-align:center;
+  color:#94a3b8;
+  font-size:13px;
+  line-height:1.5;
+}
+#worldView{
+  display:none;
+  min-height:100vh;
+  background:#0b1220;
+}
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:20;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-bottom:1px solid var(--line);
+  background:rgba(15,23,42,.97);
+  backdrop-filter:blur(8px);
+}
+.back{
+  border:0;
+  border-radius:9px;
+  padding:9px 12px;
+  font-weight:700;
+  cursor:pointer;
+  white-space:nowrap;
+}
+#currentWorldTitle{
+  font-weight:700;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+iframe{
+  width:100%;
+  height:calc(100vh - 54px);
+  border:0;
+  display:block;
+  background:#111827;
+}
+@media(max-width:760px){
+  #chooser{align-items:flex-start;padding-top:18px}
+  .cards{grid-template-columns:1fr}
+  .card{min-height:0}
+  .card h2{font-size:25px}
+}
 </style>
 </head>
 <body>
-<h1>Somik World — שני עולמות נפרדים</h1>
-<div class="sub">v1.3 ו־v2 רצים באותה לשונית אך בתוך iframe מבודדים. לכל עולם Seed, שמירה, מהירות ומצב ריצה נפרדים. מסך ההשוואה רק קורא נתונים ואינו משנה את חוקי הסימולציה.</div>
 
-<div class="master">
-  <button class="primary" id="runBoth">▶ הפעל את שניהם</button>
-  <button class="stop" id="pauseBoth">⏸ עצור את שניהם</button>
-  <button class="save" id="saveBoth">💾 שמור את שניהם</button>
-  <span id="masterStatus" class="sub" style="margin:0">ממתין לטעינת העולמות…</span>
-</div>
-
-<div class="compare">
-  <h2>מדדי השוואה חיים וזהים</h2>
-  <table>
-    <thead><tr><th>מדד</th><th>Somik World v1.3</th><th>Somik World v2</th></tr></thead>
-    <tbody>
-      <tr><td>דור מרבי שהושג</td><td id="v13_gen">—</td><td id="v2_gen">—</td></tr>
-      <tr><td>אוכלוסייה חיה</td><td id="v13_pop">—</td><td id="v2_pop">—</td></tr>
-      <tr><td>מצב העולם / הכחדה</td><td id="v13_ext">—</td><td id="v2_ext">—</td></tr>
-      <tr><td>אנרגיה ממוצעת לפרט חי</td><td id="v13_energy">—</td><td id="v2_energy">—</td></tr>
-      <tr><td>קצב רבייה מצטבר · לידות ל־1,000 צעדי עולם</td><td id="v13_repro">—</td><td id="v2_repro">—</td></tr>
-      <tr><td>Seed / מספר התחלה</td><td id="v13_seed">—</td><td id="v2_seed">—</td></tr>
-      <tr><td>צעדי עולם</td><td id="v13_ticks">—</td><td id="v2_ticks">—</td></tr>
-      <tr><td>לידות מצטברות</td><td id="v13_births">—</td><td id="v2_births">—</td></tr>
-      <tr><td>מצב ריצה</td><td id="v13_run">—</td><td id="v2_run">—</td></tr>
-      <tr><td>מהירות יעד</td><td id="v13_speed">—</td><td id="v2_speed">—</td></tr>
-    </tbody>
-  </table>
-  <div class="note">המדדים מתעדכנים בזמן אמת באותה שיטת חישוב בשני העולמות. קצב הרבייה = לידות מצטברות ÷ צעדי עולם × 1,000. אנרגיה ממוצעת = ממוצע האנרגיה של כל הפרטים החיים. המסך רק קורא נתונים ואינו משנה את חוקי הסימולציה.</div>
-  <div class="note"><b>כל שאר המדדים המקוריים לא הוסרו.</b> מתחת לטבלת ההשוואה מוצג לוח המדדים המלא של כל גרסה בתוך העולם שלה. ברירת המחדל היא תצוגה מלאה ללא חיתוך.</div>
-</div>
-
-<div class="worlds">
-  <section class="worldCard" id="card13">
-    <div class="worldHead">
-      <div class="worldTitle">Somik World v1.3 — Continuous Run</div>
-      <div class="controls">
-        <button class="primary" data-world="v1.3" data-cmd="run">▶ הפעל</button>
-        <button class="stop" data-world="v1.3" data-cmd="pause">⏸ עצור</button>
-        <button class="save" data-world="v1.3" data-cmd="save">💾 שמור v1.3</button>
-        <button class="viewBtn" data-view="v1.3">↕ לוח מלא</button>
-        <label>מהירות
-          <select id="speed13" data-world="v1.3">
-            <option value="1">×1</option><option value="5">×5</option><option value="20">×20</option><option value="100">×100</option>
-          </select>
-        </label>
-      </div>
-      <div class="saveState" id="save13">שמירה נפרדת של v1.3</div>
-      <div class="dashboardHint">מוצג כאן לוח המדדים המקורי המלא של v1.3 — אוכלוסייה, רבייה, מזון, בלוקים, זיכרון, מוח, שושלות, התנהגות, התראות וכלי ניסוי.</div>
+<section id="chooser">
+  <div class="wrap">
+    <h1>Somik World</h1>
+    <div class="subtitle">
+      עולם של חיים מלאכותיים שבו יצורים פשוטים נעים, אוכלים, מתרבים ומשתנים מדור לדור.
+      בחר את סוג העולם שתרצה לחקור — כל אחד פועל באופן עצמאי ושומר את ההתקדמות שלו בנפרד.
     </div>
-    <div class="frameWrap"><iframe id="frame13" src="somik-v1.3.html" title="Somik World v1.3"></iframe></div>
-  </section>
 
-  <section class="worldCard" id="card2">
-    <div class="worldHead">
-      <div class="worldTitle">Somik World v2 — Baseline Frozen</div>
-      <div class="controls">
-        <button class="primary" data-world="v2" data-cmd="run">▶ הפעל</button>
-        <button class="stop" data-world="v2" data-cmd="pause">⏸ עצור</button>
-        <button class="save" data-world="v2" data-cmd="save">💾 שמור v2</button>
-        <button class="viewBtn" data-view="v2">↕ לוח מלא</button>
-        <label>מהירות
-          <select id="speed2" data-world="v2">
-            <option value="1">×1</option><option value="5">×5</option><option value="20">×20</option><option value="100">×100</option>
-          </select>
-        </label>
-      </div>
-      <div class="saveState" id="save2">שמירה נפרדת של v2</div>
-      <div class="dashboardHint">מוצג כאן לוח המדדים המקורי המלא של v2 — Primary/Secondary/Descriptive, אוכלוסייה, רבייה, מזון, בלוקים, זיכרון, מוח, שושלות, התנהגות וכלי ניסוי.</div>
+    <div class="cards">
+      <article class="card">
+        <div class="version">Somik World v1.3</div>
+        <h2>עולם אבולוציוני עשיר</h2>
+        <div class="tag">Continuous Run</div>
+        <p>
+          סימולציה עשירה ורבת־יכולות שבה לכל Somik יש מוח מתפתח, זיכרון, תקשורת מקומית
+          ומספר דרכים לפעול על הסביבה. מיועד לצפייה בהתנהגויות מורכבות לאורך ריצות ארוכות.
+        </p>
+        <ul class="points">
+          <li>מוח מתפתח עם זיכרון ותקשורת מקומית</li>
+          <li>אכילה, אחיזה, מגע ואינטראקציה עם אובייקטים</li>
+          <li>אזור מסוכן, בלוקים, מזון ושושלות מתפתחות</li>
+          <li>לוח מדדים מלא למעקב אחר אוכלוסייה, דורות והתנהגות</li>
+          <li>מותאם לריצות ארוכות ורציפות</li>
+        </ul>
+        <button class="choose" onclick="openWorld('v13')">פתח את Somik World v1.3</button>
+      </article>
+
+      <article class="card">
+        <div class="version">Somik World v2</div>
+        <h2>מעבדת אבולוציה מינימלית</h2>
+        <div class="tag">Baseline Frozen</div>
+        <p>
+          ניסוי אבולוציוני נקי ומינימלי שבו המוח מקבל מידע גולמי מהסביבה ושולט רק
+          בתנועה, סיבוב ואחיזה. שאר ההתנהגות נוצרת מתוך חוקי הגוף, הסביבה והאבולוציה.
+        </p>
+        <ul class="points">
+          <li>13 חיישנים גולמיים ו־2 תאי זיכרון</li>
+          <li>שלוש פעולות חיצוניות בלבד: תנועה, סיבוב ואחיזה</li>
+          <li>אכילה ורבייה נובעות מחוקים פיזיים וביולוגיים קבועים</li>
+          <li>מדדי הצלחה אבולוציוניים שהוגדרו מראש</li>
+          <li>מתאים למחקר מבוקר של התפתחות התנהגות</li>
+        </ul>
+        <button class="choose" onclick="openWorld('v2')">פתח את Somik World v2</button>
+      </article>
     </div>
-    <div class="frameWrap"><iframe id="frame2" src="somik-v2.html" title="Somik World v2"></iframe></div>
-  </section>
-</div>
+
+    <div class="note">
+      כל עולם נשמר בנפרד. אפשר לחזור למסך הבחירה בכל עת ולפתוח עולם אחר בלי לערבב ביניהם.
+    </div>
+  </div>
+</section>
+
+<section id="worldView">
+  <div class="topbar">
+    <button class="back" onclick="backToChooser()">← בחירת עולם</button>
+    <div id="currentWorldTitle">Somik World</div>
+  </div>
+  <iframe id="worldFrame" title="Somik World"></iframe>
+</section>
 
 <script>
-const frames={"v1.3":document.getElementById("frame13"),v2:document.getElementById("frame2")};
-const ready={"v1.3":false,v2:false};
-const latest={"v1.3":null,v2:null};
-
-function send(world,command,value){
-  const f=frames[world];
-  if(f&&f.contentWindow)f.contentWindow.postMessage({type:"somik-control",worldId:world,command,value},"*");
-}
-function sendBoth(command){send("v1.3",command);send("v2",command);}
-
-function fmt(n,d=0){return Number.isFinite(Number(n))?Number(n).toLocaleString("he-IL",{minimumFractionDigits:d,maximumFractionDigits:d}):"—";}
-function setText(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
-function renderStats(world,s){
-  const p=world==="v1.3"?"v13":"v2";
-  setText(p+"_gen",fmt(s.generation));
-  setText(p+"_pop",fmt(s.population));
-  const ext=document.getElementById(p+"_ext");
-  if(ext){ext.textContent=s.extinct?"נכחד":"חי";ext.className=s.extinct?"statusDead":"statusAlive";}
-  setText(p+"_energy",fmt(s.averageEnergy,2));
-  setText(p+"_repro",fmt(s.reproductionRatePer1000Ticks,2));
-  setText(p+"_seed",fmt(s.seed));
-  setText(p+"_ticks",fmt(s.ticks));
-  setText(p+"_births",fmt(s.births));
-  setText(p+"_run",s.running?"רץ":"עצור");
-  setText(p+"_speed","×"+fmt(s.speed));
-  const sel=document.getElementById(world==="v1.3"?"speed13":"speed2");
-  if(sel && String(s.speed)!==sel.value)sel.value=String(s.speed);
-}
-
-window.addEventListener("message",e=>{
-  const d=e.data;if(!d||!d.worldId||!frames[d.worldId])return;
-  if(e.source!==frames[d.worldId].contentWindow)return;
-  if(d.type==="somik-ready"){
-    ready[d.worldId]=true;
-    setText("masterStatus",ready["v1.3"]&&ready.v2?"שני העולמות מחוברים":"עולם אחד נטען; ממתין לשני…");
-    send(d.worldId,"stats");
-  }else if(d.type==="somik-stats"){
-    latest[d.worldId]=d;renderStats(d.worldId,d);
-  }else if(d.type==="somik-save-done"){
-    const id=d.worldId==="v1.3"?"save13":"save2";
-    setText(id,"✅ נשמר בנפרד · "+new Date(d.at).toLocaleTimeString("he-IL"));
-  }else if(d.type==="somik-control-error"){
-    const id=d.worldId==="v1.3"?"save13":"save2";
-    setText(id,"⚠ "+d.message);
+const worlds = {
+  v13:{
+    src:"somik-v1.3.html",
+    title:"Somik World v1.3 — Continuous Run"
+  },
+  v2:{
+    src:"somik-v2.html",
+    title:"Somik World v2 — Baseline Frozen"
   }
-});
+};
 
-document.querySelectorAll("button[data-world]").forEach(btn=>btn.addEventListener("click",()=>send(btn.dataset.world,btn.dataset.cmd)));
-document.querySelectorAll("select[data-world]").forEach(sel=>sel.addEventListener("change",()=>send(sel.dataset.world,"speed",Number(sel.value))));
-document.getElementById("runBoth").onclick=()=>sendBoth("run");
-document.getElementById("pauseBoth").onclick=()=>sendBoth("pause");
-document.getElementById("saveBoth").onclick=()=>sendBoth("save");
-setInterval(()=>{send("v1.3","stats");send("v2","stats");},800);
-
-const fullView={"v1.3":true,v2:true};
-function cardFor(world){return document.getElementById(world==="v1.3"?"card13":"card2");}
-function resizeFrameToContent(world){
-  if(!fullView[world])return;
-  const frame=frames[world];
-  try{
-    const doc=frame.contentDocument||frame.contentWindow.document;
-    if(!doc)return;
-    const h=Math.max(
-      doc.documentElement?.scrollHeight||0,
-      doc.body?.scrollHeight||0,
-      1100
-    );
-    frame.style.height=(h+8)+"px";
-  }catch(_){
-    // Same-origin on GitHub allows automatic sizing; if blocked, the iframe itself remains scrollable.
-  }
+function openWorld(key){
+  const w=worlds[key];
+  if(!w)return;
+  document.getElementById("currentWorldTitle").textContent=w.title;
+  document.getElementById("worldFrame").src=w.src;
+  document.getElementById("chooser").style.display="none";
+  document.getElementById("worldView").style.display="block";
+  window.scrollTo(0,0);
 }
-function setView(world,full){
-  fullView[world]=full;
-  const card=cardFor(world);
-  if(card)card.classList.toggle("compact",!full);
-  const btn=document.querySelector(`[data-view="${world}"]`);
-  if(btn)btn.textContent=full?"↕ לוח מלא":"▣ תצוגה קומפקטית";
-  if(full)resizeFrameToContent(world);
-}
-document.querySelectorAll("button[data-view]").forEach(btn=>btn.addEventListener("click",()=>{
-  const w=btn.dataset.view;setView(w,!fullView[w]);
-}));
-Object.entries(frames).forEach(([w,f])=>f.addEventListener("load",()=>setTimeout(()=>resizeFrameToContent(w),500)));
-setInterval(()=>{resizeFrameToContent("v1.3");resizeFrameToContent("v2");},1500);
 
+function backToChooser(){
+  // Unload the iframe so only one simulation runs at a time.
+  document.getElementById("worldFrame").src="about:blank";
+  document.getElementById("worldView").style.display="none";
+  document.getElementById("chooser").style.display="flex";
+  window.scrollTo(0,0);
+}
 </script>
 </body>
 </html>
