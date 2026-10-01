@@ -1,9 +1,3 @@
-# Somik World Semantic Baseline 4.1 — Energy-Path Audit
+# Somik World Semantic Baseline 4.1.1 — Startup Fix
 
-Protocol SW-V4-SEM-1.1.
-
-This revision is intentionally incompatible with 4.0 scientific continuation because the environmental energy pathway changed. World topology and geometry are unchanged.
-
-Key correction: water no longer injects energy directly into Somiks and no longer grants a locomotor bonus. The same external water energy budget is represented as generic primary resource packets spawned inside the water basin; Somiks must contact and consume them through the ordinary jaw pathway.
-
-The observer now records water-origin resource production and death causes.
+Fixes mobile/browser startup being bricked by an incompatible older IndexedDB snapshot. Uses a protocol-specific IndexedDB namespace and falls back to a fresh world if a local snapshot cannot be loaded. Scientific ecology/physics from 4.1 are unchanged.
