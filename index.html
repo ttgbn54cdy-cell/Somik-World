@@ -276,77 +276,6 @@ canvas{max-width:100%;box-sizing:border-box}.chart,.brainCanvas,.miniCanvas{widt
   .worldHead{grid-template-columns:1fr!important;grid-template-areas:"world" "controls";gap:5px!important}.worldHead>strong{grid-area:world}.legend{grid-area:controls;padding-top:2px;flex-wrap:nowrap!important;justify-content:center!important;overflow:hidden}.layerMenu{grid-area:controls;justify-self:start;z-index:3}.legend span{white-space:nowrap;padding:3px 4px!important;font-size:8.5px!important}.layerMenu summary{white-space:nowrap}
 }
 
-
-
-/* ============================================================
-   BEST-OF-SOMIK UI ACCESSIBILITY PASS — observer/render layer only
-   Based on the readable v0.x structure. No simulation/physics changes.
-   ============================================================ */
-:root{--ui-body:16px;--ui-secondary:14px;--ui-title:clamp(30px,4vw,48px)}
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-body{font-size:var(--ui-body);line-height:1.5}
-.titleRow h1{font-size:var(--ui-title)!important;line-height:1.12!important}
-.productSubtitle{display:block!important;font-size:15px!important;line-height:1.5!important;color:#d3deed!important}
-.badge,.statusPill{font-size:13px!important;line-height:1.25!important;padding:6px 9px!important}
-.controls label,.primaryControls label,.secondaryControls label{font-size:14px!important;color:#d3deed!important}
-.primaryControls button,.primaryControls select,.primaryControls input,.secondaryControls button,.secondaryControls select,.secondaryControls input,.fileControls button{
-  min-height:44px!important;padding:9px 13px!important;font-size:15px!important;line-height:1.2!important;border-radius:10px!important
-}
-.moreTools summary{min-height:44px!important;padding:10px 13px!important;font-size:14px!important;align-items:center!important}
-.saveLine{font-size:14px!important;line-height:1.45!important;padding:8px 10px!important}
-.worldHead{padding:10px 12px!important}.worldHead>strong{font-size:17px!important}
-.legend{gap:10px!important;font-size:14px!important;color:#d3deed!important}.legend span{font-size:14px!important;padding:4px 6px!important}.dot{width:11px!important;height:11px!important}
-.selectedLabel{font-size:14px!important;padding:7px 10px!important}
-.sideCard{padding:16px!important}.sideCard .sectionTitle,.sectionTitle{font-size:22px!important;line-height:1.2!important}.sideHint{font-size:14px!important;line-height:1.5!important;color:#cbd5e1!important}
-.kpi{padding:10px!important}.kpi .n{font-size:22px!important}.kpi .l{font-size:14px!important;line-height:1.35!important;color:#cbd5e1!important}
-.subhead{font-size:16px!important;line-height:1.35!important}.rows .row,.selectedCard .row{font-size:15px!important;line-height:1.4!important;padding:8px 0!important}
-.small,.classicCard .hint,.sideHint{font-size:14px!important;line-height:1.5!important}.classicCard h3,.eventFeedHead h3{font-size:17px!important}
-.sensorLine{font-size:14px!important}.sensorBar,.bar{height:8px!important}
-.classicLegend{font-size:14px!important;gap:8px!important}.quickBrainBtn{min-height:44px!important;font-size:15px!important}
-.tabBtn{min-height:44px!important;padding:9px 13px!important;font-size:15px!important}.panel{padding:14px!important}.panel h3{font-size:18px!important}.panel h4{font-size:16px!important}
-table{font-size:14px!important}th,td{padding:9px 10px!important}.labControls button,.labControls select,.labControls input{min-height:44px!important;font-size:14px!important;padding:9px 11px!important}
-.output,.event,.protocol,.warningBox,.okBox{font-size:14px!important;line-height:1.5!important}.event .t,.livingEvent .t,.livingEvent span{font-size:13px!important}.livingEvent{font-size:14px!important}.livingBadge{font-size:14px!important}.livingBadge small{font-size:12px!important}
-.eventFeedHead span,.feedEvent small{font-size:13px!important}.feedEvent b{font-size:14px!important}.feedEvent{padding:8px 9px!important}
-.mobileInspectorToggle,.mobileLabToggle{min-height:44px!important;font-size:15px!important}
-.layerMenu summary{min-height:44px!important;font-size:14px!important;padding:9px 11px!important}.layerMenuPop label{font-size:14px!important}
-
-/* Restore the v0.x information hierarchy: world first, readable observer second. */
-@media(min-width:1051px){
-  .app{grid-template-columns:minmax(0,1fr) 380px!important}
-  .sideCard{padding:18px!important}
-}
-@media(max-width:1050px){
-  .app{display:block!important;direction:rtl!important}
-  .top{padding:12px!important}.worldCard{margin:0 10px 10px!important}.sideCard{position:relative!important;height:auto!important;max-height:none!important;padding:14px!important}
-}
-@media(max-width:720px){
-  body{font-size:16px!important}
-  .top{padding:10px 10px 8px!important}
-  .titleRow{display:flex!important;flex-wrap:wrap!important;justify-content:center!important;gap:7px!important}
-  .titleRow h1{order:-2;width:100%!important;text-align:center!important;font-size:30px!important}
-  .productSubtitle{display:block!important;text-align:center!important;font-size:14px!important;margin:4px auto 8px!important}
-  .titleRow .badge,.titleRow .statusPill{font-size:12px!important;max-width:100%!important}
-  .controls{margin-top:8px!important}.controlBar{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;width:100%!important}
-  .controlBar .controlMain,.speedControl,.primaryControls button,.primaryControls select{min-height:46px!important;height:46px!important;font-size:15px!important;padding:8px 10px!important}
-  .speedControl{display:grid!important;grid-template-columns:auto 1fr!important}.speedCaption{display:inline!important;font-size:14px!important}.speedControl select{font-size:16px!important}
-  .moreTools{width:100%!important}.moreTools summary{display:flex!important;justify-content:center!important;width:100%!important;font-size:14px!important}
-  .secondaryControls{display:grid!important;grid-template-columns:1fr!important;gap:8px!important}.secondaryControls button,.secondaryControls select,.secondaryControls input{width:100%!important;min-height:44px!important;font-size:15px!important}
-  .saveLine{display:flex!important;justify-content:center!important;font-size:13px!important}
-  .worldCard{margin:0 8px 10px!important;border-radius:10px!important}.worldHead{display:flex!important;flex-wrap:wrap!important;justify-content:center!important;gap:7px!important;padding:9px!important}.worldHead>strong{width:100%;text-align:center;font-size:17px!important}
-  .legend{display:flex!important;flex-wrap:wrap!important;justify-content:center!important;overflow:visible!important;gap:6px!important}.legend span{font-size:13px!important;padding:4px 5px!important}.dot{width:10px!important;height:10px!important}
-  .layerMenu{justify-self:auto!important}.layerMenu summary{font-size:13px!important;min-height:40px!important}
-  .selectedLabel{font-size:13px!important;padding:6px 8px!important}
-  .worldWrap canvas{max-height:none!important;object-fit:contain!important}
-  .sideCard{padding:12px!important}.sideCard>.sectionTitle{display:block!important;text-align:center;font-size:21px!important}.sideHint{display:block!important;text-align:center;font-size:13px!important}
-  .sideCard .kpis{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;overflow:visible!important}.sideCard .kpi{min-width:0!important;padding:9px!important;border-radius:9px!important}.sideCard .kpi .n{font-size:21px!important}.sideCard .kpi .l{font-size:13px!important}
-  .eventFeedCard,.selectedCard{padding:11px!important;margin-top:10px!important}.eventFeedHead h3,.selectedCard h3{font-size:17px!important}.eventFeedHead span{font-size:13px!important}.eventFeed{max-height:260px!important}.feedEvent b{font-size:14px!important}.feedEvent small{font-size:13px!important}.selectedCard .row{font-size:15px!important;padding:7px 0!important}
-  .mobileInspectorToggle,.mobileLabToggle{font-size:15px!important;min-height:46px!important;padding:10px 12px!important}
-  .tabsWrap{padding:8px 8px 18px!important}.tabs{gap:7px!important;padding:8px 0!important}.tabBtn{font-size:14px!important;min-height:44px!important;padding:9px 12px!important}
-  .panel{padding:12px!important}.panel h3{font-size:18px!important}.panel h4{font-size:16px!important}.small{font-size:14px!important}.chart{height:220px!important}.brainCanvas{height:430px!important}
-}
-@media(max-width:430px){
-  .titleRow h1{font-size:28px!important}.controlBar{grid-template-columns:1fr 1fr!important}.legend span{font-size:12px!important}.sideCard .kpis{grid-template-columns:1fr 1fr!important}
-}
 </style>
 </head>
 <body>
@@ -1356,3 +1285,22 @@ init().catch(err=>{console.error(err);$('saveStatus').className='saveWarn';$('sa
 <style id="visual-contract-qc">
 @media(max-width:520px){.worldHead{grid-template-columns:1fr auto!important;grid-template-areas:"world world" "legend layers"!important}.worldHead>strong{grid-area:world!important}.worldHead .legend{grid-area:legend!important;flex-wrap:wrap!important;overflow:visible!important;justify-content:flex-start!important}.worldHead .layerMenu{grid-area:layers!important;align-self:start!important;justify-self:end!important}.worldHead .legend span{font-size:8px!important;padding:2px 4px!important}}
 </style>
+
+<style id="professional-readability-c7">
+@media (max-width:720px){
+  .sideCard .kpi .l{font-size:10.5px!important;line-height:1.25!important}
+  .eventFeedHead h3{font-size:13px!important}
+  .eventFeedHead span{font-size:10.5px!important}
+  .feedEvent b{font-size:12px!important;line-height:1.3!important}
+  .feedEvent small,.feedTick{font-size:10.5px!important;line-height:1.35!important}
+  .selectedCard h3{font-size:13px!important}
+  .selectedCard .row{font-size:12px!important;line-height:1.35!important}
+  .sensorLine,.classicLegend{font-size:11.5px!important;line-height:1.35!important}
+  .rows .row{font-size:12px!important;line-height:1.35!important}
+  .subhead{font-size:12px!important}
+}
+@media (max-width:520px){
+  .worldHead .legend span{font-size:10px!important;line-height:1.15!important}
+}
+</style>
+
