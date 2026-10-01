@@ -139,7 +139,7 @@ button{
     <div class="row"><span>זכרים</span><b id="maleCount">0</b></div>
     <div class="row"><span>נקבות</span><b id="femaleCount">0</b></div>
     <div class="small" style="margin:6px 0 10px">
-      מין הוא תכונת תצפית בלבד: זכר כחול · נקבה ורודה. הוא אינו חיישן, אינו מגביל רבייה ואינו משנה הישרדות.
+      מין הוא תכונת תצפית בלבד. הוא אינו מסומן בצבע, אינו חיישן, אינו מגביל רבייה ואינו משנה הישרדות.
     </div>
     <div class="sectionTitle">רבייה</div>
     <div class="row"><span>יצורים עם דחף היצמדות גבוה</span><b id="willingCount">0</b></div>
@@ -410,8 +410,7 @@ button{
         <div><span class="swatch" style="background:#a8b3c2"></span>בלוק</div>
         <div><span class="swatch" style="background:#fbbf24"></span>בלוק בנשיאה</div>
         <div><span class="swatch" style="background:#7f1d1d"></span>אזור סכנה</div>
-        <div><span class="swatch" style="background:#38bdf8;border-radius:50%"></span>זכר — תצפית בלבד</div>
-        <div><span class="swatch" style="background:#f472b6;border-radius:50%"></span>נקבה — תצפית בלבד</div>
+        <div><span class="swatch" style="background:#38bdf8;border-radius:50%"></span>Somik — תצוגה בלבד</div>
       </div>
     </div>
 
@@ -1985,7 +1984,7 @@ class Somik{
   draw(){
     ctx.beginPath();
     ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
-    ctx.fillStyle=this.sex==="female"?"#f472b6":"#38bdf8";
+    ctx.fillStyle="#38bdf8";
     ctx.fill();
 
 

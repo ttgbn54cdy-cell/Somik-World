@@ -45,7 +45,7 @@ h1{
 }
 .cards{
   display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
   gap:18px;
 }
 .card{
@@ -196,6 +196,21 @@ iframe{
         </ul>
         <button class="choose" onclick="openWorld('v2')">פתח את Somik World v2</button>
       </article>
+
+      <article class="card">
+        <div class="version">Somik World v3</div>
+        <h2>Evolution Baseline</h2>
+        <div class="tag">Scientific Core</div>
+        <p>מעבדת אבולוציה מבוקרת שנבנתה כדי להפריד שינוי תורשתי אמיתי מהתנהגות רגעית או מהטיה של המנוע.</p>
+        <ul class="points">
+          <li>חישה פיזיקלית גולמית ללא תוויות משמעות</li>
+          <li>מוח recurrent קבוע ורק שני מנועים</li>
+          <li>אב קדמון זהה, RNG מופרד ורבייה א־מינית</li>
+          <li>Common Garden, Ancestor Replay ו־Mutation-Off</li>
+          <li>פרוטוקול מדעי קפוא ונקודות בדיקה קבועות מראש</li>
+        </ul>
+        <button class="choose" onclick="openWorld('v3')">פתח את Somik World v3</button>
+      </article>
     </div>
 
     <div class="note">
@@ -221,6 +236,10 @@ const worlds = {
   v2:{
     src:"somik-v2.html",
     title:"Somik World v2 — Baseline Frozen"
+  },
+  v3:{
+    src:"somik-v3.html",
+    title:"Somik World v3 — Evolution Baseline"
   }
 };
 
