@@ -8,7 +8,7 @@ const filename=path.join(root,'research-engine.js');
 delete require.cache[require.resolve(filename)];let E=require(filename);
 const manifest=JSON.parse(JSON.stringify(E.Protocol));delete manifest.protocolHash;
 const protocolHash=sha(JSON.stringify(manifest)).slice(0,16);
-source=source.replace(/const PROTOCOL_HASH='[^']+';/,`const PROTOCOL_HASH='${protocolHash}';`);
+source=source.replace(/const PROTOCOL_HASH='[^']*';/,`const PROTOCOL_HASH='${protocolHash}';`);
 source=source.replace(/const ENGINE_HASH='[^']+';/,"const ENGINE_HASH='';");
 const engineHash=sha(source);
 source=source.replace("const ENGINE_HASH='';",`const ENGINE_HASH='${engineHash}';`);
@@ -20,7 +20,7 @@ const app=fs.readFileSync(path.join(root,'app.js'),'utf8'),v3=fs.readFileSync(pa
 const single=fs.readFileSync(path.join(root,'index.html'),'utf8')
  .replace('<script src="research-engine.js"></script>',`<script>${escapeScript(source)}</script>\n<script>globalThis.__SOMIK_ENGINE_SOURCE=${escapeScript(JSON.stringify(source))};globalThis.__SOMIK_V3_SOURCE=${escapeScript(JSON.stringify(v3))};</script>`)
  .replace('<script src="app.js"></script>',`<script>${escapeScript(app)}</script>`);
-fs.writeFileSync(path.join(root,'Somik_World_Research_1.1_Classic.html'),single);
+fs.writeFileSync(path.join(root,'Somik_World_Research_1.2_Emergence.html'),single);
 const files={};for(const name of fs.readdirSync(root).sort()){const p=path.join(root,name);if(fs.statSync(p).isFile()&&name!=='BUILD_MANIFEST.json')files[name]=sha(fs.readFileSync(p));}
 fs.writeFileSync(path.join(root,'BUILD_MANIFEST.json'),JSON.stringify({version:E.ENGINE_VERSION,protocolId:E.PROTOCOL_ID,protocolHash:E.PROTOCOL_HASH,engineHash:E.ENGINE_HASH,engineHashRule:'SHA-256 of research-engine.js with ENGINE_HASH replaced by empty string',files},null,2)+'\n');
 console.log(JSON.stringify({version:E.ENGINE_VERSION,protocolHash:E.PROTOCOL_HASH,engineHash:E.ENGINE_HASH,files:Object.keys(files).length}));

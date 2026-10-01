@@ -1,9 +1,9 @@
 {
-  "product": "Somik World Research 1.1 Classic",
-  "protocolId": "SW-R1-OEL-1.1",
-  "protocolHash": "e9d23eefa006dec9",
-  "status": "frozen-research-1.1",
-  "purpose": "Long-horizon open evolutionary laboratory with heritable morphology, physiology, sensors and neural topology; no target behavior or internal fitness score.",
+  "product": "Somik World Research 1.2 Emergence",
+  "protocolId": "SW-R1-OEL-1.2",
+  "protocolHash": "9d37194329759d85",
+  "status": "frozen-research-1.2-emergence",
+  "purpose": "Open evolutionary laboratory for discovering environmental use from local physical signals; no target behavior, semantic hazard/food sensors or internal fitness score.",
   "world": {
     "width": 1200,
     "height": 720,
@@ -24,6 +24,7 @@
     "tissueEnergyPerUnit": 34,
     "resourceRadius": 3.5,
     "corpseDecayTicks": 5000,
+    "primaryDecayTicks": 14000,
     "maxLooseResources": 9000
   },
   "objects": {
@@ -84,9 +85,19 @@
     "wasteCrossFeeding": true,
     "genericGrip": true,
     "chemicalField": true,
-    "hazard": false,
+    "hazard": true,
+    "foodCaching": true,
     "populationFeedback": false,
     "rescue": false
+  },
+  "hazard": {
+    "x": 430,
+    "y": 0,
+    "w": 340,
+    "h": 720,
+    "damagePerTick": 0.11,
+    "protectionRadius": 48,
+    "blockAttenuation": 0.92
   },
   "observer": {
     "feedbackToWorld": false,
@@ -106,6 +117,8 @@
     "no-objects",
     "no-chemical",
     "memory-off",
+    "hazard-off",
+    "cache-off",
     "ancestor-replay",
     "common-garden",
     "connection-knockout",
@@ -117,6 +130,7 @@
     "No population rescue",
     "Resource flux independent of population",
     "Display/analytics must not consume simulation RNG",
-    "Extinction is a valid result"
+    "Extinction is a valid result",
+    "Hazard and cache labels are observer-only; no reward is assigned to either"
   ]
 }

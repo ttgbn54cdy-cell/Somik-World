@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Somik World Research 1.1 Classic — Open Evolution Laboratory</title>
+<title>Somik World — מעבדת אבולוציה 1.2</title>
 <link rel="icon" href="data:,">
 <style>
 :root{
@@ -21,7 +21,7 @@ button,input,select{font:inherit}.app{min-height:100vh}.top{position:sticky;top:
 
 
 /* ============================================================
-   Research 1.1 Classic — Stable Classic UI
+   Research 1.2 Emergence — Open Ancient World UI
    Visual/observer layer only. Inspired by the v0.x layout:
    world + controls on the left, permanent inspector on the right.
    ============================================================ */
@@ -178,14 +178,21 @@ body{overflow-x:hidden}
 .sideCard{background:linear-gradient(180deg,#111c2d,#0c1524);border-color:#31506d}
 .sideCard .sectionTitle{color:#dff6ff}
 .livingStrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:9px;background:#0d1725;border-top:1px solid #31506d}.storyCard{min-height:52px;padding:8px 10px;border:1px solid #2b405c;border-radius:9px;background:linear-gradient(145deg,#16263a,#101b2b);display:flex;flex-direction:column;gap:4px}.storyCard b{font-size:12px;color:#e8f8ff}.storyCard span{font-size:10px;color:#9fb4c9;line-height:1.3}.storyCard.active{border-color:#4dd5ff;box-shadow:0 0 0 1px rgba(77,213,255,.18) inset}@media(max-width:720px){.livingStrip{grid-template-columns:repeat(2,minmax(0,1fr))}}
-</style>
+
+.primaryControls,.fileControls{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap}
+.fileControls{margin-top:10px}
+.primaryControls button,.primaryControls button.primary,.primaryControls button.danger,.fileControls button,.primaryControls select{appearance:none;-webkit-appearance:none;background:#e9e9ed;color:#008af5;border:0;border-radius:18px;padding:14px 20px;font-size:18px;font-weight:700;min-height:48px}
+.primaryControls label{font-size:14px}
+.labControls select{max-width:100%;min-width:0;direction:rtl}
+@media(max-width:720px){.primaryControls button,.fileControls button,.primaryControls select{font-size:15px;padding:12px 14px;border-radius:16px}.primaryControls,.fileControls{gap:8px}}
+.output,.protocol{direction:rtl;text-align:right;unicode-bidi:plaintext}button:focus-visible{outline:3px solid #38bdf8;outline-offset:3px}</style>
 </head>
 <body>
 <div class="app">
 <header class="top">
   <div class="titleRow">
-    <h1>Somik World Research 1.1 Classic</h1>
-    <span class="badge">Open Evolution Laboratory</span>
+    <h1>Somik World מחקר 1.2 — עולם קדמון פתוח</h1>
+    <span class="badge">מעבדה לאבולוציה פתוחה</span>
     <span class="badge mono" id="protocolBadge"></span>
     <span class="statusPill run" id="runStatus">רץ</span>
   </div>
@@ -193,25 +200,26 @@ body{overflow-x:hidden}
   <div class="controls">
     <div class="primaryControls">
       <button class="primary" id="pauseBtn">⏸ עצור</button>
-      <button class="danger" id="newRunBtn">↻ Run חדש</button>
+      <button class="danger" id="newRunBtn">↻ עולם חדש</button>
       <label>מהירות <select id="speedSel"><option>1</option><option>5</option><option>20</option><option selected>100</option><option>500</option></select></label>
       <button id="saveBtn">💾 שמור עכשיו</button>
     </div>
+    <div class="fileControls"><button id="exportBtn">⬇ ייצוא שמירה</button><button id="importBtn">⬆ ייבוא שמירה</button></div>
     <details class="moreTools">
-      <summary>כלי Run, קבצים ותצוגה</summary>
+      <summary>כלי הרצה, קבצים ותצוגה</summary>
       <div class="secondaryControls">
         <button id="renderBtn">👁 תצוגה: פעילה</button>
-        <button id="exportBtn">⬇ ייצוא Run</button>
+        
         <button id="exportFullBtn">🗄 ייצוא ארכיון מלא</button>
-        <button id="importBtn">⬆ ייבוא</button><input type="file" id="importFile" accept="application/json,.json" hidden>
-        <label>Seed <input id="seedInput" type="number" min="1" step="1" value="1" style="width:110px"></label>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+        <label>ערך אתחול <input id="seedInput" type="number" min="1" step="1" value="1" style="width:110px"></label>
       </div>
     </details>
   </div>
   <div class="saveLine">
-    <span id="saveStatus" class="saveWarn">Autosave מתחיל…</span>
-    <span>Run: <b class="mono" id="runIdLabel">—</b></span>
-    <span>State hash: <b class="mono" id="stateHashLabel">—</b></span>
+    <span id="saveStatus" class="saveWarn">שמירה אוטומטית מתחיל…</span>
+    <span>הרצה: <b class="mono" id="runIdLabel">—</b></span>
+    <span>חתימת מצב: <b class="mono" id="stateHashLabel">—</b></span>
     <span id="computeLine">—</span>
   </div>
 </header>
@@ -221,21 +229,22 @@ body{overflow-x:hidden}
     <div class="worldHead">
       <strong>העולם החי</strong>
       <div class="legend">
-        <span><i class="dot" style="background:#38bdf8"></i>Somik</span>
+        <span><i class="dot" style="background:#38bdf8"></i>סומיק</span>
         <span><i class="dot" style="background:#fde047"></i>משאב ראשוני</span>
         <span><i class="dot" style="background:#a78bfa"></i>פסולת</span>
         <span><i class="dot" style="background:#fb923c"></i>רקמה</span>
         <span><i class="dot sq" style="background:#94a3b8"></i>אובייקט</span>
         <span><i class="dot" style="background:#b45309"></i>גופה</span>
+        <span><i class="dot" style="background:#a63d32"></i>אזור סכנה</span>
       </div>
       <label class="small"><input type="checkbox" id="layerResources" checked> משאבים</label><label class="small"><input type="checkbox" id="layerTrails"> מסלולים</label><label class="small"><input type="checkbox" id="layerInteractions" checked> קשרים פיזיים</label><label class="small"><input type="checkbox" id="raysCheck"> חיישני הנבחר</label>
     </div>
     <div class="worldWrap">
       <canvas id="world" width="1200" height="720"></canvas>
-      <div class="selectedLabel" id="selectedLabel">לחץ על Somik לבחירה</div>
+      <div class="selectedLabel" id="selectedLabel">לחץ על סומיק לבחירה</div>
     </div>
     <div class="livingStrip" id="livingStrip">
-      <div class="storyCard"><b>1. בחר Somik</b><span>לחץ על דמות במפה</span></div>
+      <div class="storyCard"><b>1. בחר סומיק</b><span>לחץ על דמות במפה</span></div>
       <div class="storyCard"><b>2. עקוב אחר תנועה</b><span>נאסוף היסטוריה בלי להשפיע על העולם</span></div>
       <div class="storyCard"><b>3. ראה מגעים</b><span>קשרים פיזיים, אחיזה ושחרור</span></div>
       <div class="storyCard"><b>4. מצא דפוס</b><span>תווית תופיע רק אחרי ראיות חוזרות</span></div>
@@ -244,34 +253,34 @@ body{overflow-x:hidden}
 
   <aside class="sideCard">
     <div class="sectionTitle">מצב העולם</div>
-    <div class="sideHint">לוח Observer קבוע — המדדים אינם משפיעים על ה־Somik-ים או על ה־RNG המדעי.</div>
+    <div class="sideHint">לוח תצפית קבוע — המדדים אינם משפיעים על ה־סומיק-ים או על ה־מחולל האקראיות המדעי.</div>
     <div class="kpis">
       <div class="kpi"><div class="n" id="kPop">0</div><div class="l">אוכלוסייה</div></div>
       <div class="kpi"><div class="n" id="kGen">0</div><div class="l">דור חציוני</div></div>
       <div class="kpi"><div class="n" id="kBirth">0</div><div class="l">לידות</div></div>
       <div class="kpi"><div class="n" id="kTick">0</div><div class="l">צעדי עולם</div></div>
-      <div class="kpi"><div class="n" id="kFitness">0</div><div class="l">רבייה / 1000 mature-ticks</div></div>
+      <div class="kpi"><div class="n" id="kFitness">0</div><div class="l">רבייה / 1000 צעדי בגרות</div></div>
       <div class="kpi"><div class="n" id="kGenDist">0</div><div class="l">מרחק גנטי מהאב</div></div>
     </div>
 
-    <div class="subhead">Primary — הצלחה אבולוציונית</div>
+    <div class="subhead">ראשוני — הצלחה אבולוציונית</div>
     <div class="rows" id="primaryRows"></div>
-    <div class="subhead">Secondary — מצב חיים</div>
+    <div class="subhead">משני — מצב חיים</div>
     <div class="rows" id="secondaryRows"></div>
-    <div class="subhead">Exploratory — שינוי ומורכבות</div>
+    <div class="subhead">תיאורי — שינוי ומורכבות</div>
     <div class="rows" id="exploreRows"></div>
     <div class="classicCard">
-      <h3>Somik נבחר <span class="badge" id="selectedQuickBadge">לחץ על Somik</span></h3>
-      <div id="selectedSide" class="small">לא נבחר Somik.</div>
+      <h3>סומיק נבחר <span class="badge" id="selectedQuickBadge">לחץ על סומיק</span></h3>
+      <div id="selectedSide" class="small">לא נבחר סומיק.</div>
     </div>
     <div class="classicCard">
       <h3>חיישנים חיים</h3>
-      <div class="hint">ערכים פיזיקליים גולמיים בלבד. Ray אינו יודע מה הוא רואה.</div>
-      <div id="selectedSensors"><div class="small">בחר Somik.</div></div>
+      <div class="hint">ערכים פיזיקליים גולמיים בלבד. קרן חישה אינו יודע מה הוא רואה.</div>
+      <div id="selectedSensors"><div class="small">בחר סומיק.</div></div>
     </div>
     <div class="classicCard">
       <h3>פעולות גוף</h3>
-      <div id="selectedActions"><div class="small">בחר Somik.</div></div>
+      <div id="selectedActions"><div class="small">בחר סומיק.</div></div>
     </div>
     <div class="classicCard">
       <h3>מפת מוח חיה</h3>
@@ -281,7 +290,7 @@ body{overflow-x:hidden}
     <div class="classicCard">
       <h3>מקרא העולם</h3>
       <div class="classicLegend">
-        <span><i class="dot" style="background:#38bdf8"></i>Somik</span>
+        <span><i class="dot" style="background:#38bdf8"></i>סומיק</span>
         <span><i class="dot" style="background:#fde047"></i>משאב ראשוני</span>
         <span><i class="dot" style="background:#a78bfa"></i>פסולת</span>
         <span><i class="dot" style="background:#fb923c"></i>רקמה</span>
@@ -301,15 +310,15 @@ body{overflow-x:hidden}
     <button class="tabBtn" data-tab="ecology">אקולוגיה והתנהגות</button>
     <button class="tabBtn" data-tab="lab">מעבדת ניסויים</button>
     <button class="tabBtn" data-tab="archive">ארכיון ושחזור</button>
-    <button class="tabBtn" data-tab="protocol">פרוטוקול ו־QA</button>
+    <button class="tabBtn" data-tab="protocol">פרוטוקול ו־בקרת איכות</button>
   </div>
 
   <div class="tabPane active" id="tab-overview">
     <div class="grid2">
       <div class="panel"><h3>אוכלוסייה ודורות</h3><canvas class="chart" id="chartPop"></canvas></div>
       <div class="panel"><h3>שינוי גנטי ומגוון</h3><canvas class="chart" id="chartGenetic"></canvas></div>
-      <div class="panel"><h3>Fitness רבייתי</h3><canvas class="chart" id="chartFitness"></canvas></div>
-      <div class="panel"><h3>מורכבות ו־Novelty</h3><canvas class="chart" id="chartComplex"></canvas></div>
+      <div class="panel"><h3>הצלחה רבייתית רבייתי</h3><canvas class="chart" id="chartFitness"></canvas></div>
+      <div class="panel"><h3>מורכבות ו־חדשנות</h3><canvas class="chart" id="chartComplex"></canvas></div>
       <div class="panel"><h3>מגמות גוף ופיזיולוגיה</h3><canvas class="chart" id="chartMorph"></canvas></div>
       <div class="panel"><h3>זרימת משאבים</h3><canvas class="chart" id="chartMaterials"></canvas></div>
     </div>
@@ -322,7 +331,7 @@ body{overflow-x:hidden}
       <div class="panel"><h3>מורפולוגיה ופיזיולוגיה</h3><div id="traitSummary" class="rows"></div></div>
     </div>
     <div class="grid2" style="margin-top:12px">
-      <div class="panel"><h3>Genotypes נפוצים עכשיו</h3><div class="tableWrap"><table><thead><tr><th>Genome</th><th>פרטים</th><th>אחוז</th><th>דור ממוצע</th></tr></thead><tbody id="genomeTable"></tbody></table></div></div>
+      <div class="panel"><h3>גנוטיפים נפוצים עכשיו</h3><div class="tableWrap"><table><thead><tr><th>חתימה גנטית</th><th>פרטים</th><th>אחוז</th><th>דור ממוצע</th></tr></thead><tbody id="genomeTable"></tbody></table></div></div>
       <div class="panel"><h3>אירועים אבולוציוניים אחרונים</h3><div id="mutationEvents"></div></div>
     </div>
   </div>
@@ -330,19 +339,19 @@ body{overflow-x:hidden}
   <div class="tabPane" id="tab-brain">
     <div class="grid2">
       <div class="panel">
-        <h3>רשת עצבית — Somik נבחר</h3>
+        <h3>רשת עצבית — סומיק נבחר</h3>
         <div class="labControls">
           <button id="brainSelectedBtn">מוח נוכחי</button><button id="brainFounderBtn">אב קדמון</button>
-          <select id="connectionSelect"></select><button id="knockoutBtn">Knockout לקשר</button>
+          <select id="connectionSelect"></select><button id="knockoutBtn">השבתת קשר בניסוי</button>
         </div>
         <canvas class="brainCanvas" id="brainCanvas"></canvas>
-        <div class="small">עובי הקו = |משקל|. כחול = חיובי, ורוד = שלילי. עוצמת המילוי בנוירון משקפת activation נוכחי כאשר מוצג Somik חי.</div>
+        <div class="small">עובי הקו = |משקל|. כחול = חיובי, ורוד = שלילי. עוצמת המילוי בנוירון משקפת פעילות נוכחית כאשר מוצג סומיק חי.</div>
       </div>
       <div class="panel">
         <h3>פרטי המוח וההבדל מהאב</h3>
         <div id="brainDetails" class="rows"></div>
         <h4>קשרים שהשתנו ביחס לאב הקדמון</h4>
-        <div class="tableWrap"><table><thead><tr><th>קשר</th><th>From</th><th>To</th><th>משקל</th><th>Δ מהאב</th></tr></thead><tbody id="connectionTable"></tbody></table></div>
+        <div class="tableWrap"><table><thead><tr><th>קשר</th><th>מקור</th><th>יעד</th><th>משקל</th><th>Δ מהאב</th></tr></thead><tbody id="connectionTable"></tbody></table></div>
       </div>
     </div>
   </div>
@@ -350,10 +359,10 @@ body{overflow-x:hidden}
   <div class="tabPane" id="tab-lineages">
     <div class="grid2">
       <div class="panel"><h3>פילוגניה מקומית של הנבחר</h3><canvas class="miniCanvas" id="lineageCanvas"></canvas><div class="small">מוצגים אבות זמינים בזיכרון הפעיל; כל אירועי הלידה נשמרים בארכיון המחקר לצורך שחזור מלא.</div></div>
-      <div class="panel"><h3>Relative lineage reproductive fitness — cohorts</h3><div class="tableWrap"><table><thead><tr><th>Cohort</th><th>Lineage</th><th>Birth share</th><th>Exposure share</th><th>Relative fitness</th></tr></thead><tbody id="lineageFitnessTable"></tbody></table></div></div>
-      <div class="panel"><h3>Founder ancestry באוכלוסייה</h3><div id="founderAncestry" class="rows"></div></div>
-      <div class="panel"><h3>אירועי לידה/מוות/Checkpoint</h3><div id="eventLog"></div></div>
-      <div class="panel"><h3>שחזור פילוגניה היסטורי</h3><div class="labControls"><label>עומק <input id="ancestryDepth" type="number" value="8" min="1" max="30" style="width:70px"></label><button id="ancestryBtn">שחזר לנבחר</button></div><div class="small">משלב זיכרון פעיל עם ארכיון לידות ב־IndexedDB, גם לאחר מות הפרטים.</div><div class="tableWrap" style="margin-top:8px"><table><thead><tr><th>Depth</th><th>Agent</th><th>Generation</th><th>Parent A</th><th>Parent B</th><th>Genome</th></tr></thead><tbody id="ancestryTable"></tbody></table></div></div>
+      <div class="panel"><h3>הצלחה רבייתית יחסית של שושלות לפי קבוצות גיל</h3><div class="tableWrap"><table><thead><tr><th>קבוצת גיל</th><th>שושלת</th><th>חלק יחסי בלידות</th><th>חלק יחסי בחשיפה</th><th>הצלחה רבייתית יחסית</th></tr></thead><tbody id="lineageFitnessTable"></tbody></table></div></div>
+      <div class="panel"><h3>מוצא מהמייסדים באוכלוסייה</h3><div id="founderAncestry" class="rows"></div></div>
+      <div class="panel"><h3>אירועי לידה/מוות/נקודת ביקורת</h3><div id="eventLog"></div></div>
+      <div class="panel"><h3>שחזור פילוגניה היסטורי</h3><div class="labControls"><label>עומק <input id="ancestryDepth" type="number" value="8" min="1" max="30" style="width:70px"></label><button id="ancestryBtn">שחזר לנבחר</button></div><div class="small">משלב זיכרון פעיל עם ארכיון לידות ב־מסד הנתונים בדפדפן, גם לאחר מות הפרטים.</div><div class="tableWrap" style="margin-top:8px"><table><thead><tr><th>עומק</th><th>סומיק</th><th>דור</th><th>הורה א</th><th>הורה ב</th><th>חתימה גנטית</th></tr></thead><tbody id="ancestryTable"></tbody></table></div></div>
     </div>
   </div>
 
@@ -364,52 +373,52 @@ body{overflow-x:hidden}
       <div class="panel"><h3>התנהגות תיאורית</h3><div id="behaviorRows" class="rows"></div></div>
     </div>
     <div class="grid2" style="margin-top:12px">
-      <div class="panel"><h3>Trade-offs באוכלוסייה</h3><canvas class="chart" id="tradeoffCanvas"></canvas><div class="small">X = קצב מטבולי, Y = קיבולת אנרגיה, גודל נקודה = רדיוס. תיאור בלבד, לא ציון Fitness.</div></div>
-      <div class="panel"><h3>מדדים של Somik נבחר</h3><div id="selectedEcology" class="rows"></div></div>
-      <div class="panel livingPanel"><h3>העולם החי — ציר זמן של הנבחר</h3><div id="livingBadges" class="livingBadges"></div><div id="livingEvidence" class="rows"></div><div id="livingTimeline" class="livingTimeline"></div><div class="small">Observer-only: התוויות מתארות דפוסים שנמדדו ואינן משנות את העולם או את ה־RNG.</div></div>
+      <div class="panel"><h3>יחסי תמורה באוכלוסייה</h3><canvas class="chart" id="tradeoffCanvas"></canvas><div class="small">X = קצב מטבולי, Y = קיבולת אנרגיה, גודל נקודה = רדיוס. תיאור בלבד, לא ציון הצלחה רבייתית.</div></div>
+      <div class="panel"><h3>מדדים של סומיק נבחר</h3><div id="selectedEcology" class="rows"></div></div>
+      <div class="panel livingPanel"><h3>העולם החי — ציר זמן של הנבחר</h3><div id="livingBadges" class="livingBadges"></div><div id="livingEvidence" class="rows"></div><div id="livingTimeline" class="livingTimeline"></div><div class="small">תצפית בלבד: התוויות מתארות דפוסים שנמדדו ואינן משנות את העולם או את ה־מחולל האקראיות.</div></div>
     </div>
   </div>
 
   <div class="tabPane" id="tab-lab">
     <div class="grid2">
       <div class="panel">
-        <h3>Common Garden / Ancestor Replay</h3><p class="small">בדיקה מבודדת: רבייה א־מינית, ללא חפצים וללא ערוץ כימי. יחס לא מוגדר כאשר לאב אין רבייה.</p>
-        <div class="labControls"><label>Assay ticks <input id="assayTicks" type="number" value="4000" min="500" step="500" style="width:95px"></label><button id="commonGardenBtn">Common Garden לנבחר</button><button id="ancestorReplayBtn">Ancestor Replay</button></div>
-        <div class="output" id="commonGardenOut">בחר Somik ואז הפעל ניסוי.</div>
+        <h3>השוואה בתנאים אחידים / הרצת האב הקדמון</h3><p class="small">בדיקה מבודדת: רבייה א־מינית, ללא חפצים וללא ערוץ כימי. יחס לא מוגדר כאשר לאב אין רבייה.</p>
+        <div class="labControls"><label>צעדי ניסוי <input id="assayTicks" type="number" value="4000" min="500" step="500" style="width:95px"></label><button id="commonGardenBtn">השוואה בתנאים אחידים לנבחר</button><button id="ancestorReplayBtn">הרצת האב הקדמון</button></div>
+        <div class="output" id="commonGardenOut">בחר סומיק ואז הפעל ניסוי.</div>
       </div>
       <div class="panel">
-        <h3>Mutation-Off Control</h3>
-        <div class="labControls"><label>Ticks <input id="controlTicks" type="number" value="5000" min="500" step="500" style="width:95px"></label><button id="mutationOffBtn">הרץ Control</button></div>
+        <h3>ביקורת ללא מוטציות</h3>
+        <div class="labControls"><label>צעדים <input id="controlTicks" type="number" value="5000" min="500" step="500" style="width:95px"></label><button id="mutationOffBtn">הרץ ביקורת</button></div>
         <div class="output" id="mutationOffOut">—</div>
       </div>
       <div class="panel">
-        <h3>Mutational Neighborhood</h3>
+        <h3>בדיקת מוטציות סמוכות</h3>
         <div class="labControls"><label>מוטנטים <input id="mutantN" type="number" value="48" min="8" max="256" step="8" style="width:80px"></label><button id="neighborhoodBtn">נתח נבחר</button></div>
         <div class="output" id="neighborhoodOut">—</div>
       </div>
       <div class="panel">
-        <h3>Multi-Seed Replication</h3>
-        <div class="labControls"><label>Seeds <input id="multiN" type="number" value="5" min="2" max="30" style="width:65px"></label><label>Ticks <input id="multiTicks" type="number" value="4000" min="500" step="500" style="width:90px"></label><button id="multiSeedBtn">הרץ</button></div>
+        <h3>חזרות עם ערכי אתחול שונים</h3>
+        <div class="labControls"><label>ערכי אתחול <input id="multiN" type="number" value="5" min="2" max="30" style="width:65px"></label><label>צעדים <input id="multiTicks" type="number" value="4000" min="500" step="500" style="width:90px"></label><button id="multiSeedBtn">הרץ</button></div>
         <div class="output" id="multiOut">—</div>
       </div>
-      <div class="panel"><h3>Treatment Control — עולם מבודד</h3><div class="labControls"><label><input id="tMutation" type="checkbox" checked> Mutation</label><label><input id="tAsexual" type="checkbox"> Asexual</label><label><input id="tObjects" type="checkbox" checked> Objects</label><label><input id="tChemical" type="checkbox" checked> Chemical</label><label><input id="tMemory" type="checkbox" checked> Recurrent memory</label><label>Ticks <input id="treatmentTicks" type="number" value="2000" min="100" step="100" style="width:90px"></label><button id="treatmentBtn">הרץ Treatment</button></div><div class="output" id="treatmentOut">—</div></div>
+      <div class="panel"><h3>ביקורת תנאי ניסוי — עולם מבודד</h3><div class="labControls"><label><input id="tMutation" type="checkbox" checked> מוטציות</label><label><input id="tAsexual" type="checkbox"> רבייה אל־מינית</label><label><input id="tObjects" type="checkbox" checked> חפצים</label><label><input id="tChemical" type="checkbox" checked> שדה כימי</label><label><input id="tMemory" type="checkbox" checked> זיכרון פנימי חוזר</label><label>צעדים <input id="treatmentTicks" type="number" value="2000" min="100" step="100" style="width:90px"></label><button id="treatmentBtn">הרץ תנאי ניסוי</button></div><div class="output" id="treatmentOut">—</div></div>
     </div>
-    <div class="panel" style="margin-top:12px"><h3>v3 Scientific Baseline</h3><p class="small">מודל ביקורת מינימלי נפרד עם פרוטוקול משלו. אינו בר־השוואה ישירה להרצת Research.</p><button id="openV3Btn">פתח מודל ביקורת v3</button></div><div class="warningBox" style="margin-top:12px">כל כלי המעבדה רצים בעולמות נפרדים עם RNG משלהם ואינם מחזירים מידע לעולם הראשי. הם Observer-only.</div>
+    <div class="panel" style="margin-top:12px"><h3>גרסה 3 — מודל ביקורת מדעי</h3><p class="small">מודל ביקורת מינימלי נפרד עם פרוטוקול משלו. אינו בר־השוואה ישירה להרצת מחקר.</p><button id="openV3Btn">פתח מודל ביקורת v3</button></div><div class="warningBox" style="margin-top:12px">כל כלי המעבדה רצים בעולמות נפרדים עם מחולל האקראיות משלהם ואינם מחזירים מידע לעולם הראשי. הם תצפית בלבד.</div>
   </div>
 
   <div class="tabPane" id="tab-archive">
     <div class="grid2">
-      <div class="panel"><h3>Checkpoints גנטיים</h3><div class="tableWrap"><table><thead><tr><th>דור</th><th>Tick</th><th>Genomes</th><th>אוכלוסייה</th><th>מרחק גנטי</th></tr></thead><tbody id="checkpointTable"></tbody></table></div></div>
-      <div class="panel"><h3>Autosave / Runs</h3><div id="autosaveInfo" class="rows"></div><h4>אחסון דפדפן</h4><div id="storageInfo" class="rows"></div><div class="labControls"><button id="persistStorageBtn">בקש אחסון מתמשך</button></div><h4>Runs שמורים במכשיר</h4><div class="tableWrap"><table><thead><tr><th>Run</th><th>Seed</th><th>Tick</th><th>נשמר</th><th></th></tr></thead><tbody id="runsTable"></tbody></table></div></div>
+      <div class="panel"><h3>נקודות ביקורת גנטיים</h3><div class="tableWrap"><table><thead><tr><th>דור</th><th>צעד</th><th>גנומים</th><th>אוכלוסייה</th><th>מרחק גנטי</th></tr></thead><tbody id="checkpointTable"></tbody></table></div></div>
+      <div class="panel"><h3>שמירה אוטומטית / הרצות</h3><div id="autosaveInfo" class="rows"></div><h4>אחסון דפדפן</h4><div id="storageInfo" class="rows"></div><div class="labControls"><button id="persistStorageBtn">בקש אחסון מתמשך</button></div><h4>הרצות שמורים במכשיר</h4><div class="tableWrap"><table><thead><tr><th>הרצה</th><th>ערך אתחול</th><th>צעד</th><th>נשמר</th><th></th></tr></thead><tbody id="runsTable"></tbody></table></div></div>
       <div class="panel"><h3>ארכיון רב־רזולוציה</h3><div id="archiveRows" class="rows"></div><div class="small">היסטוריה קרובה נשמרת ברזולוציה גבוהה; היסטוריה ישנה נדחסת לרמות דגימה נמוכות יותר כדי לאפשר ריצות ארוכות.</div></div>
-      <div class="panel"><h3>ארכיון אירועים</h3><div id="eventArchiveRows" class="rows"></div><div class="small">לידות נשמרות עם הורים, Genome hash ומוטציות; מוות ו־checkpoints נשמרים גם הם. אירועי Grip תכופים אינם נשמרים אחד־אחד — המונים האקולוגיים נשמרים.</div></div>
+      <div class="panel"><h3>ארכיון אירועים</h3><div id="eventArchiveRows" class="rows"></div><div class="small">לידות נשמרות עם הורים, חתימה גנטית ומוטציות; מוות ו־נקודות ביקורת נשמרים גם הם. אירועי אחיזה תכופים אינם נשמרים אחד־אחד — המונים האקולוגיים נשמרים.</div></div>
     </div>
   </div>
 
   <div class="tabPane" id="tab-protocol">
     <div class="grid2">
-      <div class="panel"><h3>Scientific Protocol</h3><div id="protocolText" class="protocol"></div></div>
-      <div class="panel"><h3>בדיקות QA דטרמיניסטיות</h3><button id="selfTestBtn" style="padding:8px 10px;margin-bottom:9px">הרץ Self-Test</button><div id="selfTestOut"></div><h4>זהות Run</h4><div id="identityRows" class="rows"></div></div>
+      <div class="panel"><h3>פרוטוקול מדעי</h3><div id="protocolText" class="protocol"></div></div>
+      <div class="panel"><h3>בדיקות בקרת איכות דטרמיניסטיות</h3><button id="selfTestBtn" style="padding:8px 10px;margin-bottom:9px">הרץ בדיקה עצמית</button><div id="selfTestOut"></div><h4>זהות הרצה</h4><div id="identityRows" class="rows"></div></div>
     </div>
   </div>
 </section>

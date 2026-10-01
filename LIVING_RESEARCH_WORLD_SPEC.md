@@ -1,4 +1,8 @@
-# Living Research World — Extension Spec
+# Living Research World — Extension Spec (1.2 Emergence)
+
+## Ancient-world treatment
+
+The default 1.2 world has a fixed vertical hazard zone in the center. It damages agents physically. Unheld blocks attenuate damage within a fixed radius. Primary resources can be carried, dropped, revisited and eventually decay. The observer may report candidate caches or structures, but the simulation does not reward those patterns and never tells an agent what they mean.
 
 ## Purpose
 
