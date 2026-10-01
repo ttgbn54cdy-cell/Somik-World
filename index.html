@@ -159,6 +159,25 @@ body{overflow-x:hidden}
 
 
 #selfTestOut{white-space:pre-wrap}.worldHead{flex-wrap:wrap}button{cursor:pointer}
+
+/* Visual correction pass: restore a compact classic laboratory composition. */
+@media(min-width:1051px){
+  .app{grid-template-columns:minmax(0,1fr) 370px;grid-template-rows:auto auto auto;grid-template-areas:"top side" "world side" "tabs side";align-items:start}
+  .top{grid-column:1;grid-row:1;max-width:none}
+  .worldCard{grid-column:1;grid-row:2}
+  .tabsWrap{grid-column:1;grid-row:3}
+  .sideCard{grid-column:2;grid-row:1 / span 3;align-self:start;position:sticky;top:0;height:100vh;min-height:100vh}
+}
+.titleRow h1{font-size:clamp(25px,3vw,38px);letter-spacing:-.03em}
+.titleRow .badge{background:#142338;border-color:#31506d}
+.worldCard{box-shadow:0 16px 42px rgba(0,0,0,.24);border-color:#31506d}
+.worldHead{background:linear-gradient(90deg,#101d31,#102b36);border-bottom-color:#31506d}
+.tabs{background:rgba(11,18,32,.98)}
+.panel{background:linear-gradient(145deg,#111c2d,#0e1726);border-color:#2b405c;box-shadow:0 8px 20px rgba(0,0,0,.13)}
+.chart{height:190px}.chart,.brainCanvas,.miniCanvas{background:radial-gradient(circle at 50% 0%,#14243a,#0b1423 72%);border-color:#29415f}
+.sideCard{background:linear-gradient(180deg,#111c2d,#0c1524);border-color:#31506d}
+.sideCard .sectionTitle{color:#dff6ff}
+.livingStrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:9px;background:#0d1725;border-top:1px solid #31506d}.storyCard{min-height:52px;padding:8px 10px;border:1px solid #2b405c;border-radius:9px;background:linear-gradient(145deg,#16263a,#101b2b);display:flex;flex-direction:column;gap:4px}.storyCard b{font-size:12px;color:#e8f8ff}.storyCard span{font-size:10px;color:#9fb4c9;line-height:1.3}.storyCard.active{border-color:#4dd5ff;box-shadow:0 0 0 1px rgba(77,213,255,.18) inset}@media(max-width:720px){.livingStrip{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -214,6 +233,12 @@ body{overflow-x:hidden}
     <div class="worldWrap">
       <canvas id="world" width="1200" height="720"></canvas>
       <div class="selectedLabel" id="selectedLabel">לחץ על Somik לבחירה</div>
+    </div>
+    <div class="livingStrip" id="livingStrip">
+      <div class="storyCard"><b>1. בחר Somik</b><span>לחץ על דמות במפה</span></div>
+      <div class="storyCard"><b>2. עקוב אחר תנועה</b><span>נאסוף היסטוריה בלי להשפיע על העולם</span></div>
+      <div class="storyCard"><b>3. ראה מגעים</b><span>קשרים פיזיים, אחיזה ושחרור</span></div>
+      <div class="storyCard"><b>4. מצא דפוס</b><span>תווית תופיע רק אחרי ראיות חוזרות</span></div>
     </div>
   </div>
 
