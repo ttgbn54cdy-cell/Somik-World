@@ -1,27 +1,20 @@
-# Somik World 1.3 — Living World
+# Somik World — Learning World
 
-A self-contained browser-based artificial-life / evolutionary research world.
+Single-file browser artificial-life laboratory combining inherited evolution with individual lifetime learning.
+
+## Current model
+- Founders spawn in water.
+- Water restores energy and increases locomotor speed, without a semantic `water` sensor.
+- Trees are generic physical obstacles and fixed origins of primary food.
+- Food and movable blocks can be carried with the same generic grip action.
+- The central hazard damages health; unheld blocks physically attenuate hazard damage nearby.
+- Recurrent state provides short-term internal memory.
+- Lifetime neural plasticity changes only the individual's learned connection deltas. Learned deltas are not inherited.
+- Plasticity rate is heritable and mutable, allowing selection on capacity to learn.
+- Learning uses only change in the organism's own energy/health as a local reinforcement signal; it receives no labels for water, food, danger, tree, shelter, cache, leader, or target behavior.
+- Reproduction occurs in water; offspring inherit genome, not acquired learning.
+- Predation, scavenging, waste cross-feeding, chemical signaling, mutation and lineage tracking remain enabled.
+- Explicit Learning OFF treatment is available in the laboratory controls.
 
 ## Run
-
-Open `index.html` in a modern browser. For GitHub Pages, publish the repository root; no build step or external dependencies are required.
-
-## Core design
-
-- Local physical interaction rather than semantic knowledge.
-- Somiks do not receive explicit `food`, `tree`, `water`, `danger`, `shelter`, or `build` concepts.
-- Water is an environmental energy source.
-- Trees are physical obstacles and spatial sources of primary food.
-- The danger zone causes physical damage; nearby blocks can physically attenuate it.
-- Food and objects can be carried and dropped through generic interaction.
-- Event feed is observer-only and does not affect the simulation.
-- Mutation, inheritance, recurrent internal state, lineage tracking, archive tools, autosave and scientific controls are included.
-- Extinction is a valid outcome; there is no hidden population rescue.
-
-## Reproducibility
-
-The application stores protocol/state identifiers, supports save/export/import, and includes internal self-tests and isolated research controls. Display and analytics are intended not to consume simulation RNG or feed information back into the world.
-
-## GitHub Pages
-
-Repository **Settings → Pages → Deploy from a branch**, choose the branch containing `index.html` and `/ (root)`.
+Open `index.html` in a modern browser or publish the repository with GitHub Pages.
