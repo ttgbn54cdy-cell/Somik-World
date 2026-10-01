@@ -1,4 +1,4 @@
-/* Somik World Research 1.0 — Open Evolution Laboratory
+/* Somik World Research 1.1 Classic — Open Evolution Laboratory
    Scientific engine. No DOM access. Browser + Node compatible.
 */
 (function(root,factory){
@@ -9,28 +9,29 @@
 'use strict';
 
 const TAU=Math.PI*2;
-const ENGINE_VERSION='Somik World Research 1.0';
-const PROTOCOL_ID='SW-R1-OEL-1.0';
-const PROTOCOL_HASH='a68eb2f7f223f7c0';
-const ENGINE_HASH='f8caf1a27e225286';
+const ENGINE_VERSION='Somik World Research 1.1 Classic';
+const PROTOCOL_ID='SW-R1-OEL-1.1';
+const PROTOCOL_HASH='e9d23eefa006dec9';
+const ENGINE_HASH='65b4530eee3a32880c8c0fa32c5259fd3ef2f42b148c19f63bb1eb432f39b49a';
 
 const Protocol=Object.freeze({
   product:ENGINE_VERSION,
   protocolId:PROTOCOL_ID,
   protocolHash:PROTOCOL_HASH,
-  status:'frozen-research-1.0',
+  status:'frozen-research-1.1',
   purpose:'Long-horizon open evolutionary laboratory with heritable morphology, physiology, sensors and neural topology; no target behavior or internal fitness score.',
   world:{width:1200,height:720,topology:'2D torus',synchronous:true},
   founders:{count:72,ancestorSeed:13733069,initialEnergyFraction:0.58,initialHealth:1},
   resources:{initialPrimary:240,primaryFluxPerTick:0.22,primaryEnergyPerUnit:42,wasteEnergyPerUnit:18,tissueEnergyPerUnit:34,resourceRadius:3.5,corpseDecayTicks:5000,maxLooseResources:9000},
   objects:{count:48,minRadius:8,maxRadius:18,density:2.3},
+  interactionRevision:'simultaneous-grip-and-object-contact-1',
   physics:{baseDensity:1,maxLinearSpeed:2.6,baseTurnRate:0.22,collisionIterations:1},
-  brain:{minHidden:4,maxHidden:32,minRaySensors:2,maxRaySensors:12,actuators:['left_motor','right_motor','jaw','grip','chemical_emit'],fixedSensors:['energy','health','touch','chemical'],activation:'tanh',recurrent:true},
+  brain:{minHidden:4,maxHidden:32,minRaySensors:2,maxRaySensors:12,actuators:['left_motor','right_motor','jaw','grip','chemical_emit'],memoryOffControl:true,fixedSensors:['energy','health','touch','chemical'],activation:'tanh',recurrent:true},
   mutation:{traitSigma:0.08,weightSigma:0.14,biasSigma:0.10,basePerGene:0.008,baseStructural:0.0025,rateHeritable:true,structuralHeritable:true},
   reproduction:{mode:'sexual-hermaphroditic',maturityBaseTicks:300,cooldownBaseTicks:260,minContributionEnergy:18,developmentEfficiency:0.82,asexualControlAvailable:true},
   ecology:{predation:true,scavenging:true,wasteCrossFeeding:true,genericGrip:true,chemicalField:true,hazard:false,populationFeedback:false,rescue:false},
   observer:{feedbackToWorld:false,checkpointGenerations:[50,150,300],periodicCheckpointEveryGeneration:250,archiveBaseStride:250,archiveMaxPerLevel:4096,fixedAgeEndpoint:5000},
-  controls:['mutation-off','asexual-control','no-objects','no-chemical','ancestor-replay','common-garden','connection-knockout','mutational-neighborhood','multi-seed'],
+  controls:['mutation-off','asexual-control','no-objects','no-chemical','memory-off','ancestor-replay','common-garden','connection-knockout','mutational-neighborhood','multi-seed'],
   frozenRules:['No mid-run parameter edits','No population rescue','Resource flux independent of population','Display/analytics must not consume simulation RNG','Extinction is a valid result']
 });
 
@@ -60,7 +61,7 @@ class RNG{
   int(n){return Math.floor(this.next()*n);}
   gauss(){if(this.spare!==null){const x=this.spare;this.spare=null;return x;}let u=0;while(u<=1e-12)u=this.next();const v=this.next(),m=Math.sqrt(-2*Math.log(u));this.spare=m*Math.sin(TAU*v);return m*Math.cos(TAU*v);}
   dump(){return{state:this.state,spare:this.spare};}
-  static load(o){const r=new RNG(o?.state||1);r.state=normSeed(o?.state||1);r.spare=o?.spare??null;return r;}
+  static load(o){const r=new RNG(o?.state||1);if(!o||!Number.isInteger(o.state)||o.state<0||o.state>4294967295)throw new Error('Invalid RNG state');r.state=o.state>>>0;r.spare=o?.spare??null;return r;}
 }
 
 function wrap(v,size){v%=size;if(v<0)v+=size;return v;}
@@ -140,6 +141,29 @@ function digestEfficiency(agent,material){const t=agent.genome.traits;return mat
 function entityRadius(e){if(e.kind==='agent')return e.pheno.radius;if(e.kind==='object'||e.kind==='corpse')return e.radius;return Protocol.resources.resourceRadius;}
 function entityMass(e){if(!e)return 0;if(e.kind==='object')return e.mass;if(e.kind==='corpse')return Math.max(1,e.biomass*12);if(e.kind==='resource')return Math.max(.2,e.amount*4);return e.kind==='agent'?e.pheno.mass:1;}
 
+
+function entityKey(e){return e.kind+':'+e.id;}
+function stableStringify(v){if(v===null||typeof v!=='object')return JSON.stringify(v);if(Array.isArray(v))return '['+v.map(stableStringify).join(',')+']';return '{'+Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>JSON.stringify(k)+':'+stableStringify(v[k])).join(',')+'}';}
+function digest64(s){let a=2166136261>>>0,b=2246822519>>>0;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);a=Math.imul(a^c,16777619);b=Math.imul(b^c,3266489917);}return hex32(a)+hex32(b);}
+function snapshotHash(o){return digest64(stableStringify(o));}
+function validateState(o){
+  const scan=(v)=>{if(typeof v==='number'&&!Number.isFinite(v))throw new Error('Non-finite state value');if(v&&typeof v==='object')for(const k of Object.keys(v)){if(['__proto__','prototype','constructor'].includes(k))throw new Error('Invalid state key');scan(v[k]);}};scan(o);
+  if(!Number.isSafeInteger(o.tick)||o.tick<0)throw new Error('Invalid tick');
+  if(!o.treatment||typeof o.treatment.memoryEnabled!=='boolean'||!['sexual','asexual'].includes(o.treatment.reproductionMode))throw new Error('Invalid treatment');
+  if(o.protocolVariantHash!==hex32(labelHash(JSON.stringify(o.treatment))))throw new Error('Treatment identity mismatch');
+  const entities=new Map(),agents=new Map();
+  for(const [name,kind] of [['agents','agent'],['objects','object'],['resources','resource'],['corpses','corpse']]){
+    if(!Array.isArray(o[name]))throw new Error('Missing '+name);const ids=new Set();
+    for(const e of o[name]){if(e.kind!==kind||!Number.isSafeInteger(e.id)||e.id<1||ids.has(e.id))throw new Error('Invalid/duplicate '+kind+' ID');ids.add(e.id);
+      if(!Number.isFinite(e.x)||!Number.isFinite(e.y))throw new Error('Invalid position');
+      if(kind==='agent'){agents.set(e.id,e);if(!e.genome||!e.hiddenState||!Number.isFinite(e.energy)||!Number.isFinite(e.health))throw new Error('Invalid agent');}
+      else entities.set(entityKey(e),e);
+    }
+  }
+  for(const a of agents.values())if(a.holding){const e=entities.get(entityKey(a.holding));if(!e||e.heldBy!==a.id)throw new Error('Broken grip reference');}
+  for(const e of entities.values())if(e.heldBy){const a=agents.get(e.heldBy);if(!a||!a.holding||entityKey(a.holding)!==entityKey(e))throw new Error('Orphaned held entity');}
+}
+
 class MultiResolutionArchive{
   constructor(baseStride=Protocol.observer.archiveBaseStride,maxPerLevel=Protocol.observer.archiveMaxPerLevel){this.baseStride=baseStride;this.maxPerLevel=maxPerLevel;this.levels=[[]];this.lastTick=-1;}
   add(sample){if(sample.tick===this.lastTick||sample.tick%this.baseStride!==0)return;this.lastTick=sample.tick;this.levels[0].push(sample);this.compact(0);}
@@ -151,7 +175,7 @@ class MultiResolutionArchive{
 
 class World{
   constructor(opts={}){
-    this.seed=normSeed(opts.seed||1);this.treatment={mutationEnabled:opts.mutationEnabled!==false,reproductionMode:opts.reproductionMode||'sexual',objectsEnabled:opts.objectsEnabled!==false,chemicalEnabled:opts.chemicalEnabled!==false};this.protocolVariantHash=this.variantHash();
+    this.seed=normSeed(opts.seed||1);this.treatment={mutationEnabled:opts.mutationEnabled!==false,reproductionMode:opts.reproductionMode||'sexual',objectsEnabled:opts.objectsEnabled!==false,chemicalEnabled:opts.chemicalEnabled!==false,memoryEnabled:opts.memoryEnabled!==false};this.protocolVariantHash=this.variantHash();
     this.rngInit=new RNG(deriveSeed(this.seed,'initialization'));this.rngEnvironment=new RNG(deriveSeed(this.seed,'environment-primary'));this.ancestorGenome=cloneGenome(opts.founderGenome||founderGenome());this.ancestorHash=genomeHash(this.ancestorGenome);
     this.tick=0;this.nextAgentId=1;this.nextResourceId=1;this.nextObjectId=1;this.births=0;this.deaths=0;this.extinct=false;this.technicalFailure=false;this.resourceAccumulator=0;this.agents=[];this.resources=[];this.objects=[];this.corpses=[];this.eventBuffer=[];this.recentEvents=[];this.lineageRecent=new Map();this.archive=new MultiResolutionArchive();this.checkpoints={};this.checkpointDone=new Set();this.noveltyArchive=[];this.fixedAgeN=0;this.fixedAgeOffspring=0;this.fixedAgeReproduced=0;this.completedN=0;this.completedOffspring=0;this.completedReproduced=0;this.ecology={consumedPrimary:0,consumedWaste:0,consumedTissue:0,predationDamage:0,bites:0,grips:0,objectCarryTicks:0,chemicalEmission:0,wasteProduced:0,corpsesCreated:0};this.matureExposure=0;this.lastClusterCount=1;this.cohortStats={};this.mutationStats={birthsWithMutations:0,totalChanges:0,byType:{trait:0,sensor:0,bias:0,weight:0,structure:0},byAction:{},byTarget:{}};this.startObserverTime=Date.now();
     const founderCount=opts.founderCount||Protocol.founders.count;for(let i=0;i<founderCount;i++){const g=cloneGenome(this.ancestorGenome),p=phenotype(g);const a=new Agent({id:this.nextAgentId++,x:this.rngInit.next()*Protocol.world.width,y:this.rngInit.next()*Protocol.world.height,dir:this.rngInit.next()*TAU,genome:g,energy:p.energyCapacity*Protocol.founders.initialEnergyFraction,health:1,generation:0,lineageRoot:i+1,ancestry:{[String(i+1)]:1}});this.agents.push(a);this.recordLineage(a);}
@@ -168,21 +192,69 @@ class World{
     const inputs={energy:clamp(a.energy/a.pheno.energyCapacity,0,1)*2-1,health:clamp(a.health,0,1)*2-1,touch:touching?1:-1,chemical:this.treatment.chemicalEnabled?Math.tanh(chem*0.4*a.genome.traits.chemoSense):0};a.touch=touching?1:0;
     for(const s of a.genome.sensors){let best=s.range,ang=a.dir+s.angle;for(const c of cand){if(c.surface<0){best=0;break;}if(c.surface>s.range)continue;const ad=Math.abs(angleDiff(ang,c.qa));if(ad<=Math.max(0.055,c.angularRadius)&&c.surface<best)best=c.surface;}inputs['ray:'+s.id]=clamp((1-best/s.range)*s.gain,0,1)*2-1;}return inputs;
   }
-  actionPhase(grid){const proposals=[];for(const a of this.agents){const input=this.sensorsFor(a,grid);a.lastInputs=input;const o=brainStep(a,input),p=a.pheno;const turn=(o.right_motor-o.left_motor)*p.turnRate,drive=(o.right_motor+o.left_motor)*0.5,dir=wrap(a.dir+turn,TAU),speed=drive*p.maxSpeed,dx=Math.cos(dir)*speed,dy=Math.sin(dir)*speed;proposals.push({id:a.id,x:wrap(a.x+dx,Protocol.world.width),y:wrap(a.y+dy,Protocol.world.height),dir,dx,dy,speed,outputs:o});}return proposals;}
+  actionPhase(grid){const proposals=[];for(const a of this.agents){const input=this.sensorsFor(a,grid);a.lastInputs=input;if(!this.treatment.memoryEnabled)a.hiddenState={};const o=brainStep(a,input),p=a.pheno;const turn=(o.right_motor-o.left_motor)*p.turnRate,drive=(o.right_motor+o.left_motor)*0.5,dir=wrap(a.dir+turn,TAU),speed=drive*p.maxSpeed,dx=Math.cos(dir)*speed,dy=Math.sin(dir)*speed;proposals.push({id:a.id,x:wrap(a.x+dx,Protocol.world.width),y:wrap(a.y+dy,Protocol.world.height),dir,dx,dy,speed,outputs:o});}return proposals;}
   resolveAgentCollisions(proposals){const map=new Map(proposals.map(p=>[p.id,p])),agentMap=new Map(this.agents.map(a=>[a.id,a])),g=new SpatialGrid(Protocol.world.width,Protocol.world.height,40);for(const p of proposals){const a=agentMap.get(p.id);g.add({kind:'agent',id:p.id,x:p.x,y:p.y,radius:a.pheno.radius,mass:a.pheno.mass},p.x,p.y);}const disp=new Map(this.agents.map(a=>[a.id,{x:0,y:0}])),seen=new Set();for(const a of this.agents){const p=map.get(a.id);for(const q of g.nearby(p.x,p.y,a.pheno.radius*2+26)){if(q.id===a.id)continue;const lo=Math.min(a.id,q.id),hi=Math.max(a.id,q.id),key=lo+':'+hi;if(seen.has(key))continue;seen.add(key);const b=agentMap.get(q.id);if(!b)continue;const pb=map.get(b.id);let dx=torusDelta(pb.x,p.x,Protocol.world.width),dy=torusDelta(pb.y,p.y,Protocol.world.height),d=Math.hypot(dx,dy),minD=a.pheno.radius+b.pheno.radius;if(d>=minD)continue;if(d<1e-9){const ang=keyed01(this.seed,'overlap',this.tick,lo,hi)*TAU;dx=Math.cos(ang);dy=Math.sin(ang);d=1;}const ov=minD-d,nx=dx/d,ny=dy/d,ma=a.pheno.mass,mb=b.pheno.mass,total=ma+mb,da=ov*(mb/total),db=ov*(ma/total);disp.get(a.id).x+=nx*da;disp.get(a.id).y+=ny*da;disp.get(b.id).x-=nx*db;disp.get(b.id).y-=ny*db;}}for(const p of proposals){const d=disp.get(p.id);p.x=wrap(p.x+d.x,Protocol.world.width);p.y=wrap(p.y+d.y,Protocol.world.height);}return map;
   }
-  resolveObjects(proposals){if(!this.treatment.objectsEnabled)return;const movableByKey=new Map();for(const o of this.objects)movableByKey.set('object:'+o.id,o);for(const r of this.resources)movableByKey.set('resource:'+r.id,r);for(const c of this.corpses)movableByKey.set('corpse:'+c.id,c);
-    for(const a of this.agents){const p=proposals.get(a.id);if(!p)continue;if(a.holding){const e=movableByKey.get(a.holding.kind+':'+a.holding.id);if(!e){a.holding=null;}else if(a.outputs.grip<0.32){e.heldBy=0;a.holding=null;}else{e.heldBy=a.id;e.x=wrap(p.x+Math.cos(p.dir)*(a.pheno.radius+entityRadius(e)+2),Protocol.world.width);e.y=wrap(p.y+Math.sin(p.dir)*(a.pheno.radius+entityRadius(e)+2),Protocol.world.height);a.gripTicks++;this.ecology.objectCarryTicks++;}}
-      if(!a.holding&&a.outputs.grip>0.70&&a.genome.traits.gripPower>0.05){let best=null,bd=1e9;const pool=[...this.objects,...this.resources,...this.corpses];for(const e of pool){if(e.heldBy)continue;const d=Math.sqrt(dist2(p.x,p.y,e.x,e.y))-a.pheno.radius-entityRadius(e);if(d<3&&d<bd){best=e;bd=d;}}if(best){best.heldBy=a.id;a.holding={kind:best.kind,id:best.id};this.ecology.grips++;this.logEvent({type:'grip',agent:a.id,entityKind:best.kind,entity:best.id});}}
+  resolveObjects(proposals){
+    const agents=[...this.agents].sort((a,b)=>a.id-b.id);
+    const pool=[...(this.treatment.objectsEnabled?this.objects:[]),...this.resources,...this.corpses]
+      .sort((a,b)=>entityKey(a).localeCompare(entityKey(b)));
+    const entities=new Map(pool.map(e=>[entityKey(e),e]));
+    // First release/maintain existing grips. All new intents see this same snapshot.
+    for(const a of agents){
+      const p=proposals.get(a.id);if(!p||!a.holding)continue;
+      const e=entities.get(entityKey(a.holding));
+      if(!e){a.holding=null;continue;}
+      if(e.heldBy!==a.id){a.holding=null;continue;}
+      if(a.outputs.grip<0.32){e.heldBy=0;a.holding=null;continue;}
+      e.x=wrap(p.x+Math.cos(p.dir)*(a.pheno.radius+entityRadius(e)+2),Protocol.world.width);
+      e.y=wrap(p.y+Math.sin(p.dir)*(a.pheno.radius+entityRadius(e)+2),Protocol.world.height);
+      a.gripTicks++;this.ecology.objectCarryTicks++;
     }
-    for(const o of this.objects){if(o.heldBy)continue;let px=0,py=0,count=0;for(const a of this.agents){const p=proposals.get(a.id);const dx=torusDelta(o.x,p.x,Protocol.world.width),dy=torusDelta(o.y,p.y,Protocol.world.height),d=Math.hypot(dx,dy),md=o.radius+a.pheno.radius;if(d<md&&d>1e-9){const ov=md-d,nx=dx/d,ny=dy/d;p.x=wrap(p.x+nx*ov*0.65,Protocol.world.width);p.y=wrap(p.y+ny*ov*0.65,Protocol.world.height);const push=(Math.abs(a.outputs.left_motor)+Math.abs(a.outputs.right_motor))*a.genome.traits.motorPower;px-=nx*ov*0.35*push;py-=ny*ov*0.35*push;count++;}}if(count){o.x=wrap(o.x+px/Math.max(1,o.mass/80),Protocol.world.width);o.y=wrap(o.y+py/Math.max(1,o.mass/80),Protocol.world.height);}}
+    const groups=new Map();
+    for(const a of agents){
+      const p=proposals.get(a.id);
+      if(!p||a.holding||a.outputs.grip<=0.70||a.genome.traits.gripPower<=0.05)continue;
+      let best=null,bd=Infinity,bk=Infinity;
+      for(const e of pool){
+        if(e.heldBy)continue;
+        const d=Math.sqrt(dist2(p.x,p.y,e.x,e.y))-a.pheno.radius-entityRadius(e);
+        const k=eventSeed(this.seed,'gripChoice:'+e.kind,this.tick,a.id,e.id);
+        if(d<3&&(d<bd||(d===bd&&k<bk))){best=e;bd=d;bk=k;}
+      }
+      if(best){const key=entityKey(best);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(a);}
+    }
+    for(const [key,candidates] of groups){
+      const e=entities.get(key);
+      candidates.sort((a,b)=>eventSeed(this.seed,'gripContest:'+key,this.tick,a.id)-eventSeed(this.seed,'gripContest:'+key,this.tick,b.id)||a.id-b.id);
+      const a=candidates[0];e.heldBy=a.id;a.holding={kind:e.kind,id:e.id};
+      this.ecology.grips++;this.logEvent({type:'grip',agent:a.id,entityKind:e.kind,entity:e.id});
+    }
+    // Object/body contacts are accumulated from one position snapshot.
+    const shifts=new Map(agents.map(a=>[a.id,{x:0,y:0}]));
+    const objectShifts=[];
+    for(const o of (this.treatment.objectsEnabled?[...this.objects]:[]).sort((a,b)=>a.id-b.id)){
+      if(o.heldBy)continue;let px=0,py=0,count=0;
+      for(const a of agents){
+        const p=proposals.get(a.id);if(!p)continue;
+        let dx=torusDelta(o.x,p.x,Protocol.world.width),dy=torusDelta(o.y,p.y,Protocol.world.height),d=Math.hypot(dx,dy);
+        const md=o.radius+a.pheno.radius;if(d>=md)continue;
+        let nx,ny;if(d<1e-9){const angle=keyed01(this.seed,'objectOverlap',this.tick,a.id,o.id)*TAU;nx=Math.cos(angle);ny=Math.sin(angle);}else{nx=dx/d;ny=dy/d;}
+        const ov=md-d,shift=shifts.get(a.id);shift.x+=nx*ov*0.65;shift.y+=ny*ov*0.65;
+        const push=(Math.abs(a.outputs.left_motor)+Math.abs(a.outputs.right_motor))*a.genome.traits.motorPower;
+        px-=nx*ov*0.35*push;py-=ny*ov*0.35*push;count++;
+      }
+      if(count)objectShifts.push({o,x:px/Math.max(1,o.mass/80),y:py/Math.max(1,o.mass/80)});
+    }
+    for(const a of agents){const p=proposals.get(a.id),d=shifts.get(a.id);if(p){p.x=wrap(p.x+d.x,Protocol.world.width);p.y=wrap(p.y+d.y,Protocol.world.height);}}
+    for(const d of objectShifts){d.o.x=wrap(d.o.x+d.x,Protocol.world.width);d.o.y=wrap(d.o.y+d.y,Protocol.world.height);}
   }
   applyMotionEnergy(proposals){for(const a of this.agents){const p=proposals.get(a.id);if(!p)continue;const oldx=a.x,oldy=a.y;a.x=p.x;a.y=p.y;a.dir=p.dir;const dd=Math.sqrt(dist2(oldx,oldy,a.x,a.y));a.distance+=dd;a.age++;if(a.age>=a.pheno.maturity)a.matureTicks++,this.matureExposure++;let cost=a.pheno.baseMet+(Math.abs(a.outputs.left_motor)+Math.abs(a.outputs.right_motor))*0.5*0.010*a.pheno.mass/125*a.genome.traits.motorPower;if(a.holding){let e=null;if(a.holding.kind==='object')e=this.objects.find(x=>x.id===a.holding.id);else if(a.holding.kind==='resource')e=this.resources.find(x=>x.id===a.holding.id);else if(a.holding.kind==='corpse')e=this.corpses.find(x=>x.id===a.holding.id);if(e)cost+=0.0035*entityMass(e)/100;}const emit=this.treatment.chemicalEnabled?a.outputs.chemical_emit*a.genome.traits.chemoEmit:0;a.lastEmit=emit;a.chemicalTotal+=emit;this.ecology.chemicalEmission+=emit;cost+=emit*0.006;a.energy-=cost;if(a.health<1&&a.energy>2&&a.genome.traits.repair>0){const repair=Math.min(1-a.health,0.0006*a.genome.traits.repair);a.health+=repair;a.energy-=repair*8;}a.energy=clamp(a.energy,-50,a.pheno.energyCapacity);}}
   mouthTarget(a,grid){const reach=a.pheno.radius+7;let best=null,bd=Infinity;for(const q of grid.nearby(a.x,a.y,reach+22)){if(q.kind==='agent'&&q.id===a.id)continue;const dx=torusDelta(a.x,q.x,Protocol.world.width),dy=torusDelta(a.y,q.y,Protocol.world.height),d=Math.hypot(dx,dy)-a.pheno.radius-entityRadius(q),ad=Math.abs(angleDiff(a.dir,Math.atan2(dy,dx)));if(d<=5&&ad<0.70&&d<bd){best=q;bd=d;}}return best;}
   feedingAndPredation(){const grid=this.buildGrid(true),resourceDelete=new Set(),corpseDelete=new Set(),waste=[],groups=new Map();for(const a of this.agents){const act=a.outputs.jaw*a.genome.traits.jawPower;if(act<0.12)continue;const q=this.mouthTarget(a,grid);if(!q||q.kind==='object')continue;this.ecology.bites++;const key=q.kind+':'+q.id;if(!groups.has(key))groups.set(key,[]);groups.get(key).push({a,q,act,key:eventSeed(this.seed,'jawTie',this.tick,a.id,q.id)});}for(const intents of groups.values()){intents.sort((x,y)=>x.key-y.key||x.a.id-y.a.id);const q=intents[0].q;if(q.kind==='resource'){const r=q;let available=Math.max(0,r.amount);for(const it of intents){if((r.heldBy&&r.heldBy!==it.a.id)||available<=0)continue;const take=Math.min(available,0.20+0.55*it.act),eff=digestEfficiency(it.a,r.material),gain=take*resourceEnergy(r.material)*eff;it.a.energy=Math.min(it.a.pheno.energyCapacity,it.a.energy+gain);available-=take;if(r.material==='primary'){it.a.foodPrimary+=take;this.ecology.consumedPrimary+=take;}else if(r.material==='waste'){it.a.foodWaste+=take;this.ecology.consumedWaste+=take;}else{it.a.foodTissue+=take;this.ecology.consumedTissue+=take;}const wasteAmt=take*(1-eff)*0.52;if(wasteAmt>0.06)waste.push(this.makeResource('waste',wasteAmt,it.a.x,it.a.y));this.ecology.wasteProduced+=wasteAmt;}r.amount=available;if(r.amount<=0.04)resourceDelete.add(r.id);}else if(q.kind==='corpse'){const c=q;let available=Math.max(0,c.biomass);for(const it of intents){if((c.heldBy&&c.heldBy!==it.a.id)||available<=0)continue;const take=Math.min(available,0.15+0.65*it.act),eff=it.a.genome.traits.digestTissue;it.a.energy=Math.min(it.a.pheno.energyCapacity,it.a.energy+take*Protocol.resources.tissueEnergyPerUnit*eff);it.a.foodTissue+=take;this.ecology.consumedTissue+=take;available-=take;}c.biomass=available;if(c.biomass<=0.05)corpseDelete.add(c.id);}else if(q.kind==='agent'&&Protocol.ecology.predation){const victim=q;let remaining=Math.max(0,victim.health);for(const it of intents){if(it.a.id===victim.id||remaining<=0)continue;const proposed=0.0014*it.act*it.a.pheno.mass/(100*victim.pheno.toughness),damage=Math.min(remaining,proposed);remaining-=damage;it.a.damageGiven+=damage;victim.damageTaken+=damage;this.ecology.predationDamage+=damage;const gain=damage*45*it.a.genome.traits.digestTissue;it.a.energy=Math.min(it.a.pheno.energyCapacity,it.a.energy+gain);}victim.health=remaining;}}if(resourceDelete.size){this.resources=this.resources.filter(r=>!resourceDelete.has(r.id));for(const a of this.agents)if(a.holding?.kind==='resource'&&resourceDelete.has(a.holding.id))a.holding=null;}if(corpseDelete.size){this.corpses=this.corpses.filter(c=>!corpseDelete.has(c.id));for(const a of this.agents)if(a.holding?.kind==='corpse'&&corpseDelete.has(a.holding.id))a.holding=null;}if(waste.length&&this.resources.length<Protocol.resources.maxLooseResources)this.resources.push(...waste.slice(0,Protocol.resources.maxLooseResources-this.resources.length));
   }
   finalizeFixedAge(a){if(a.evalRecorded)return;a.evalRecorded=true;this.fixedAgeN++;this.fixedAgeOffspring+=a.offspring;if(a.offspring>0)this.fixedAgeReproduced++;}
-  killDead(){const dead=[],alive=[];for(const a of this.agents){if(a.age>=Protocol.observer.fixedAgeEndpoint&&!a.evalRecorded)this.finalizeFixedAge(a);if(a.energy<=0||a.health<=0){if(!a.evalRecorded)this.finalizeFixedAge(a);this.completedN++;this.completedOffspring+=a.offspring;if(a.offspring>0)this.completedReproduced++;dead.push(a);}else alive.push(a);}for(const a of dead){this.deaths++;const biomass=Math.max(0.3,a.pheno.mass/85+Math.max(0,a.energy)/80);this.corpses.push({kind:'corpse',id:this.nextResourceId++,x:a.x,y:a.y,radius:Math.max(4,a.pheno.radius*0.85),biomass,age:0,sourceAgent:a.id,heldBy:0});this.ecology.corpsesCreated++;this.logEvent({type:'death',agent:a.id,generation:a.generation,genomeHash:genomeHash(a.genome),offspring:a.offspring});}this.agents=alive;if(!this.agents.length)this.extinct=true;}
+  killDead(){const dead=[],alive=[];for(const a of this.agents){if(a.age>=Protocol.observer.fixedAgeEndpoint&&!a.evalRecorded)this.finalizeFixedAge(a);if(a.energy<=0||a.health<=0){if(!a.evalRecorded)this.finalizeFixedAge(a);this.completedN++;this.completedOffspring+=a.offspring;if(a.offspring>0)this.completedReproduced++;dead.push(a);}else alive.push(a);}const deadIds=new Set(dead.map(a=>a.id));for(const e of [...this.objects,...this.resources,...this.corpses])if(deadIds.has(e.heldBy))e.heldBy=0;for(const a of dead){a.holding=null;this.deaths++;const biomass=Math.max(0.3,a.pheno.mass/85+Math.max(0,a.energy)/80);this.corpses.push({kind:'corpse',id:this.nextResourceId++,x:a.x,y:a.y,radius:Math.max(4,a.pheno.radius*0.85),biomass,age:0,sourceAgent:a.id,heldBy:0});this.ecology.corpsesCreated++;this.logEvent({type:'death',agent:a.id,generation:a.generation,genomeHash:genomeHash(a.genome),offspring:a.offspring});}this.agents=alive;if(!this.agents.length)this.extinct=true;}
   eligible(a){return a.age>=a.pheno.maturity&&a.energy>=a.pheno.reproThreshold&&this.tick-a.lastBirthTick>=a.pheno.cooldown;}
   combineAndMutate(a,b,childId){let base;if(this.treatment.reproductionMode==='asexual'||!b)base=cloneGenome(a.genome);else base=crossover(a.genome,b.genome,this.seed,this.tick,childId);return mutateGenome(base,this.seed,this.tick,childId,this.treatment.mutationEnabled);}
   reproduceSexual(){const grid=new SpatialGrid(Protocol.world.width,Protocol.world.height,42);for(const a of this.agents)grid.add(a,a.x,a.y);const candidates=[],seen=new Set();for(const a of this.agents){if(!this.eligible(a))continue;for(const b of grid.nearby(a.x,a.y,a.pheno.radius+26)){if(b.id===a.id||!this.eligible(b))continue;const lo=Math.min(a.id,b.id),hi=Math.max(a.id,b.id),k=lo+':'+hi;if(seen.has(k))continue;seen.add(k);const rr=a.pheno.radius+b.pheno.radius+1.5;if(dist2(a.x,a.y,b.x,b.y)<=rr*rr)candidates.push({a:a.id===lo?a:b,b:a.id===lo?b:a,key:eventSeed(this.seed,'mateTie',this.tick,lo,hi)});}}candidates.sort((x,y)=>x.key-y.key||x.a.id-y.a.id);const used=new Set();for(const p of candidates){if(used.has(p.a.id)||used.has(p.b.id)||!this.eligible(p.a)||!this.eligible(p.b))continue;this.makeChild(p.a,p.b);used.add(p.a.id);used.add(p.b.id);}}
@@ -191,7 +263,7 @@ class World{
   reproduction(){if(this.extinct)return;if(this.treatment.reproductionMode==='asexual')this.reproduceAsexual();else this.reproduceSexual();}
   recordAncestryExposure(){if(this.tick%10!==0)return;for(const a of this.agents){if(a.age<a.pheno.maturity)continue;const bin=Math.floor(a.generation/50)*50;if(!this.cohortStats[bin])this.cohortStats[bin]={birthAncestry:{},eligibleExposure:{},births:0};addWeightedMap(this.cohortStats[bin].eligibleExposure,a.ancestry,10);}}
   resourceFlow(){this.resourceAccumulator+=Protocol.resources.primaryFluxPerTick;while(this.resourceAccumulator>=1&&this.resources.length<Protocol.resources.maxLooseResources){this.resourceAccumulator-=1;this.resources.push(this.makeResource('primary',1,this.rngEnvironment.next()*Protocol.world.width,this.rngEnvironment.next()*Protocol.world.height));}for(const r of this.resources)r.age=(r.age||0)+1;const waste=[];for(const c of this.corpses){c.age++;if(c.age>=Protocol.resources.corpseDecayTicks&&c.biomass>0){waste.push(this.makeResource('waste',c.biomass*0.72,c.x,c.y));c.biomass=0;}}const gone=new Set(this.corpses.filter(c=>c.biomass<=0.04).map(c=>c.id));this.corpses=this.corpses.filter(c=>c.biomass>0.04);if(gone.size)for(const a of this.agents)if(a.holding?.kind==='corpse'&&gone.has(a.holding.id))a.holding=null;if(waste.length&&this.resources.length<Protocol.resources.maxLooseResources)this.resources.push(...waste.slice(0,Protocol.resources.maxLooseResources-this.resources.length));}
-  step(){if(this.extinct||this.technicalFailure)return;try{const sensorGrid=this.buildGrid(true),proposals=this.actionPhase(sensorGrid),map=this.resolveAgentCollisions(proposals);this.resolveObjects(map);this.applyMotionEnergy(map);this.feedingAndPredation();this.killDead();this.reproduction();this.recordAncestryExposure();this.resourceFlow();this.tick++;this.captureObserver();if(!this.agents.length)this.extinct=true;}catch(err){this.technicalFailure=true;this.logEvent({type:'technical_failure',message:String(err?.stack||err)});}}
+  step(){if(this.extinct||this.technicalFailure)return;try{for(const list of [this.agents,this.objects,this.resources,this.corpses])list.sort((a,b)=>a.id-b.id);const sensorGrid=this.buildGrid(true),proposals=this.actionPhase(sensorGrid),map=this.resolveAgentCollisions(proposals);this.resolveObjects(map);this.applyMotionEnergy(map);this.feedingAndPredation();this.killDead();this.reproduction();this.recordAncestryExposure();this.resourceFlow();this.tick++;this.captureObserver();if(!this.agents.length)this.extinct=true;}catch(err){this.technicalFailure=true;this.logEvent({type:'technical_failure',message:String(err?.stack||err)});}}
   phenotypeDescriptor(a){const t=a.genome.traits;return[t.radius,t.motorPower,t.basalScale,t.storageScale,t.digestPrimary,t.digestWaste,t.digestTissue,t.repair,t.armor,t.jawPower,t.gripPower,t.chemoEmit,t.chemoSense,a.genome.sensors.length,a.genome.hidden.length,a.genome.connections.length];}
   noveltyScore(sample){if(!this.noveltyArchive.length)return 0;let total=0;for(const d of sample){let best=Infinity;for(const q of this.noveltyArchive){let s=0;for(let i=0;i<d.length;i++){const z=(d[i]-q[i])/Math.max(1,Math.abs(d[i]),Math.abs(q[i]));s+=z*z;}best=Math.min(best,Math.sqrt(s/d.length));}total+=best;}return total/sample.length;}
   estimateClusters(sample){if(!sample.length)return 0;const reps=[];for(const a of sample){let found=false;for(const r of reps)if(genomeDistance(a.genome,r.genome)<0.22){found=true;break;}if(!found)reps.push(a);}return reps.length;}
@@ -216,20 +288,44 @@ class World{
   }
   captureObserver(){if(this.tick%1000===0){const sm=this.agents.slice().sort((a,b)=>eventSeed(this.seed,'clusterSample',this.tick,a.id)-eventSeed(this.seed,'clusterSample',this.tick,b.id)).slice(0,100);this.lastClusterCount=this.estimateClusters(sm);const desc=sm.slice(0,20).map(a=>this.phenotypeDescriptor(a));this.noveltyArchive.push(...desc);if(this.noveltyArchive.length>400)this.noveltyArchive.splice(0,this.noveltyArchive.length-400);}if(this.tick%Protocol.observer.archiveBaseStride===0){const m=this.metrics();this.archive.add(m);}if(this.tick%50===0){const mg=Math.floor(median(this.agents.map(a=>a.generation)));for(const cp of Protocol.observer.checkpointGenerations)if(mg>=cp&&!this.checkpointDone.has(cp))this.captureCheckpoint(cp);if(mg>=500){const p=Protocol.observer.periodicCheckpointEveryGeneration,cp=Math.floor(mg/p)*p;if(cp>=500&&!this.checkpointDone.has(cp))this.captureCheckpoint(cp);}}}
   captureCheckpoint(generation){const sample=this.agents.slice().sort((a,b)=>eventSeed(this.seed,'checkpoint',generation,a.id)-eventSeed(this.seed,'checkpoint',generation,b.id)).slice(0,16);this.checkpoints[generation]={generation,tick:this.tick,metrics:this.metrics(),genomes:sample.map(a=>cloneGenome(a.genome)),agentIds:sample.map(a=>a.id),hashes:sample.map(a=>genomeHash(a.genome))};this.checkpointDone.add(generation);this.logEvent({type:'checkpoint',generation,agentIds:sample.map(a=>a.id),hashes:sample.map(a=>genomeHash(a.genome))});}
-  stateHash(){let h=2166136261>>>0;const add=s=>{s=String(s);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}};add(this.seed);add(this.tick);add(this.births);add(this.deaths);add(this.resourceAccumulator.toFixed(9));for(const a of this.agents.slice().sort((x,y)=>x.id-y.id)){add(a.id);add(a.x.toFixed(6));add(a.y.toFixed(6));add(a.energy.toFixed(6));add(a.health.toFixed(6));add(a.generation);add(genomeHash(a.genome));}for(const r of this.resources.slice().sort((x,y)=>x.id-y.id)){add(r.id);add(r.material);add(r.x.toFixed(5));add(r.y.toFixed(5));add(r.amount.toFixed(5));}return hex32(h);}
-  dump(){return{schema:'SomikWorldResearchState/1',engineVersion:ENGINE_VERSION,protocolId:PROTOCOL_ID,protocolHash:PROTOCOL_HASH,engineHash:ENGINE_HASH,protocolVariantHash:this.protocolVariantHash,seed:this.seed,treatment:this.treatment,rngInit:this.rngInit.dump(),rngEnvironment:this.rngEnvironment.dump(),ancestorGenome:this.ancestorGenome,ancestorHash:this.ancestorHash,tick:this.tick,nextAgentId:this.nextAgentId,nextResourceId:this.nextResourceId,nextObjectId:this.nextObjectId,births:this.births,deaths:this.deaths,extinct:this.extinct,technicalFailure:this.technicalFailure,resourceAccumulator:this.resourceAccumulator,agents:this.agents.map(a=>a.dump()),resources:this.resources,objects:this.objects,corpses:this.corpses,eventBuffer:this.eventBuffer,recentEvents:this.recentEvents,lineageRecent:[...this.lineageRecent.entries()],archive:this.archive.dump(),checkpoints:this.checkpoints,checkpointDone:[...this.checkpointDone],noveltyArchive:this.noveltyArchive,fixedAgeN:this.fixedAgeN,fixedAgeOffspring:this.fixedAgeOffspring,fixedAgeReproduced:this.fixedAgeReproduced,completedN:this.completedN,completedOffspring:this.completedOffspring,completedReproduced:this.completedReproduced,ecology:this.ecology,matureExposure:this.matureExposure,lastClusterCount:this.lastClusterCount,cohortStats:this.cohortStats,mutationStats:this.mutationStats,startObserverTime:this.startObserverTime};}
-  static load(o){if(o.protocolId!==PROTOCOL_ID)throw new Error('Protocol mismatch: '+o.protocolId);const w=Object.create(World.prototype);Object.assign(w,o);w.rngInit=RNG.load(o.rngInit);w.rngEnvironment=RNG.load(o.rngEnvironment);w.agents=o.agents.map(x=>new Agent(x));w.lineageRecent=new Map(o.lineageRecent||[]);w.archive=MultiResolutionArchive.load(o.archive);w.checkpointDone=new Set(o.checkpointDone||[]);w.ancestorGenome=cloneGenome(o.ancestorGenome);w.cohortStats=o.cohortStats||{};w.mutationStats=o.mutationStats||{birthsWithMutations:0,totalChanges:0,byType:{trait:0,sensor:0,bias:0,weight:0,structure:0},byAction:{},byTarget:{}};return w;}
+  stateHash(){
+    const agents=[...this.agents].sort((a,b)=>a.id-b.id).map(a=>({
+      id:a.id,x:a.x,y:a.y,dir:a.dir,energy:a.energy,health:a.health,age:a.age,
+      generation:a.generation,bornTick:a.bornTick,lastBirthTick:a.lastBirthTick,
+      offspring:a.offspring,parentA:a.parentA,parentB:a.parentB,lineageRoot:a.lineageRoot,
+      ancestry:a.ancestry,genome:a.genome,holding:a.holding,lastEmit:a.lastEmit,hiddenState:a.hiddenState
+    }));
+    return digest64(stableStringify({protocol:PROTOCOL_HASH,engine:ENGINE_HASH,seed:this.seed,tick:this.tick,
+      treatment:this.treatment,nextAgentId:this.nextAgentId,nextResourceId:this.nextResourceId,nextObjectId:this.nextObjectId,
+      births:this.births,deaths:this.deaths,extinct:this.extinct,technicalFailure:this.technicalFailure,
+      resourceAccumulator:this.resourceAccumulator,rngInit:this.rngInit.dump(),rngEnvironment:this.rngEnvironment.dump(),agents,
+      resources:[...this.resources].sort((a,b)=>a.id-b.id),objects:[...this.objects].sort((a,b)=>a.id-b.id),corpses:[...this.corpses].sort((a,b)=>a.id-b.id)}));
+  }
+  dump(){return{schema:'SomikWorldResearchState/1.1',engineVersion:ENGINE_VERSION,protocolId:PROTOCOL_ID,protocolHash:PROTOCOL_HASH,engineHash:ENGINE_HASH,protocolVariantHash:this.protocolVariantHash,seed:this.seed,treatment:this.treatment,rngInit:this.rngInit.dump(),rngEnvironment:this.rngEnvironment.dump(),ancestorGenome:this.ancestorGenome,ancestorHash:this.ancestorHash,tick:this.tick,nextAgentId:this.nextAgentId,nextResourceId:this.nextResourceId,nextObjectId:this.nextObjectId,births:this.births,deaths:this.deaths,extinct:this.extinct,technicalFailure:this.technicalFailure,resourceAccumulator:this.resourceAccumulator,agents:this.agents.map(a=>a.dump()),resources:this.resources,objects:this.objects,corpses:this.corpses,eventBuffer:this.eventBuffer,recentEvents:this.recentEvents,lineageRecent:[...this.lineageRecent.entries()],archive:this.archive.dump(),checkpoints:this.checkpoints,checkpointDone:[...this.checkpointDone],noveltyArchive:this.noveltyArchive,fixedAgeN:this.fixedAgeN,fixedAgeOffspring:this.fixedAgeOffspring,fixedAgeReproduced:this.fixedAgeReproduced,completedN:this.completedN,completedOffspring:this.completedOffspring,completedReproduced:this.completedReproduced,ecology:this.ecology,matureExposure:this.matureExposure,lastClusterCount:this.lastClusterCount,cohortStats:this.cohortStats,mutationStats:this.mutationStats,startObserverTime:this.startObserverTime};}
+  static load(o){if(!o||o.schema!=='SomikWorldResearchState/1.1')throw new Error('Unsupported state schema: '+(o?.schema||'missing'));if(o.protocolId!==PROTOCOL_ID||o.protocolHash!==PROTOCOL_HASH)throw new Error('Protocol mismatch: '+o.protocolId+'/'+o.protocolHash);if(o.engineHash!==ENGINE_HASH)throw new Error('Engine mismatch: '+o.engineHash);validateState(o);o=JSON.parse(JSON.stringify(o));const w=Object.create(World.prototype);Object.assign(w,o);w.rngInit=RNG.load(o.rngInit);w.rngEnvironment=RNG.load(o.rngEnvironment);w.agents=o.agents.map(x=>new Agent(x));w.lineageRecent=new Map(o.lineageRecent||[]);w.archive=MultiResolutionArchive.load(o.archive);w.checkpointDone=new Set(o.checkpointDone||[]);w.ancestorGenome=cloneGenome(o.ancestorGenome);w.cohortStats=o.cohortStats||{};w.mutationStats=o.mutationStats||{birthsWithMutations:0,totalChanges:0,byType:{trait:0,sensor:0,bias:0,weight:0,structure:0},byAction:{},byTarget:{}};return w;}
 }
 
-function runAssay(genome,seed,opts={}){const w=new World({seed,founderGenome:genome,founderCount:opts.founderCount||24,mutationEnabled:false,reproductionMode:opts.reproductionMode||'asexual',objectsEnabled:opts.objectsEnabled??false,chemicalEnabled:opts.chemicalEnabled??false});const ticks=opts.ticks||6000;for(let i=0;i<ticks&&!w.extinct&&!w.technicalFailure;i++)w.step();const m=w.metrics();return{seed,ticks:w.tick,genomeHash:genomeHash(genome),births:m.births,population:m.population,extinct:m.extinct,meanOffspringFixedAge:m.meanOffspringFixedAge,reproducedFixedAgeFraction:m.reproducedFixedAgeFraction,reproRate:m.reproductionRatePer1000MatureTicks,meanEnergy:m.meanEnergy,stateHash:w.stateHash()};}
+function runAssay(genome,seed,opts={}){const w=new World({seed,founderGenome:genome,founderCount:opts.founderCount||24,mutationEnabled:false,reproductionMode:opts.reproductionMode||'asexual',objectsEnabled:opts.objectsEnabled??false,chemicalEnabled:opts.chemicalEnabled??false,memoryEnabled:opts.memoryEnabled!==false});const ticks=opts.ticks||6000;for(let i=0;i<ticks&&!w.extinct&&!w.technicalFailure;i++)w.step();const m=w.metrics();return{seed,ticks:w.tick,genomeHash:genomeHash(genome),births:m.births,population:m.population,extinct:m.extinct,technicalFailure:m.technicalFailure,meanOffspringFixedAge:m.meanOffspringFixedAge,reproducedFixedAgeFraction:m.reproducedFixedAgeFraction,reproRate:m.reproductionRatePer1000MatureTicks,meanEnergy:m.meanEnergy,stateHash:w.stateHash()};}
 
-function commonGarden(genomes,ancestor,assaySeeds=[91001,91002,91003],opts={}){const anc=assaySeeds.map(s=>runAssay(ancestor,s,opts)),evo=[];for(const g of genomes)for(const s of assaySeeds)evo.push(runAssay(g,s,opts));const aMap=new Map(anc.map(x=>[x.seed,x.reproRate])),ratios=evo.map(x=>({seed:x.seed,genomeHash:x.genomeHash,ratio:aMap.get(x.seed)>0?x.reproRate/aMap.get(x.seed):NaN})).filter(x=>Number.isFinite(x.ratio));return{ancestor:anc,evolved:evo,ratios,meanRatio:mean(ratios.map(x=>x.ratio)),meanLogRatio:mean(ratios.filter(x=>x.ratio>0).map(x=>Math.log(x.ratio)))};}
+function commonGarden(genomes,ancestor,assaySeeds=[91001,91002,91003],opts={}){
+  const anc=assaySeeds.map(seed=>runAssay(ancestor,seed,opts)),evo=[];
+  for(const genome of genomes)for(const seed of assaySeeds)evo.push(runAssay(genome,seed,opts));
+  const aMap=new Map(anc.map(x=>[x.seed,x]));
+  const ratios=evo.map(x=>{const a=aMap.get(x.seed);return{seed:x.seed,genomeHash:x.genomeHash,
+    ratio:!a.technicalFailure&&!x.technicalFailure&&a.reproRate>0?x.reproRate/a.reproRate:null,
+    reason:a.technicalFailure||x.technicalFailure?'technical-failure':a.reproRate>0?null:'ancestor-zero-reproduction'};});
+  const valid=ratios.filter(x=>Number.isFinite(x.ratio)),positive=valid.filter(x=>x.ratio>0);
+  return{ancestor:anc,evolved:evo,ratios,validPairs:valid.length,totalPairs:ratios.length,
+    meanRatio:valid.length?mean(valid.map(x=>x.ratio)):null,
+    meanLogRatio:valid.length&&positive.length===valid.length?mean(positive.map(x=>Math.log(x.ratio))):null,
+    zeroRatios:valid.length-positive.length};
+}
 
 function knockoutGenome(g,connectionId){const x=cloneGenome(g),c=x.connections.find(c=>c.id===connectionId);if(c)c.enabled=false;return x;}
 function oneStepMutant(g,seed,index){const x=cloneGenome(g),r=new RNG(eventSeed(seed,'neighborhood',0,index));const mode=r.int(4);if(mode===0){const k=TraitKeys[r.int(TraitKeys.length)],old=x.traits[k];x.traits[k]=clampTrait(k,old+r.gauss()*Protocol.mutation.traitSigma*Math.max(.2,Math.abs(old)));}else if(mode===1&&x.connections.length){x.connections[r.int(x.connections.length)].weight+=r.gauss()*Protocol.mutation.weightSigma;}else if(mode===2&&x.hidden.length){x.hidden[r.int(x.hidden.length)].bias+=r.gauss()*Protocol.mutation.biasSigma;}else if(x.sensors.length){const s=x.sensors[r.int(x.sensors.length)];s.angle=wrap(s.angle+r.gauss()*.18,TAU);}return sanitizeGenome(x);}
-function mutationalNeighborhood(g,seed=99001,n=64,assayOpts={ticks:3500,founderCount:16}){const base=runAssay(g,seed,assayOpts),rows=[];for(let i=0;i<n;i++){const m=oneStepMutant(g,seed,i),r=runAssay(m,seed,assayOpts);rows.push({i,genomeHash:genomeHash(m),reproRate:r.reproRate,relative:base.reproRate>0?r.reproRate/base.reproRate:NaN});}const rel=rows.map(x=>x.relative).filter(Number.isFinite);return{base,rows,beneficial:rel.filter(x=>x>1.02).length,neutral:rel.filter(x=>x>=.98&&x<=1.02).length,deleterious:rel.filter(x=>x<.98).length,meanRelative:mean(rel)};}
+function mutationalNeighborhood(g,seed=99001,n=64,assayOpts={ticks:3500,founderCount:16}){const base=runAssay(g,seed,assayOpts),rows=[];for(let i=0;i<n;i++){const m=oneStepMutant(g,seed,i),r=runAssay(m,seed,assayOpts);rows.push({i,genomeHash:genomeHash(m),reproRate:r.reproRate,relative:base.reproRate>0?r.reproRate/base.reproRate:NaN});}const rel=rows.map(x=>x.relative).filter(Number.isFinite);return{base,rows,beneficial:rel.filter(x=>x>1.02).length,neutral:rel.filter(x=>x>=.98&&x<=1.02).length,deleterious:rel.filter(x=>x<.98).length,validComparisons:rel.length,unassessable:rows.length-rel.length,meanRelative:rel.length?mean(rel):null};}
 
-function selfTest(){const results=[];function test(name,fn){try{const d=fn();results.push({name,ok:!!d,detail:typeof d==='string'?d:''});}catch(e){results.push({name,ok:false,detail:String(e.message||e)});}}
+function selfTest(){const results=[];function test(name,fn){try{const d=fn();results.push({name,ok:d===true,detail:typeof d==='string'?d:(d===true?'':'Expected true, received '+String(d))});}catch(e){results.push({name,ok:false,detail:String(e.message||e)});}}
   test('same seed deterministic',()=>{const a=new World({seed:12345}),b=new World({seed:12345});for(let i=0;i<600;i++){a.step();b.step();}return a.stateHash()===b.stateHash()||`A ${a.stateHash()} B ${b.stateHash()}`;});
   test('different seed diverges',()=>{const a=new World({seed:12345}),b=new World({seed:12346});for(let i=0;i<250;i++){a.step();b.step();}return a.stateHash()!==b.stateHash();});
   test('save/load continuation deterministic',()=>{const a=new World({seed:222});for(let i=0;i<300;i++)a.step();const b=World.load(JSON.parse(JSON.stringify(a.dump())));for(let i=0;i<200;i++){a.step();b.step();}return a.stateHash()===b.stateHash()||`A ${a.stateHash()} B ${b.stateHash()}`;});
@@ -237,8 +333,13 @@ function selfTest(){const results=[];function test(name,fn){try{const d=fn();res
   test('resource flux is population independent',()=>Protocol.resources.primaryFluxPerTick===0.22&&Protocol.ecology.populationFeedback===false);
   test('no semantic ray sensor types',()=>founderGenome().sensors.every(s=>Object.keys(s).every(k=>['id','angle','range','gain'].includes(k))));
   test('observer archive does not affect state hash',()=>{const a=new World({seed:444}),b=new World({seed:444});b.archive.add=()=>{};for(let i=0;i<400;i++){a.step();b.step();}return a.stateHash()===b.stateHash();});
+  test('metrics do not advance scientific state',()=>{const a=new World({seed:555}),b=new World({seed:555});for(let i=0;i<40;i++)a.metrics();for(let i=0;i<250;i++){a.step();b.step();}return a.stateHash()===b.stateHash();});
+  test('state hash covers recurrent neural state',()=>{const a=new World({seed:666}),b=World.load(JSON.parse(JSON.stringify(a.dump())));const id=a.agents[0].genome.hidden[0].id;b.agents[0].hiddenState[id]=0.123456789;return a.stateHash()!==b.stateHash();});
+  test('state hash covers movable-object state',()=>{const a=new World({seed:777}),b=World.load(JSON.parse(JSON.stringify(a.dump())));if(!b.objects.length)return false;b.objects[0].x=wrap(b.objects[0].x+1,Protocol.world.width);return a.stateHash()!==b.stateHash();});
+  test('protocol hash mismatch is rejected',()=>{const a=new World({seed:888}).dump();a.protocolHash='bad';try{World.load(a);return false;}catch{return true;}});
+  test('founders are genome-identical',()=>{const w=new World({seed:999});return new Set(w.agents.map(a=>genomeHash(a.genome))).size===1;});
   return{ok:results.every(x=>x.ok),results,protocolId:PROTOCOL_ID,protocolHash:PROTOCOL_HASH,engineHash:ENGINE_HASH};
 }
 
-return{ENGINE_VERSION,PROTOCOL_ID,PROTOCOL_HASH,ENGINE_HASH,Protocol,Limits,RNG,World,Agent,founderGenome,phenotype,genomeHash,genomeDistance,cloneGenome,runAssay,commonGarden,knockoutGenome,mutationalNeighborhood,selfTest,helpers:{clamp,mean,median,variance,eventSeed,keyed01,wrap,dist2}};
+return{ENGINE_VERSION,PROTOCOL_ID,PROTOCOL_HASH,ENGINE_HASH,Protocol,Limits,RNG,World,Agent,founderGenome,phenotype,genomeHash,genomeDistance,cloneGenome,runAssay,commonGarden,knockoutGenome,mutationalNeighborhood,selfTest,snapshotHash,helpers:{clamp,mean,median,variance,eventSeed,keyed01,wrap,dist2}};
 });

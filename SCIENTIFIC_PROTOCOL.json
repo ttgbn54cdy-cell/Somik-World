@@ -1,0 +1,122 @@
+{
+  "product": "Somik World Research 1.1 Classic",
+  "protocolId": "SW-R1-OEL-1.1",
+  "protocolHash": "e9d23eefa006dec9",
+  "status": "frozen-research-1.1",
+  "purpose": "Long-horizon open evolutionary laboratory with heritable morphology, physiology, sensors and neural topology; no target behavior or internal fitness score.",
+  "world": {
+    "width": 1200,
+    "height": 720,
+    "topology": "2D torus",
+    "synchronous": true
+  },
+  "founders": {
+    "count": 72,
+    "ancestorSeed": 13733069,
+    "initialEnergyFraction": 0.58,
+    "initialHealth": 1
+  },
+  "resources": {
+    "initialPrimary": 240,
+    "primaryFluxPerTick": 0.22,
+    "primaryEnergyPerUnit": 42,
+    "wasteEnergyPerUnit": 18,
+    "tissueEnergyPerUnit": 34,
+    "resourceRadius": 3.5,
+    "corpseDecayTicks": 5000,
+    "maxLooseResources": 9000
+  },
+  "objects": {
+    "count": 48,
+    "minRadius": 8,
+    "maxRadius": 18,
+    "density": 2.3
+  },
+  "interactionRevision": "simultaneous-grip-and-object-contact-1",
+  "physics": {
+    "baseDensity": 1,
+    "maxLinearSpeed": 2.6,
+    "baseTurnRate": 0.22,
+    "collisionIterations": 1
+  },
+  "brain": {
+    "minHidden": 4,
+    "maxHidden": 32,
+    "minRaySensors": 2,
+    "maxRaySensors": 12,
+    "actuators": [
+      "left_motor",
+      "right_motor",
+      "jaw",
+      "grip",
+      "chemical_emit"
+    ],
+    "memoryOffControl": true,
+    "fixedSensors": [
+      "energy",
+      "health",
+      "touch",
+      "chemical"
+    ],
+    "activation": "tanh",
+    "recurrent": true
+  },
+  "mutation": {
+    "traitSigma": 0.08,
+    "weightSigma": 0.14,
+    "biasSigma": 0.1,
+    "basePerGene": 0.008,
+    "baseStructural": 0.0025,
+    "rateHeritable": true,
+    "structuralHeritable": true
+  },
+  "reproduction": {
+    "mode": "sexual-hermaphroditic",
+    "maturityBaseTicks": 300,
+    "cooldownBaseTicks": 260,
+    "minContributionEnergy": 18,
+    "developmentEfficiency": 0.82,
+    "asexualControlAvailable": true
+  },
+  "ecology": {
+    "predation": true,
+    "scavenging": true,
+    "wasteCrossFeeding": true,
+    "genericGrip": true,
+    "chemicalField": true,
+    "hazard": false,
+    "populationFeedback": false,
+    "rescue": false
+  },
+  "observer": {
+    "feedbackToWorld": false,
+    "checkpointGenerations": [
+      50,
+      150,
+      300
+    ],
+    "periodicCheckpointEveryGeneration": 250,
+    "archiveBaseStride": 250,
+    "archiveMaxPerLevel": 4096,
+    "fixedAgeEndpoint": 5000
+  },
+  "controls": [
+    "mutation-off",
+    "asexual-control",
+    "no-objects",
+    "no-chemical",
+    "memory-off",
+    "ancestor-replay",
+    "common-garden",
+    "connection-knockout",
+    "mutational-neighborhood",
+    "multi-seed"
+  ],
+  "frozenRules": [
+    "No mid-run parameter edits",
+    "No population rescue",
+    "Resource flux independent of population",
+    "Display/analytics must not consume simulation RNG",
+    "Extinction is a valid result"
+  ]
+}

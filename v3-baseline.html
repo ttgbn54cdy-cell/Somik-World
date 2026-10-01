@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Somik World v3 — Evolution Baseline</title>
+<style>
+:root{--bg:#111827;--panel:#1f2937;--line:#374151;--text:#f9fafb;--muted:#cbd5e1;--grass:#4b9b4f;--card:#182233}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}.app{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) 370px;direction:ltr}main,aside{direction:rtl}main{padding:14px;min-width:0}aside{background:var(--panel);padding:14px;border-left:1px solid var(--line);overflow:auto;max-height:100vh}h1{margin:0 0 5px;font-size:clamp(28px,3.5vw,48px)}.subtitle{color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:10px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}button,select,input{padding:9px 11px;border:0;border-radius:9px;font-weight:700}button{cursor:pointer}input,select{background:#0f172a;color:#f8fafc;border:1px solid #475569}.canvasWrap{width:100%;background:#0b1220;border:2px solid var(--line);border-radius:12px;overflow:hidden}#world{width:100%;height:auto;display:block;background:var(--grass);touch-action:manipulation}.row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}.row span{color:var(--muted)}.card{margin-top:12px;padding:11px;border:1px solid var(--line);border-radius:11px;background:var(--card)}.card h3{margin:0 0 8px}.small{font-size:12px;line-height:1.5;color:var(--muted)}.pill{display:inline-block;padding:3px 7px;border:1px solid #475569;border-radius:999px;font-size:11px;margin:2px}.ok{color:#86efac}.warn{color:#fde68a}.bad{color:#fca5a5}.legend{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:var(--muted)}.swatch{display:inline-block;width:12px;height:12px;margin-left:5px;vertical-align:-1px}.metricGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.metric{padding:8px;border:1px solid #334155;border-radius:8px;background:#111827}.metric b{display:block;font-size:16px}.metric span{font-size:11px;color:#94a3b8}.lab button{margin:3px 0;width:100%}#plot{width:100%;height:130px;background:#101827;border:1px solid var(--line);border-radius:8px}.statusBox{white-space:pre-wrap;background:#0b1220;padding:8px;border-radius:8px;border:1px solid #334155;max-height:220px;overflow:auto}.checkpoint{padding:6px 0;border-bottom:1px solid #334155}.topline{display:flex;justify-content:space-between;gap:8px;align-items:center}.protocolHash{font-family:monospace;font-size:11px;color:#93c5fd}.selected{outline:2px solid #fff}@media(max-width:850px){.app{display:flex;flex-direction:column}.app main{order:1}.app aside{order:2;max-height:none;border-left:0;border-top:1px solid var(--line)}main{padding:9px}h1{text-align:center}.subtitle{text-align:center}.toolbar{justify-content:center}.metricGrid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<main>
+  <h1>Somik World v3</h1>
+  <div class="subtitle">Evolution Baseline — ניסוי אבולוציוני קפוא: חישה פיזיקלית גולמית, מוח recurrent קבוע, רבייה א־מינית, RNG מופרד ובקרות Common Garden / Replay / Mutation‑Off.</div>
+  <div class="toolbar">
+    <button id="pauseBtn">⏸ עצור</button><button id="resetBtn">↻ עולם חדש</button><button id="speedBtn">⚡ x1</button><button id="saveBtn">💾 שמור</button><button id="exportBtn">⬇️ ייצא נתונים</button><button id="importBtn">⬆️ ייבא שמירה</button><input id="importFile" type="file" accept=".json" style="display:none">
+    <label>Seed <input id="seedInput" type="number" value="1" min="1" style="width:120px"></label>
+  </div>
+  <div class="canvasWrap"><canvas id="world" width="1000" height="650"></canvas></div>
+  <div class="card small"><b>מה ה־Somik יודע?</b> אנרגיה פנימית, מגע כללי ו־8 קרני מרחק זהות שאינן מספרות מה נמצא מולו. אין “אוכל”, “בן זוג”, “סכנה”, “מין”, “גיל”, Noise, זיכרון מוכן או פקודת רבייה. שני מנועים בלבד שולטים בגוף. מצב recurrent פנימי יכול להפוך לזיכרון אם האבולוציה מנצלת אותו.</div>
+</main>
+<aside>
+  <div class="topline"><b>Scientific Protocol</b><span class="protocolHash">74b493bef4333f05</span></div>
+  <div class="small">SW‑V3‑SCI‑1.0 · Core Baseline. הפרוטוקול נעול בתוך הקובץ; שינוי חוק ביולוגי/פיזיקלי מחייב גרסה חדשה.</div>
+  <div class="card"><h3>מצב העולם</h3><div class="metricGrid">
+    <div class="metric"><b id="mPop">—</b><span>אוכלוסייה</span></div><div class="metric"><b id="mGen">—</b><span>דור חציוני / מקסימלי</span></div>
+    <div class="metric"><b id="mTicks">—</b><span>צעדי עולם</span></div><div class="metric"><b id="mEnergy">—</b><span>אנרגיה ממוצעת</span></div>
+    <div class="metric"><b id="mBirths">—</b><span>לידות</span></div><div class="metric"><b id="mFood">—</b><span>מזון בעולם</span></div>
+  </div></div>
+  <div class="card"><h3>Primary endpoints</h3>
+    <div class="row"><span>צאצאים ממוצעים עד גיל 5,000 / מוות מוקדם</span><b id="mLRS">—</b></div>
+    <div class="row"><span>חלק שהתרבו עד גיל 5,000 / מוות מוקדם</span><b id="mRepFrac">—</b></div>
+    <div class="row"><span>לידות / 1000 Somik‑ticks בוגרים</span><b id="mRate">—</b></div>
+    <div class="row"><span>Common Garden</span><b id="mCG">טרם נבדק</b></div>
+  </div>
+  <div class="card"><h3>ראיה לשינוי תורשתי</h3>
+    <div class="row"><span>מרחק גנטי ממוצע מהאב</span><b id="mGD">—</b></div>
+    <div class="row"><span>Ancestor genome</span><b id="mAncestor">—</b></div>
+    <div class="row"><span>הכחדה</span><b id="mExtinct">לא</b></div>
+    <div class="row"><span>Founder-lineage RF — אבחנת drift בלבד</span><b id="mLineage">—</b></div>
+    <div class="row"><span>Completed-life LRS — תיאורי</span><b id="mCompletedLRS">—</b></div>
+    <div class="row"><span>Completed-life reproduced — תיאורי</span><b id="mCompletedRep">—</b></div>
+  </div>
+  <div class="card"><h3>גרף אוכלוסייה</h3><canvas id="plot" width="340" height="130"></canvas></div>
+  <div class="card"><h3>נקודות בדיקה קפואות</h3><div id="checkpoints" class="small"></div></div>
+  <div class="card lab"><h3>מעבדת אימות — אינה משפיעה על העולם</h3>
+    <button id="commonBtn">🧪 Common Garden — נקודה אחרונה</button>
+    <button id="replayBtn">↺ Ancestor Replay — נקודה אחרונה</button>
+    <button id="mutOffBtn">🧬 Mutation‑Off Control</button>
+    <button id="pilotBtn">📦 Pilot — 10 Seeds עד דור חציוני 50</button>
+    <button id="confirmBtn">🔬 Confirmatory — 20 Seeds + בקרת Mutation‑Off</button>
+    <button id="selfTestBtn">✓ בדיקת שחזור ודטרמיניזם</button>
+    <div id="labStatus" class="statusBox small">טרם הורצה בדיקת מעבדה.</div>
+  </div>
+  <div class="card"><h3>Somik שנבחר</h3><div id="selectedInfo" class="small">לחץ על Somik בעולם.</div></div>
+  <div class="card"><h3>מקרא</h3><div class="legend"><div><span class="swatch" style="background:#38bdf8;border-radius:50%"></span>Somik</div><div><span class="swatch" style="background:#ef4444;border-radius:50%"></span>מזון</div></div></div>
+  <div class="card small"><b>מה בכוונה לא נמצא ב־Core:</b> Hazard, בלוקים/Grip, תקשורת, מין, רבייה זוגית וגודל מוח מתפתח. אלה אינם “אסורים”; הם נשמרים לניסויי Treatment נפרדים כדי שלא נערבב כמה לחצי ברירה באותה בדיקת בסיס.</div>
+</aside></div>
+<script>
+
+const V3 = (()=>{
+"use strict";
+const P = {
+  "actuators": {
+    "channels": [
+      "left motor",
+      "right motor"
+    ],
+    "count": 2,
+    "differential_drive": true
+  },
+  "analysis": {
+    "archive_sample_size": 12,
+    "common_garden_founders": 20,
+    "common_garden_seeds": [
+      91001,
+      91002,
+      91003
+    ],
+    "common_garden_ticks": 4000,
+    "generation_checkpoints": [
+      50,
+      150,
+      300
+    ],
+    "generation_cohort_width": 50,
+    "stable_pattern_rule": "same directional change in >=3 consecutive preregistered cohorts; descriptive unless linked to reproductive outcome across independent seeds"
+  },
+  "brain": {
+    "hidden_neurons": 9,
+    "memory_registers": false,
+    "recurrent": true,
+    "structural_mutation": false,
+    "type": "fixed recurrent tanh network"
+  },
+  "controls": [
+    "mutation-off control",
+    "ancestor replay",
+    "common-garden assay",
+    "independent multi-seed replicates"
+  ],
+  "display": {
+    "food_color": "#ef4444",
+    "somik_color": "#38bdf8",
+    "world_color": "#4b9b4f"
+  },
+  "energetics": {
+    "base_metabolism": 0.018,
+    "max_energy": 180,
+    "max_speed": 2.1,
+    "max_turn_rate": 0.2,
+    "motor_cost": 0.012
+  },
+  "environment": {
+    "blocks": false,
+    "food_energy": 40,
+    "food_inflow_per_tick": 0.18,
+    "food_placement": "uniform over torus",
+    "hazard": false,
+    "initial_food": 160,
+    "population_feedback": false
+  },
+  "founders": {
+    "ancestor_seed": 13733069,
+    "count": 64,
+    "genotype": "all founders are exact clones of one fixed protocol ancestor genome",
+    "initial_energy": 100
+  },
+  "mandatory_outcomes": [
+    "extinction",
+    "technical failure",
+    "median and maximum generation",
+    "genetic distance from ancestor"
+  ],
+  "model": "Somik World v3 — Evolution Baseline",
+  "mutation": {
+    "adaptive_rate": false,
+    "gaussian_sigma": 0.12,
+    "genome_structure_fixed": true,
+    "mean": 0,
+    "per_gene_probability": 0.01
+  },
+  "observer_only": [
+    "colors",
+    "IDs",
+    "lineage labels",
+    "dashboard",
+    "plots",
+    "archive selection",
+    "render cadence"
+  ],
+  "primary_endpoints": [
+    "mean offspring produced by fixed age 5000 ticks (or before earlier death)",
+    "fraction reproducing at least once by fixed age 5000 ticks (or before earlier death)",
+    "common-garden reproductive-rate ratio of checkpoint genomes versus ancestor"
+  ],
+  "protocol_hash_sha256_16": "74b493bef4333f05",
+  "protocol_id": "SW-V3-SCI-1.0",
+  "purpose": "Test whether heritable behavioral changes and reproductive differences emerge under a fixed, minimal artificial ecology without semantic sensors or target behaviors.",
+  "replication_plan": {
+    "confirmatory_max_ticks": 2000000,
+    "confirmatory_paired_mutation_off_control": true,
+    "confirmatory_seeds": [
+      200001,
+      200002,
+      200003,
+      200004,
+      200005,
+      200006,
+      200007,
+      200008,
+      200009,
+      200010,
+      200011,
+      200012,
+      200013,
+      200014,
+      200015,
+      200016,
+      200017,
+      200018,
+      200019,
+      200020
+    ],
+    "confirmatory_target_median_generation": 300,
+    "pilot_max_ticks": 250000,
+    "pilot_not_confirmatory": true,
+    "pilot_seeds": [
+      100001,
+      100002,
+      100003,
+      100004,
+      100005,
+      100006,
+      100007,
+      100008,
+      100009,
+      100010
+    ],
+    "pilot_target_median_generation": 50
+  },
+  "reproduction": {
+    "brain_output": false,
+    "child_energy": 50,
+    "cooldown_ticks": 250,
+    "energy_threshold": 135,
+    "fixed_age_endpoint_ticks": 5000,
+    "maturity_ticks": 250,
+    "mode": "asexual",
+    "parent_energy_cost": 50
+  },
+  "rng": {
+    "ancestor_genome_rng_fixed_by_protocol": true,
+    "event_randomness": "mutation, offspring placement, tie breaking and exact-overlap contact resolution are counter/keyed by event identity rather than consumed sequentially",
+    "observer_rng_affects_world": false,
+    "streams": [
+      "initialization",
+      "food_environment",
+      "mutation_event",
+      "offspring_placement_event",
+      "tie_event",
+      "contact_overlap_event"
+    ]
+  },
+  "run_stop": {
+    "confirmatory_target_median_generation": 300,
+    "extinction_is_result": true,
+    "max_ticks": 2000000,
+    "no_rescue": true
+  },
+  "schedule": "Synchronous per tick: snapshot -> sense -> decide -> propose motion -> symmetric contact resolution -> energy -> food competition -> deaths -> reproduction -> food inflow -> observer metrics.",
+  "scope_note": "This is a core baseline. Hazard, manipulation/blocks, communication, sexual reproduction, and evolving brain size are excluded from the core so each can later be introduced as a separately preregistered treatment.",
+  "sensors": {
+    "channels": [
+      "internal energy",
+      "generic touch",
+      "8 evenly spaced generic range rays"
+    ],
+    "count": 10,
+    "noise_input": false,
+    "ray_range": 95,
+    "semantic_labels_to_brain": false
+  },
+  "topology": "2D torus, 1000x650"
+};
+const C = Object.freeze({
+  W:1000,H:650,R:6,FOOD_R:4,RAY_RANGE:95,RAY_COUNT:8,
+  FOUNDERS:64,INITIAL_FOOD:160,FOOD_RATE:0.18,FOOD_ENERGY:40,
+  MAX_ENERGY:180,START_ENERGY:100,BASE_MET:0.018,MOTOR_COST:0.012,
+  MAX_SPEED:2.1,TURN_RATE:0.20,HIDDEN:9,
+  MATURITY:250,REPRO_THRESHOLD:135,REPRO_COOLDOWN:250,CHILD_ENERGY:50,PARENT_COST:50,EVAL_AGE:5000,
+  MUT_P:0.01,MUT_SD:0.12,FOUNDER_WEIGHT_SD:0.35,FOUNDER_BIAS_SD:0.10,
+  CHECKPOINTS:[50,150,300],ARCHIVE_N:12,COHORT_W:50,
+  ASSAY_SEEDS:[91001,91002,91003],ASSAY_TICKS:4000,ASSAY_FOUNDERS:20,
+  MAX_PROTOCOL_TICKS:2000000,TARGET_MEDIAN_GEN:300
+});
+const TAU=Math.PI*2;
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function normSeed(v){v=(Number(v)>>>0);return v||1;}
+function mix32(x){x=normSeed(x);x^=x>>>16;x=Math.imul(x,0x7feb352d);x^=x>>>15;x=Math.imul(x,0x846ca68b);x^=x>>>16;return x>>>0;}
+function labelHash(s){let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function deriveSeed(seed,label){return mix32((normSeed(seed)^labelHash(label))>>>0);}
+function eventSeed(seed,label,tick,a=0,b=0){let x=deriveSeed(seed,label)^Math.imul((tick+1)>>>0,0x9e3779b1)^Math.imul((a+1)>>>0,0x85ebca6b)^Math.imul((b+1)>>>0,0xc2b2ae35);return mix32(x>>>0);}
+function pairHash(seed,tick,a,b){let x=normSeed(seed)^Math.imul((tick+1)>>>0,0x9e3779b1)^Math.imul((Math.min(a,b)+1)>>>0,0x85ebca6b)^Math.imul((Math.max(a,b)+1)>>>0,0xc2b2ae35);return mix32(x>>>0);}
+class RNG{
+  constructor(seed){this.state=normSeed(seed);this.spare=null;}
+  next(){this.state=(this.state+0x6D2B79F5)>>>0;let t=this.state;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;}
+  int(n){return Math.floor(this.next()*n);}
+  gauss(){if(this.spare!==null){const s=this.spare;this.spare=null;return s;}let u=0,v=0;while(u<=1e-12)u=this.next();v=this.next();const m=Math.sqrt(-2*Math.log(u));const a=TAU*v;this.spare=m*Math.sin(a);return m*Math.cos(a);}
+  dump(){return{state:this.state,spare:this.spare};}
+  load(o){this.state=normSeed(o.state);this.spare=o.spare??null;}
+}
+function torusDelta(a,b,size){let d=b-a;if(d>size/2)d-=size;if(d<-size/2)d+=size;return d;}
+function wrap(v,size){v%=size;if(v<0)v+=size;return v;}
+function wrapAngle(a){a%=TAU;if(a<0)a+=TAU;return a;}
+function dist2Torus(ax,ay,bx,by){const dx=torusDelta(ax,bx,C.W),dy=torusDelta(ay,by,C.H);return dx*dx+dy*dy;}
+class SpatialGrid{
+  constructor(cell=64){this.cell=cell;this.nx=Math.ceil(C.W/cell);this.ny=Math.ceil(C.H/cell);this.cells=Array.from({length:this.nx*this.ny},()=>[]);}
+  clear(){for(const c of this.cells)c.length=0;}
+  key(x,y){let ix=Math.floor(wrap(x,C.W)/this.cell)%this.nx,iy=Math.floor(wrap(y,C.H)/this.cell)%this.ny;return iy*this.nx+ix;}
+  add(item,x=item.x,y=item.y){this.cells[this.key(x,y)].push(item);}
+  nearby(x,y,range){const ix=Math.floor(wrap(x,C.W)/this.cell)%this.nx,iy=Math.floor(wrap(y,C.H)/this.cell)%this.ny,r=Math.ceil(range/this.cell);const out=[];for(let oy=-r;oy<=r;oy++)for(let ox=-r;ox<=r;ox++){let xx=(ix+ox)%this.nx;if(xx<0)xx+=this.nx;let yy=(iy+oy)%this.ny;if(yy<0)yy+=this.ny;out.push(...this.cells[yy*this.nx+xx]);}return out;}
+}
+function genomeArrays(g){return[g.wIn,g.wRec,g.bH,g.wOut,g.bOut];}
+function cloneGenome(g){return{wIn:g.wIn.map(r=>r.slice()),wRec:g.wRec.map(r=>r.slice()),bH:g.bH.slice(),wOut:g.wOut.map(r=>r.slice()),bOut:g.bOut.slice()};}
+function makeFounderGenome(){const r=new RNG(P.founders.ancestor_seed);const mat=(rows,cols,sd)=>Array.from({length:rows},()=>Array.from({length:cols},()=>r.gauss()*sd));return{wIn:mat(C.HIDDEN,10,C.FOUNDER_WEIGHT_SD),wRec:mat(C.HIDDEN,C.HIDDEN,C.FOUNDER_WEIGHT_SD),bH:Array.from({length:C.HIDDEN},()=>r.gauss()*C.FOUNDER_BIAS_SD),wOut:mat(2,C.HIDDEN,C.FOUNDER_WEIGHT_SD),bOut:Array.from({length:2},()=>r.gauss()*C.FOUNDER_BIAS_SD)};}
+function mutateGenome(parent,rng,enabled=true){const g=cloneGenome(parent);if(!enabled)return g;const mut=v=>rng.next()<C.MUT_P?v+rng.gauss()*C.MUT_SD:v;for(const arr of genomeArrays(g)){if(Array.isArray(arr[0])){for(let i=0;i<arr.length;i++)for(let j=0;j<arr[i].length;j++)arr[i][j]=mut(arr[i][j]);}else{for(let i=0;i<arr.length;i++)arr[i]=mut(arr[i]);}}return g;}
+function genomeVector(g){const a=[];for(const arr of genomeArrays(g)){if(Array.isArray(arr[0]))for(const r of arr)a.push(...r);else a.push(...arr);}return a;}
+function genomeDistance(a,b){const x=genomeVector(a),y=genomeVector(b);let s=0;for(let i=0;i<x.length;i++){const d=x[i]-y[i];s+=d*d;}return Math.sqrt(s/x.length);}
+function genomeHash(g){let h=2166136261>>>0;const v=genomeVector(g);for(const x of v){const q=Math.round(x*1e6)|0;h^=q>>>0;h=Math.imul(h,16777619);}return (h>>>0).toString(16).padStart(8,'0');}
+function median(vals){if(!vals.length)return 0;const a=vals.slice().sort((x,y)=>x-y),m=a.length>>1;return a.length%2?a[m]:(a[m-1]+a[m])/2;}
+function mean(vals){return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;}
+function stableSample(agents,n,checkpoint,seed){return agents.slice().sort((a,b)=>{const ha=pairHash(seed,checkpoint,a.id,0),hb=pairHash(seed,checkpoint,b.id,0);return ha-hb||a.id-b.id;}).slice(0,n);}
+class Agent{
+  constructor({id,x,y,dir,energy=C.START_ENERGY,age=0,generation=0,genome,hidden=null,bornTick=0,lastBirthTick=-1e12,offspring=0,lineage=0}){Object.assign(this,{id,x,y,dir,energy,age,generation,genome,bornTick,lastBirthTick,offspring,lineage});this.evalRecorded=arguments[0].evalRecorded??false;this.hidden=hidden?hidden.slice():Array(C.HIDDEN).fill(0);this.touch=0;this.left=0;this.right=0;this.distance=arguments[0].distance??0;}
+  brain(inputs){const nh=Array(C.HIDDEN).fill(0);for(let h=0;h<C.HIDDEN;h++){let s=this.genome.bH[h];for(let i=0;i<10;i++)s+=this.genome.wIn[h][i]*inputs[i];for(let j=0;j<C.HIDDEN;j++)s+=this.genome.wRec[h][j]*this.hidden[j];nh[h]=Math.tanh(s);}const out=[0,0];for(let o=0;o<2;o++){let s=this.genome.bOut[o];for(let h=0;h<C.HIDDEN;h++)s+=this.genome.wOut[o][h]*nh[h];out[o]=Math.tanh(s);}this.hidden=nh;this.left=out[0];this.right=out[1];return out;}
+  dump(){return{id:this.id,x:this.x,y:this.y,dir:this.dir,energy:this.energy,age:this.age,generation:this.generation,genome:this.genome,hidden:this.hidden,bornTick:this.bornTick,lastBirthTick:this.lastBirthTick,offspring:this.offspring,lineage:this.lineage,evalRecorded:this.evalRecorded,touch:this.touch,left:this.left,right:this.right,distance:this.distance};}
+}
+class World{
+  constructor({seed=1,mutationEnabled=true,founderGenome=null,founderCount=C.FOUNDERS,analysisOnly=false,archiveEnabled=true}={}){
+    this.seed=normSeed(seed);this.mutationEnabled=mutationEnabled;this.analysisOnly=analysisOnly;this.archiveEnabled=archiveEnabled;
+    this.rngInit=new RNG(deriveSeed(this.seed,'initialization'));this.rngFood=new RNG(deriveSeed(this.seed,'food_environment'));
+    this.ancestorGenome=cloneGenome(founderGenome||makeFounderGenome());this.ancestorHash=genomeHash(this.ancestorGenome);
+    this.ticks=0;this.births=0;this.deaths=0;this.extinct=false;this.foodAcc=0;this.evalN=0;this.evalOffspring=0;this.evalReproduced=0;this.nextAgentId=1;this.nextFoodId=1;this.agents=[];this.foods=[];this.dead=[];this.eventLog=[];this.checkpoints={0:{tick:0,genomes:[cloneGenome(this.ancestorGenome)],hashes:[this.ancestorHash]}};this.checkpointDone=new Set();this.lineageStats=new Map();this.cohorts={};this.lastMetrics=null;this.technicalFailure=false;
+    for(let i=0;i<founderCount;i++)this.agents.push(new Agent({id:this.nextAgentId++,x:this.rngInit.next()*C.W,y:this.rngInit.next()*C.H,dir:this.rngInit.next()*TAU,genome:cloneGenome(this.ancestorGenome),lineage:i+1}));
+    for(let i=0;i<C.INITIAL_FOOD;i++)this.foods.push(this.newFood(this.rngInit));
+  }
+  newFood(rng){return{id:this.nextFoodId++,x:rng.next()*C.W,y:rng.next()*C.H};}
+  sensorInputs(a,sensorGrid){let touch=0;const ray=Array(C.RAY_COUNT).fill(0);const candidates=[];
+    const nearby=sensorGrid.nearby(a.x,a.y,C.RAY_RANGE+C.R*2);
+    for(const q0 of nearby){if(q0.kind==='agent'&&q0.id===a.id)continue;const dx=torusDelta(a.x,q0.x,C.W),dy=torusDelta(a.y,q0.y,C.H);const d2=dx*dx+dy*dy;const maxR=C.RAY_RANGE+q0.r;if(d2<=maxR*maxR)candidates.push({dx,dy,r:q0.r});if(d2<=(C.R+q0.r+0.6)**2)touch=1;}
+    for(let ri=0;ri<C.RAY_COUNT;ri++){const ang=a.dir+ri*TAU/C.RAY_COUNT,ux=Math.cos(ang),uy=Math.sin(ang);let best=C.RAY_RANGE;for(const q of candidates){const proj=q.dx*ux+q.dy*uy;if(proj<0||proj>C.RAY_RANGE+q.r)continue;const perp2=q.dx*q.dx+q.dy*q.dy-proj*proj;if(perp2>q.r*q.r)continue;const entry=proj-Math.sqrt(Math.max(0,q.r*q.r-perp2));if(entry>=0&&entry<best)best=entry;}ray[ri]=best<C.RAY_RANGE?1-best/C.RAY_RANGE:0;}
+    a.touch=touch;return[clamp(a.energy/C.MAX_ENERGY,0,1),touch,...ray];
+  }
+  step(){if(this.extinct||this.technicalFailure)return;
+    this.ticks++;
+    const sensorGrid=new SpatialGrid(64);
+    for(const a of this.agents)sensorGrid.add({kind:'agent',id:a.id,x:a.x,y:a.y,r:C.R});
+    for(const f of this.foods)sensorGrid.add({kind:'food',id:f.id,x:f.x,y:f.y,r:C.FOOD_R});
+    const proposals=[];
+    for(let i=0;i<this.agents.length;i++){
+      const a=this.agents[i];
+      const inputs=this.sensorInputs(a,sensorGrid);const [L,R]=a.brain(inputs);const lin=C.MAX_SPEED*(L+R)/2;const turn=C.TURN_RATE*(R-L)/2;const nd=wrapAngle(a.dir+turn);proposals.push({x:wrap(a.x+Math.cos(nd)*lin,C.W),y:wrap(a.y+Math.sin(nd)*lin,C.H),dir:nd,L,R,lin,i});
+    }
+    // Order-independent symmetric soft contact resolution. Pairs are discovered spatially, but all displacements are accumulated and applied together.
+    const dxAdj=Array(this.agents.length).fill(0),dyAdj=Array(this.agents.length).fill(0);const minD=C.R*2;
+    const collisionGrid=new SpatialGrid(24);for(const p of proposals)collisionGrid.add(p,p.x,p.y);
+    for(let i=0;i<proposals.length;i++){const pi=proposals[i];for(const pj of collisionGrid.nearby(pi.x,pi.y,minD)){const j=pj.i;if(j<=i)continue;let dx=torusDelta(pi.x,pj.x,C.W),dy=torusDelta(pi.y,pj.y,C.H);let d=Math.hypot(dx,dy);if(d<minD){if(d<1e-9){const ang=(pairHash(this.seed,this.ticks,this.agents[i].id,this.agents[j].id)/4294967296)*TAU;dx=Math.cos(ang);dy=Math.sin(ang);d=1;}const push=(minD-d)/2;const ux=dx/d,uy=dy/d;dxAdj[i]-=ux*push;dyAdj[i]-=uy*push;dxAdj[j]+=ux*push;dyAdj[j]+=uy*push;}}
+    }
+    for(let i=0;i<this.agents.length;i++){const a=this.agents[i],p=proposals[i];const ox=a.x,oy=a.y;a.x=wrap(p.x+dxAdj[i],C.W);a.y=wrap(p.y+dyAdj[i],C.H);a.dir=p.dir;a.distance+=Math.hypot(torusDelta(ox,a.x,C.W),torusDelta(oy,a.y,C.H));a.energy-=C.BASE_MET+C.MOTOR_COST*(Math.abs(p.L)+Math.abs(p.R))/2;a.age++;if(a.age>=C.MATURITY){const st=this.lineageStats.get(a.lineage)||{exposure:0,births:0};st.exposure++;this.lineageStats.set(a.lineage,st);}}
+    // Food competition is resolved from the same post-motion state. Contested food uses only tie-break RNG.
+    const claims=new Map();
+    const foodGrid=new SpatialGrid(24);for(let fi=0;fi<this.foods.length;fi++){const f=this.foods[fi];foodGrid.add({fi,x:f.x,y:f.y},f.x,f.y);}
+    for(let ai=0;ai<this.agents.length;ai++){const a=this.agents[ai];for(const q of foodGrid.nearby(a.x,a.y,C.R+C.FOOD_R)){const fi=q.fi,f=this.foods[fi];if(dist2Torus(a.x,a.y,f.x,f.y)<=(C.R+C.FOOD_R)**2){let arr=claims.get(fi);if(!arr){arr=[];claims.set(fi,arr);}arr.push(ai);}}}
+    const eaten=new Set();
+    for(const fi of Array.from(claims.keys()).sort((a,b)=>this.foods[a].id-this.foods[b].id)){const arr=claims.get(fi);let winner;if(arr.length===1)winner=arr[0];else{let h=eventSeed(this.seed,'tie_event',this.ticks,this.foods[fi].id,arr.length);const ids=arr.map(i=>this.agents[i].id).sort((a,b)=>a-b);for(const id of ids)h=mix32((h^Math.imul(id+1,0x27d4eb2d))>>>0);const sortedArr=arr.slice().sort((ia,ib)=>this.agents[ia].id-this.agents[ib].id);winner=sortedArr[Math.floor((h/4294967296)*sortedArr.length)];}this.agents[winner].energy=Math.min(C.MAX_ENERGY,this.agents[winner].energy+C.FOOD_ENERGY);eaten.add(fi);}
+    if(eaten.size)this.foods=this.foods.filter((_,i)=>!eaten.has(i));
+    // Deaths after energy and food resolution.
+    const survivors=[];
+    for(const a of this.agents){if(a.energy>0){survivors.push(a);}else{if(!a.evalRecorded)this.recordFixedAge(a);this.deaths++;this.dead.push({id:a.id,offspring:a.offspring,reproduced:a.offspring>0,lifespan:a.age,generation:a.generation,bornTick:a.bornTick,deathTick:this.ticks,lineage:a.lineage});this.addCohortDeath(a);}}
+    this.agents=survivors;
+    // Automatic asexual reproduction; no reproduction actuator and no semantic mate channel.
+    const babies=[];
+    for(const a of this.agents){if(a.age>=C.MATURITY&&a.energy>=C.REPRO_THRESHOLD&&(this.ticks-a.lastBirthTick)>=C.REPRO_COOLDOWN){a.energy-=C.PARENT_COST;a.lastBirthTick=this.ticks;a.offspring++;this.births++;const st=this.lineageStats.get(a.lineage)||{exposure:0,births:0};st.births++;this.lineageStats.set(a.lineage,st);const ordinal=a.offspring;const mr=new RNG(eventSeed(this.seed,'mutation_event',this.ticks,a.id,ordinal));const pr=new RNG(eventSeed(this.seed,'offspring_placement_event',this.ticks,a.id,ordinal));const g=mutateGenome(a.genome,mr,this.mutationEnabled);const ang=pr.next()*TAU;const rad=14+pr.next()*8;babies.push(new Agent({id:this.nextAgentId++,x:wrap(a.x+Math.cos(ang)*rad,C.W),y:wrap(a.y+Math.sin(ang)*rad,C.H),dir:pr.next()*TAU,energy:C.CHILD_ENERGY,generation:a.generation+1,genome:g,bornTick:this.ticks,lineage:a.lineage}));this.addCohortBirth(a.generation+1);}}
+    this.agents.push(...babies);
+    // Fixed-age endpoints are recorded after all reproduction opportunities in the evaluation tick.
+    for(const a of this.agents)if(!a.evalRecorded&&a.age>=C.EVAL_AGE)this.recordFixedAge(a);
+    this.foodAcc+=C.FOOD_RATE;while(this.foodAcc>=1){this.foods.push(this.newFood(this.rngFood));this.foodAcc-=1;}
+    if(!this.agents.length){this.extinct=true;this.eventLog.push({tick:this.ticks,type:'extinction'});}
+    if(this.agents.length>20000){this.technicalFailure=true;this.eventLog.push({tick:this.ticks,type:'technical_population_limit'});}
+    if(this.archiveEnabled&&this.ticks%100===0)this.maybeArchive();
+  }
+  recordFixedAge(a){if(a.evalRecorded)return;a.evalRecorded=true;this.evalN++;this.evalOffspring+=a.offspring;if(a.offspring>0)this.evalReproduced++;const k=Math.floor(a.generation/C.COHORT_W)*C.COHORT_W;const c=this.cohorts[k]||(this.cohorts[k]={births:0,deaths:0,offspringDead:0,reproducedDead:0,lifespanDead:0,evalN:0,evalOffspring:0,evalReproduced:0});c.evalN=(c.evalN||0)+1;c.evalOffspring=(c.evalOffspring||0)+a.offspring;c.evalReproduced=(c.evalReproduced||0)+(a.offspring>0?1:0);}
+  addCohortBirth(g){const k=Math.floor(g/C.COHORT_W)*C.COHORT_W;const c=this.cohorts[k]||(this.cohorts[k]={births:0,deaths:0,offspringDead:0,reproducedDead:0,lifespanDead:0,evalN:0,evalOffspring:0,evalReproduced:0});c.births++;}
+  addCohortDeath(a){const k=Math.floor(a.generation/C.COHORT_W)*C.COHORT_W;const c=this.cohorts[k]||(this.cohorts[k]={births:0,deaths:0,offspringDead:0,reproducedDead:0,lifespanDead:0,evalN:0,evalOffspring:0,evalReproduced:0});c.deaths++;c.offspringDead+=a.offspring;c.reproducedDead+=a.offspring>0?1:0;c.lifespanDead+=a.age;}
+  maybeArchive(){if(!this.agents.length)return;const mg=median(this.agents.map(a=>a.generation));for(const cp of C.CHECKPOINTS){if(!this.checkpointDone.has(cp)&&mg>=cp){const ss=stableSample(this.agents,C.ARCHIVE_N,cp,this.seed);this.checkpoints[cp]={tick:this.ticks,medianGeneration:mg,genomes:ss.map(a=>cloneGenome(a.genome)),hashes:ss.map(a=>genomeHash(a.genome)),ids:ss.map(a=>a.id)};this.checkpointDone.add(cp);this.eventLog.push({tick:this.ticks,type:'checkpoint',checkpoint:cp});}}}
+  metrics(){const pop=this.agents.length,energies=this.agents.map(a=>a.energy),gens=this.agents.map(a=>a.generation),deadN=this.dead.length;const dists=stableSample(this.agents,Math.min(100,pop),424242,this.seed).map(a=>genomeDistance(a.genome,this.ancestorGenome));let exp=0,lb=0;for(const s of this.lineageStats.values()){exp+=s.exposure;lb+=s.births;}let maxRel=null;if(exp>0&&lb>0){const global=lb/exp;for(const s of this.lineageStats.values())if(s.exposure>=5000){const r=(s.births/s.exposure)/global;if(maxRel===null||r>maxRel)maxRel=r;}}
+    return{ticks:this.ticks,population:pop,births:this.births,deaths:this.deaths,extinct:this.extinct,technicalFailure:this.technicalFailure,meanEnergy:mean(energies),medianGeneration:median(gens),maxGeneration:gens.length?Math.max(...gens):0,meanGeneticDistance:mean(dists),fixedAgeEvaluated:this.evalN,meanOffspringByFixedAge:this.evalN?this.evalOffspring/this.evalN:0,reproducedByFixedAgeFraction:this.evalN?this.evalReproduced/this.evalN:0,deadCompleted:deadN,meanLifetimeOffspring:deadN?this.dead.reduce((s,d)=>s+d.offspring,0)/deadN:0,reproducedFraction:deadN?this.dead.filter(d=>d.reproduced).length/deadN:0,offspringPer1000MatureTicks:exp?lb/exp*1000:0,maxFounderLineageRelativeFitness:maxRel,food:this.foods.length,ancestorHash:this.ancestorHash};}
+  summary(){return{protocol:P,seed:this.seed,mutationEnabled:this.mutationEnabled,metrics:this.metrics(),cohorts:this.cohorts,checkpoints:Object.fromEntries(Object.entries(this.checkpoints).map(([k,v])=>[k,{tick:v.tick,medianGeneration:v.medianGeneration,hashes:v.hashes,ids:v.ids}])),events:this.eventLog};}
+  stateHash(){let h=2166136261>>>0;const feed=n=>{const q=(Math.round(n*1e5)|0)>>>0;h^=q;h=Math.imul(h,16777619);};feed(this.ticks);feed(this.births);feed(this.deaths);feed(this.agents.length);feed(this.foods.length);feed(this.foodAcc);feed(this.nextAgentId);feed(this.nextFoodId);feed(this.evalN);feed(this.evalOffspring);feed(this.evalReproduced);feed(this.rngInit.state);feed(this.rngFood.state);for(const a of this.agents.slice().sort((x,y)=>x.id-y.id)){feed(a.id);feed(a.x);feed(a.y);feed(a.dir);feed(a.energy);feed(a.age);feed(a.generation);feed(a.offspring);for(const v of a.hidden)feed(v);for(const v of genomeVector(a.genome))feed(v);}for(const f of this.foods.slice().sort((x,y)=>x.id-y.id)){feed(f.id);feed(f.x);feed(f.y);}return(h>>>0).toString(16).padStart(8,'0');}
+  dump(){return{version:1,protocolHash:P.protocol_hash_sha256_16,seed:this.seed,mutationEnabled:this.mutationEnabled,ticks:this.ticks,births:this.births,deaths:this.deaths,extinct:this.extinct,foodAcc:this.foodAcc,evalN:this.evalN,evalOffspring:this.evalOffspring,evalReproduced:this.evalReproduced,nextAgentId:this.nextAgentId,nextFoodId:this.nextFoodId,ancestorGenome:this.ancestorGenome,agents:this.agents.map(a=>a.dump()),foods:this.foods,dead:this.dead,checkpoints:this.checkpoints,checkpointDone:Array.from(this.checkpointDone),lineageStats:Array.from(this.lineageStats.entries()),cohorts:this.cohorts,eventLog:this.eventLog,rng:{init:this.rngInit.dump(),food:this.rngFood.dump()}};}
+  static load(d){if(d.protocolHash!==P.protocol_hash_sha256_16)throw new Error('Protocol hash mismatch');const w=Object.create(World.prototype);w.seed=d.seed;w.mutationEnabled=d.mutationEnabled;w.analysisOnly=false;w.archiveEnabled=true;w.rngInit=new RNG(1);w.rngInit.load(d.rng.init);w.rngFood=new RNG(1);w.rngFood.load(d.rng.food);w.ticks=d.ticks;w.births=d.births;w.deaths=d.deaths;w.extinct=d.extinct;w.technicalFailure=false;w.foodAcc=d.foodAcc;w.evalN=d.evalN||0;w.evalOffspring=d.evalOffspring||0;w.evalReproduced=d.evalReproduced||0;w.nextAgentId=d.nextAgentId;w.nextFoodId=d.nextFoodId;w.ancestorGenome=d.ancestorGenome;w.ancestorHash=genomeHash(w.ancestorGenome);w.agents=d.agents.map(x=>new Agent(x));w.foods=d.foods;w.dead=d.dead||[];w.checkpoints=d.checkpoints||{0:{tick:0,genomes:[cloneGenome(w.ancestorGenome)],hashes:[w.ancestorHash]}};w.checkpointDone=new Set(d.checkpointDone||[]);w.lineageStats=new Map(d.lineageStats||[]);w.cohorts=d.cohorts||{};w.eventLog=d.eventLog||[];return w;}
+}
+function runAssay(genome,seed,ticks=C.ASSAY_TICKS,founders=C.ASSAY_FOUNDERS){const w=new World({seed,mutationEnabled:false,founderGenome:genome,founderCount:founders,analysisOnly:true,archiveEnabled:false});for(let i=0;i<ticks&&!w.extinct&&!w.technicalFailure;i++)w.step();const m=w.metrics();return{seed,ticks:w.ticks,births:w.births,birthRate:m.offspringPer1000MatureTicks,birthsPer1000WorldTicks:w.births/Math.max(1,w.ticks)*1000,finalPopulation:m.population,extinct:m.extinct,meanEnergy:m.meanEnergy};}
+function selfTest(){const results=[];const check=(name,ok,detail='')=>results.push({name,ok:!!ok,detail});
+  const a=new World({seed:12345}),b=new World({seed:12345});for(let i=0;i<800;i++){a.step();b.step();}check('deterministic same seed',a.stateHash()===b.stateHash(),a.stateHash()+' / '+b.stateHash());
+  const c=new World({seed:12346});for(let i=0;i<800;i++)c.step();check('different seed diverges',a.stateHash()!==c.stateHash(),c.stateHash());
+  const obsA=new World({seed:555}),obsB=new World({seed:555});for(let i=0;i<600;i++){obsA.step();obsA.metrics();if(i%37===0)obsA.summary();obsB.step();}check('observer calls do not change world RNG/state',obsA.stateHash()===obsB.stateHash(),obsA.stateHash()+' / '+obsB.stateHash());
+  const envA=new World({seed:6060,mutationEnabled:true}),envB=new World({seed:6060,mutationEnabled:false});for(let i=0;i<500;i++){envA.step();envB.step();}check('food environment RNG remains exogenous to evolutionary events',envA.rngFood.state===envB.rngFood.state,envA.rngFood.state+' / '+envB.rngFood.state);
+  const cont=new World({seed:8080});for(let i=0;i<1000;i++)cont.step();const split=new World({seed:8080});for(let i=0;i<500;i++)split.step();const resumed=World.load(split.dump());for(let i=0;i<500;i++)resumed.step();check('save/load continuation is deterministic',cont.stateHash()===resumed.stateHash(),cont.stateHash()+' / '+resumed.stateHash());
+  const batchA=new World({seed:9090}),batchB=new World({seed:9090});for(let i=0;i<1000;i++)batchA.step();for(let k=0;k<10;k++)for(let i=0;i<100;i++)batchB.step();check('batching/speed does not change scientific ticks',batchA.stateHash()===batchB.stateHash(),batchA.stateHash()+' / '+batchB.stateHash());
+  const f=new World({seed:77});const gh=new Set(f.agents.map(x=>genomeHash(x.genome)));check('founders genetically identical',gh.size===1,'unique='+gh.size);
+  const m=new World({seed:91,mutationEnabled:false});for(let i=0;i<1800&&!m.extinct;i++)m.step();const uniq=new Set(m.agents.map(x=>genomeHash(x.genome)));check('mutation-off keeps one genotype',uniq.size<=1,'unique='+uniq.size);
+  check('no semantic sensor channels',P.sensors.semantic_labels_to_brain===false&&P.sensors.count===10,JSON.stringify(P.sensors.channels));
+  check('fixed recurrent brain',P.brain.recurrent===true&&P.brain.hidden_neurons===9&&P.brain.structural_mutation===false,'hidden=9');
+  check('no population rescue',P.run_stop.no_rescue===true,'');
+  const reg=new World({seed:20260929});for(let i=0;i<1200&&!reg.extinct;i++)reg.step();const regression=reg.stateHash();return{ok:results.every(x=>x.ok),results,regression};}
+return{P,C,RNG,World,Agent,cloneGenome,genomeHash,genomeDistance,makeFounderGenome,runAssay,selfTest};
+})();
+
+const EXPECTED_REGRESSION="5e4d2341";
+let world=null,running=true,speed=1,selectedId=null,lastDraw=0,history=[],lastAutosave=0,commonGardenResult=null,labResults={commonGarden:{},replay:[],mutationOff:null,batches:[]};
+const canvas=document.getElementById('world'),ctx=canvas.getContext('2d'),plot=document.getElementById('plot'),pctx=plot.getContext('2d');
+function newWorld(seed=Number(document.getElementById('seedInput').value)||1){world=new V3.World({seed});running=true;selectedId=null;history=[];commonGardenResult=null;labResults={commonGarden:{},replay:[],mutationOff:null,batches:[]};document.getElementById('pauseBtn').textContent='⏸ עצור';updateUI(true);}
+function draw(){ctx.fillStyle='#4b9b4f';ctx.fillRect(0,0,V3.C.W,V3.C.H);for(const f of world.foods){ctx.beginPath();ctx.arc(f.x,f.y,V3.C.FOOD_R,0,Math.PI*2);ctx.fillStyle='#ef4444';ctx.fill();ctx.strokeStyle='#7f1d1d';ctx.lineWidth=1;ctx.stroke();}for(const a of world.agents){ctx.beginPath();ctx.arc(a.x,a.y,V3.C.R,0,Math.PI*2);ctx.fillStyle='#38bdf8';ctx.fill();ctx.strokeStyle=a.id===selectedId?'#fff':'#111827';ctx.lineWidth=a.id===selectedId?4:2;ctx.stroke();const fx=Math.cos(a.dir)*5,fy=Math.sin(a.dir)*5,px=-Math.sin(a.dir)*2.3,py=Math.cos(a.dir)*2.3;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(a.x+fx+px,a.y+fy+py,2.1,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(a.x+fx-px,a.y+fy-py,2.1,0,Math.PI*2);ctx.fill();}}
+function drawPlot(){pctx.fillStyle='#101827';pctx.fillRect(0,0,plot.width,plot.height);if(history.length<2)return;const max=Math.max(1,...history.map(x=>x.p));pctx.strokeStyle='#e5e7eb';pctx.lineWidth=1.5;pctx.beginPath();history.forEach((h,i)=>{const x=i/(history.length-1)*(plot.width-8)+4,y=plot.height-5-(h.p/max)*(plot.height-10);i?pctx.lineTo(x,y):pctx.moveTo(x,y);});pctx.stroke();pctx.fillStyle='#cbd5e1';pctx.font='10px Arial';pctx.fillText('max '+max,5,12);}
+function updateUI(force=false){if(!world)return;const m=world.metrics();mPop.textContent=m.population.toLocaleString();mGen.textContent=`${m.medianGeneration.toFixed(1)} / ${m.maxGeneration}`;mTicks.textContent=m.ticks.toLocaleString();mEnergy.textContent=m.meanEnergy.toFixed(1);mBirths.textContent=m.births.toLocaleString();mFood.textContent=m.food.toLocaleString();mLRS.textContent=m.meanOffspringByFixedAge.toFixed(2)+' ('+m.fixedAgeEvaluated+')';mRepFrac.textContent=(m.reproducedByFixedAgeFraction*100).toFixed(1)+'%';mRate.textContent=m.offspringPer1000MatureTicks.toFixed(2);mCompletedLRS.textContent=m.meanLifetimeOffspring.toFixed(2);mCompletedRep.textContent=(m.reproducedFraction*100).toFixed(1)+'%';mGD.textContent=m.meanGeneticDistance.toFixed(4);mAncestor.textContent=m.ancestorHash;mExtinct.textContent=m.extinct?'כן':'לא';mExtinct.className=m.extinct?'bad':'';mLineage.textContent=m.maxFounderLineageRelativeFitness==null?'—':m.maxFounderLineageRelativeFitness.toFixed(2);mCG.textContent=commonGardenResult?commonGardenResult:'טרם נבדק';
+  if(force||m.ticks%100===0){history.push({t:m.ticks,p:m.population});if(history.length>240)history.shift();drawPlot();renderCheckpoints();renderSelected();}}
+function renderCheckpoints(){const el=document.getElementById('checkpoints');const rows=[];for(const cp of [50,150,300]){const x=world.checkpoints[cp];rows.push(`<div class="checkpoint"><b>דור חציוני ${cp}</b> — ${x?`נשמר ב־tick ${x.tick.toLocaleString()} · ${x.hashes.length} genomes`:'טרם הגיע'}</div>`);}el.innerHTML=rows.join('');}
+function renderSelected(){const a=world.agents.find(x=>x.id===selectedId);document.getElementById('selectedInfo').innerHTML=a?`ID ${a.id}<br>דור ${a.generation} · גיל ${a.age.toLocaleString()}<br>אנרגיה ${a.energy.toFixed(1)} · צאצאים ${a.offspring}<br>מנוע שמאל ${a.left.toFixed(2)} · ימין ${a.right.toFixed(2)}<br>Genome ${V3.genomeHash(a.genome)}<br>מרחק מהאב ${V3.genomeDistance(a.genome,world.ancestorGenome).toFixed(4)}`:'לחץ על Somik בעולם.';}
+function loop(ts){if(running&&!world.extinct&&!world.technicalFailure){for(let i=0;i<speed;i++)world.step();if(world.ticks-lastAutosave>=5000){saveIndexedDB();lastAutosave=world.ticks;}}const renderEvery=speed>=100?100:speed>=20?50:0;if(!renderEvery||world.ticks%renderEvery<speed||ts-lastDraw>500){draw();updateUI();lastDraw=ts;}requestAnimationFrame(loop);}
+const speeds=[1,5,20,100];pauseBtn.onclick=()=>{running=!running;pauseBtn.textContent=running?'⏸ עצור':'▶ הפעל';};speedBtn.onclick=()=>{speed=speeds[(speeds.indexOf(speed)+1)%speeds.length];speedBtn.textContent='⚡ x'+speed;};resetBtn.onclick=()=>{if(confirm('ליצור עולם חדש לפי ה־Seed? השמירה הקודמת נשארת עד השמירה הבאה.'))newWorld();};
+canvas.addEventListener('click',e=>{const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*canvas.width/r.width,y=(e.clientY-r.top)*canvas.height/r.height;let best=null,bd=18*18;for(const a of world.agents){const d=V3.C.W?((()=>{let dx=a.x-x,dy=a.y-y;if(dx>V3.C.W/2)dx-=V3.C.W;if(dx<-V3.C.W/2)dx+=V3.C.W;if(dy>V3.C.H/2)dy-=V3.C.H;if(dy<-V3.C.H/2)dy+=V3.C.H;return dx*dx+dy*dy;})()):1e9;if(d<bd){bd=d;best=a;}}selectedId=best?best.id:null;draw();renderSelected();});
+function runtimeMeta(){return{userAgent:navigator.userAgent,language:navigator.language,hardwareConcurrency:navigator.hardwareConcurrency??null,time:new Date().toISOString()};}
+function download(name,obj){const b=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
+exportBtn.onclick=()=>download(`somik-v3-seed-${world.seed}-tick-${world.ticks}.json`,{kind:'SomikWorldV3Experiment',runtime:runtimeMeta(),summary:world.summary(),state:world.dump(),commonGardenResult,labResults});importBtn.onclick=()=>importFile.click();importFile.onchange=async()=>{const f=importFile.files[0];if(!f)return;try{const j=JSON.parse(await f.text());world=V3.World.load(j.state||j);document.getElementById('seedInput').value=world.seed;running=false;pauseBtn.textContent='▶ הפעל';draw();updateUI(true);}catch(e){alert('ייבוא נכשל: '+e.message);}};
+function db(){return new Promise((res,rej)=>{const q=indexedDB.open('somik-world-v3-evolution-baseline',1);q.onupgradeneeded=()=>q.result.createObjectStore('s');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);});}
+async function saveIndexedDB(){try{const d=await db();const tx=d.transaction('s','readwrite');tx.objectStore('s').put(world.dump(),'latest');}catch(e){}}
+saveBtn.onclick=async()=>{await saveIndexedDB();alert('נשמרה נקודת המשך מקומית.');};
+async function loadLatest(){try{const d=await db();const tx=d.transaction('s','readonly');const q=tx.objectStore('s').get('latest');return await new Promise(r=>{q.onsuccess=()=>r(q.result||null);q.onerror=()=>r(null);});}catch(e){return null;}}
+const sleep=()=>new Promise(r=>setTimeout(r,0));
+function latestCheckpoint(){return [300,150,50].find(cp=>world.checkpoints[cp]);}
+async function assayAverage(genomes){let vals=[];let done=0,total=genomes.length*V3.C.ASSAY_SEEDS.length;for(let gi=0;gi<genomes.length;gi++){const g=genomes[gi];for(const s of V3.C.ASSAY_SEEDS){const r=V3.runAssay(g,s);r.genomeIndex=gi;r.genomeHash=V3.genomeHash(g);vals.push(r);done++;labStatus.textContent=`מריץ assay ${done}/${total}...`;await sleep();}}const rates=vals.map(x=>x.birthRate),br=rates.reduce((a,b)=>a+b,0)/vals.length,sd=Math.sqrt(rates.reduce((a,b)=>a+(b-br)*(b-br),0)/Math.max(1,rates.length-1));return{birthRate:br,birthRateSD:sd,finalPopulation:vals.reduce((a,b)=>a+b.finalPopulation,0)/vals.length,extinctionRate:vals.filter(x=>x.extinct).length/vals.length,raw:vals};}
+commonBtn.onclick=async()=>{const cp=latestCheckpoint();if(!cp){labStatus.textContent='צריך להגיע לפחות לנקודת דור חציוני 50.';return;}running=false;pauseBtn.textContent='▶ הפעל';commonBtn.disabled=true;try{const anc=await assayAverage([world.ancestorGenome]);const evo=await assayAverage(world.checkpoints[cp].genomes);const amap=new Map(anc.raw.map(x=>[x.seed,x.birthRate]));const paired=evo.raw.map(x=>({seed:x.seed,genomeHash:x.genomeHash,ratio:amap.get(x.seed)>0?x.birthRate/amap.get(x.seed):NaN})).filter(x=>Number.isFinite(x.ratio));const ratio=paired.length?paired.reduce((a,b)=>a+b.ratio,0)/paired.length:NaN;const rsd=paired.length>1?Math.sqrt(paired.reduce((a,b)=>a+(b.ratio-ratio)*(b.ratio-ratio),0)/(paired.length-1)):0;commonGardenResult=`G${cp}: ×${Number.isFinite(ratio)?ratio.toFixed(3):'—'}`;labResults.commonGarden[cp]={checkpoint:cp,ancestor:anc,evolved:evo,pairedRatios:paired,ratio,ratioSD:rsd};labStatus.textContent=`Common Garden G${cp}\nAncestor reproduction/1000 mature ticks: ${anc.birthRate.toFixed(3)} ± ${anc.birthRateSD.toFixed(3)}\nCheckpoint mean: ${evo.birthRate.toFixed(3)} ± ${evo.birthRateSD.toFixed(3)}\nPaired ratio evolved/ancestor: ${Number.isFinite(ratio)?ratio.toFixed(3):'—'} ± ${rsd.toFixed(3)}\nExtinction assay: ancestor ${(anc.extinctionRate*100).toFixed(0)}%, checkpoint ${(evo.extinctionRate*100).toFixed(0)}%`;updateUI(true);}finally{commonBtn.disabled=false;}};
+replayBtn.onclick=async()=>{const cp=latestCheckpoint();if(!cp){labStatus.textContent='אין עדיין genome ארכיוני מדור 50/150/300.';return;}running=false;const g=world.checkpoints[cp].genomes[0],seed=V3.C.ASSAY_SEEDS[0];labStatus.textContent='מריץ Ancestor Replay...';await sleep();const a=V3.runAssay(world.ancestorGenome,seed),e=V3.runAssay(g,seed),dist=V3.genomeDistance(g,world.ancestorGenome);labResults.replay.push({checkpoint:cp,seed,ancestor:a,evolved:e,geneticDistance:dist,genomeHash:V3.genomeHash(g)});labStatus.textContent=`Ancestor Replay — אותו Seed ${seed}\nAncestor: births ${a.births}, final pop ${a.finalPopulation}, extinct ${a.extinct}\nArchived G${cp}: births ${e.births}, final pop ${e.finalPopulation}, extinct ${e.extinct}\nGenetic distance: ${dist.toFixed(4)}`;};
+mutOffBtn.onclick=async()=>{running=false;let rows=[];labStatus.textContent='מריץ Mutation‑Off Control...';for(let i=0;i<5;i++){const w=new V3.World({seed:70001+i,mutationEnabled:false,archiveEnabled:false});for(let t=0;t<10000&&!w.extinct;t++)w.step();const m=w.metrics(),uniq=new Set(w.agents.map(a=>V3.genomeHash(a.genome))).size;rows.push({seed:w.seed,pop:m.population,births:m.births,maxGen:m.maxGeneration,geneticDistance:m.meanGeneticDistance,uniqueGenotypes:uniq,extinct:m.extinct});labStatus.textContent=`Mutation‑Off ${i+1}/5...`;await sleep();}labResults.mutationOff={seeds:[70001,70002,70003,70004,70005],ticks:10000,rows};labStatus.textContent='Mutation‑Off Control\n'+rows.map(r=>`Seed ${r.seed}: pop ${r.pop}, births ${r.births}, maxGen ${r.maxGen}, geneticDistance ${r.geneticDistance.toFixed(6)}, genotypes ${r.uniqueGenotypes}, extinct ${r.extinct}`).join('\n');};
+async function runBatch(kind,seeds,targetMedian,maxTicks,pairedControl=false){running=false;pauseBtn.textContent='▶ הפעל';const results=[];labStatus.textContent=`${kind}: מכין Common Garden של האב...`;const ancestorAssay=await assayAverage([world.ancestorGenome]);const ancMap=new Map(ancestorAssay.raw.map(x=>[x.seed,x.birthRate]));async function evolveOne(seed,mutationEnabled,archiveEnabled){const w=new V3.World({seed,mutationEnabled,archiveEnabled});let lastUi=0;while(!w.extinct&&!w.technicalFailure&&w.ticks<maxTicks){for(let k=0;k<250&&!w.extinct&&!w.technicalFailure&&w.ticks<maxTicks;k++)w.step();const mm=w.metrics();if(mm.medianGeneration>=targetMedian)break;if(w.ticks-lastUi>=2500){labStatus.textContent=`${kind}: Seed ${seed} ${mutationEnabled?'EVOLVE':'MUT-OFF'}\ntick ${mm.ticks.toLocaleString()} · median G ${mm.medianGeneration.toFixed(1)} · pop ${mm.population}`;lastUi=w.ticks;await sleep();}}return w;}for(let ri=0;ri<seeds.length;ri++){const seed=seeds[ri];const w=await evolveOne(seed,true,true);const m=w.metrics();let cg=null;const cp=w.checkpoints[targetMedian];if(cp&&m.medianGeneration>=targetMedian){labStatus.textContent=`${kind}: Seed ${ri+1}/${seeds.length} — Common Garden G${targetMedian}...`;const evo=await assayAverage(cp.genomes);const paired=evo.raw.map(x=>({seed:x.seed,genomeHash:x.genomeHash,ratio:ancMap.get(x.seed)>0?x.birthRate/ancMap.get(x.seed):NaN})).filter(x=>Number.isFinite(x.ratio));const ratio=paired.length?paired.reduce((a,b)=>a+b.ratio,0)/paired.length:NaN;cg={checkpoint:targetMedian,ancestor:ancestorAssay,evolved:evo,pairedRatios:paired,ratio};}let control=null;if(pairedControl){const cw=await evolveOne(seed,false,false);const cm=cw.metrics();control={stopReason:cw.extinct?'extinction':cw.technicalFailure?'technical_failure':cm.medianGeneration>=targetMedian?'target_generation':'max_ticks',metrics:cm,stateHash:cw.stateHash()};}results.push({seed,stopReason:w.extinct?'extinction':w.technicalFailure?'technical_failure':m.medianGeneration>=targetMedian?'target_generation':'max_ticks',metrics:m,cohorts:w.cohorts,commonGarden:cg,control,stateHash:w.stateHash()});await sleep();}const validRatios=results.map(r=>r.commonGarden?.ratio).filter(Number.isFinite),logRatios=validRatios.filter(x=>x>0).map(Math.log),meanLog=logRatios.length?logRatios.reduce((a,b)=>a+b,0)/logRatios.length:null,sdLog=logRatios.length>1?Math.sqrt(logRatios.reduce((a,b)=>a+(b-meanLog)*(b-meanLog),0)/(logRatios.length-1)):0;const pairedFixedAge=results.filter(r=>r.control).map(r=>({seed:r.seed,evolveMeanOffspring:r.metrics.meanOffspringByFixedAge,controlMeanOffspring:r.control.metrics.meanOffspringByFixedAge,evolveRepFrac:r.metrics.reproducedByFixedAgeFraction,controlRepFrac:r.control.metrics.reproducedByFixedAgeFraction,evolveReached:r.stopReason==='target_generation',controlReached:r.control.stopReason==='target_generation'}));const record={kind,targetMedian,maxTicks,seeds,pairedControl,results,protocolHash:V3.P.protocol_hash_sha256_16,commonGardenAcrossRuns:{n:validRatios.length,ratios:validRatios,logRatios,meanLog,sdLog,geometricMeanRatio:meanLog==null?null:Math.exp(meanLog)},pairedFixedAge};labResults.batches.push(record);labStatus.textContent=`${kind} הושלם.\n`+results.map(r=>`Seed ${r.seed}: evolve ${r.stopReason}, CG ${Number.isFinite(r.commonGarden?.ratio)?'×'+r.commonGarden.ratio.toFixed(3):'—'}${r.control?' · control '+r.control.stopReason:''}`).join('\n');download(`somik-v3-${kind.toLowerCase().replace(/\s+/g,'-')}-${Date.now()}.json`,{kind:'SomikWorldV3Batch',runtime:runtimeMeta(),protocol:V3.P,batch:record});}
+pilotBtn.onclick=()=>runBatch('Pilot-10',Array.from({length:10},(_,i)=>100001+i),50,250000,false);
+confirmBtn.onclick=async()=>{if(confirm('הריצה המאשרת כוללת 20 Seeds, ולכל Seed גם ריצת Mutation‑Off תואמת עד דור חציוני 300 או 2,000,000 ticks. זו ריצה כבדה מאוד. להתחיל?'))await runBatch('Confirmatory-20-Paired',Array.from({length:20},(_,i)=>200001+i),300,2000000,true);};
+selfTestBtn.onclick=()=>{const r=V3.selfTest();const okReg=r.regression===EXPECTED_REGRESSION;labStatus.textContent=`Self Test: ${r.ok&&okReg?'PASS':'FAIL'}\nRegression ${r.regression} / expected ${EXPECTED_REGRESSION}\n`+r.results.map(x=>`${x.ok?'✓':'✗'} ${x.name}${x.detail?' — '+x.detail:''}`).join('\n');};
+(async()=>{const saved=await loadLatest();if(saved&&saved.protocolHash===V3.P.protocol_hash_sha256_16){try{world=V3.World.load(saved);seedInput.value=world.seed;running=false;pauseBtn.textContent='▶ הפעל';}catch(e){newWorld();}}else newWorld();draw();updateUI(true);requestAnimationFrame(loop);})();
+</script>
+</body></html>

@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Somik World Research 1.0 — Open Evolution Laboratory</title>
+<title>Somik World Research 1.1 Classic — Open Evolution Laboratory</title>
+<link rel="icon" href="data:,">
 <style>
 :root{
   --bg:#0b1220;--panel:#111827;--panel2:#172033;--panel3:#1e293b;--line:#334155;
@@ -17,27 +18,176 @@ button,input,select{font:inherit}.app{min-height:100vh}.top{position:sticky;top:
 .sideCard{padding:12px;max-height:calc(100vh - 130px);overflow:auto}.sectionTitle{font-size:15px;font-weight:800;margin:3px 0 9px}.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.kpi{background:var(--panel2);border:1px solid #273449;border-radius:10px;padding:9px}.kpi .n{font-size:20px;font-weight:800;direction:ltr;text-align:right}.kpi .l{font-size:11px;color:var(--muted);margin-top:2px}.subhead{font-size:12px;color:#bae6fd;font-weight:800;margin:13px 0 6px;border-bottom:1px solid var(--line);padding-bottom:5px}.rows .row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid #253044;font-size:12px}.rows .row span:first-child{color:var(--muted)}.ltr{direction:ltr;unicode-bidi:embed}.statusPill{padding:3px 7px;border-radius:999px;font-size:11px;border:1px solid #475569}.statusPill.run{color:#86efac}.statusPill.stop{color:#fca5a5}
 .tabsWrap{padding:0 12px 18px}.tabs{display:flex;gap:5px;overflow:auto;border-bottom:1px solid var(--line);padding-bottom:7px}.tabBtn{white-space:nowrap;border:1px solid #334155;background:#111827;color:#cbd5e1;padding:8px 11px;border-radius:9px;cursor:pointer}.tabBtn.active{background:#e2e8f0;color:#0f172a}.tabPane{display:none;padding-top:12px}.tabPane.active{display:block}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.panel{padding:12px}.panel h3{margin:0 0 9px;font-size:15px}.panel h4{margin:11px 0 7px;font-size:13px;color:#bae6fd}.chart{width:100%;height:230px;display:block;background:#0d1626;border:1px solid #273449;border-radius:9px}.brainCanvas{width:100%;height:500px;display:block;background:#0d1626;border:1px solid #273449;border-radius:9px}.miniCanvas{width:100%;height:260px;display:block;background:#0d1626;border:1px solid #273449;border-radius:9px}.tableWrap{overflow:auto;max-height:430px;border:1px solid #273449;border-radius:9px}table{border-collapse:collapse;width:100%;font-size:12px}th,td{padding:7px 8px;border-bottom:1px solid #273449;text-align:right;white-space:nowrap}th{position:sticky;top:0;background:#172033;color:#bae6fd;z-index:1}.small{font-size:11px;color:var(--muted);line-height:1.45}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.labControls{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:9px}.labControls button,.labControls select,.labControls input{border:1px solid #475569;background:#1e293b;color:#fff;border-radius:8px;padding:7px 9px}.labControls button{cursor:pointer;font-weight:700}.output{background:#07111e;border:1px solid #273449;border-radius:9px;padding:10px;min-height:90px;max-height:330px;overflow:auto;font-size:12px;white-space:pre-wrap;direction:ltr;text-align:left}.event{padding:7px 0;border-bottom:1px solid #253044;font-size:12px}.event .t{font-size:10px;color:#94a3b8}.mut{color:#f0abfc}.birth{color:#86efac}.death{color:#fca5a5}.checkpoint{color:#93c5fd}.protocol{direction:ltr;text-align:left;white-space:pre-wrap;font-size:11px;max-height:550px;overflow:auto;background:#07111e;padding:10px;border-radius:9px;border:1px solid #273449}.progress{height:7px;background:#334155;border-radius:999px;overflow:hidden}.progress i{display:block;height:100%;background:#e2e8f0;width:0}.warningBox{border:1px solid #92400e;background:#431407;color:#fed7aa;padding:9px;border-radius:9px;font-size:12px}.okBox{border:1px solid #166534;background:#052e16;color:#bbf7d0;padding:9px;border-radius:9px;font-size:12px}
 @media(max-width:1050px){.mainGrid{grid-template-columns:1fr}.sideCard{max-height:none}.grid3{grid-template-columns:1fr 1fr}}@media(max-width:720px){.mainGrid,.tabsWrap{padding:8px}.grid2,.grid3{grid-template-columns:1fr}.top{position:relative}.brainCanvas{height:430px}.controls button,.controls select,.controls input{padding:8px 9px}}
+
+
+/* ============================================================
+   Research 1.1 Classic — Stable Classic UI
+   Visual/observer layer only. Inspired by the v0.x layout:
+   world + controls on the left, permanent inspector on the right.
+   ============================================================ */
+html{scrollbar-gutter:stable}
+body{overflow-x:hidden}
+.app{
+  min-height:100vh;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 370px;
+  grid-template-areas:
+    "top side"
+    "world side"
+    "tabs side";
+  align-items:start;
+  direction:ltr;
+}
+.top,.worldCard,.tabsWrap{direction:rtl}
+.top{
+  grid-area:top;
+  position:relative;
+  top:auto;
+  z-index:2;
+  background:transparent;
+  backdrop-filter:none;
+  border-bottom:0;
+  padding:14px 14px 10px;
+}
+.titleRow{align-items:flex-end;gap:8px}
+.titleRow h1{font-size:clamp(28px,3.5vw,48px);letter-spacing:-.02em}
+.productSubtitle{color:var(--muted);font-size:13px;line-height:1.45;margin-top:5px;max-width:920px}
+.mainGrid{display:contents}
+.worldCard{
+  grid-area:world;
+  margin:0 14px 14px;
+  border:2px solid var(--line);
+  border-radius:12px;
+  background:#0b1220;
+}
+.worldHead{padding:8px 10px;background:#111827}
+.worldWrap{background:#0b4d42}
+.sideCard{
+  grid-area:side;
+  direction:rtl;
+  position:sticky;
+  top:0;
+  height:100vh;
+  max-height:100vh;
+  overflow:auto;
+  border:0;
+  border-left:1px solid var(--line);
+  border-radius:0;
+  background:var(--panel);
+  padding:16px;
+  scrollbar-gutter:stable;
+}
+.tabsWrap{grid-area:tabs;padding:0 14px 20px;min-width:0}
+.tabs{
+  position:sticky;
+  top:0;
+  z-index:8;
+  background:rgba(11,18,32,.97);
+  padding:8px 0;
+  border-bottom:1px solid var(--line);
+}
+.tabBtn{font-size:12px;padding:8px 10px}
+.controls{margin-top:10px;display:block}
+.primaryControls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.primaryControls button,.primaryControls select,.primaryControls input,
+.secondaryControls button,.secondaryControls select,.secondaryControls input{
+  border:1px solid #475569;background:#1e293b;color:#fff;border-radius:9px;padding:9px 11px
+}
+.primaryControls button,.secondaryControls button{cursor:pointer;font-weight:700}
+.primaryControls .primary{background:#e2e8f0;color:#0f172a}
+.primaryControls .danger{background:#4c1d2a;color:#fecdd3;border-color:#7f1d1d}
+.moreTools{margin-top:8px;max-width:100%}
+.moreTools summary{
+  display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;
+  border:1px solid #334155;background:#111827;padding:7px 10px;border-radius:9px;font-size:12px;font-weight:700;
+  user-select:none
+}
+.secondaryControls{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:8px;padding:9px;border:1px solid #273449;border-radius:10px;background:#0f172a}
+.secondaryControls label,.primaryControls label{font-size:12px;color:var(--muted);display:flex;gap:5px;align-items:center}
+.saveLine{
+  margin-top:9px;padding:7px 9px;border:1px solid #273449;border-radius:9px;background:#111827;
+  font-size:12px;display:flex;gap:12px;flex-wrap:wrap;align-items:center
+}
+.sideCard .sectionTitle{font-size:20px;margin:0 0 10px}
+.sideHint{font-size:11px;color:var(--muted);margin:-5px 0 10px;line-height:1.4}
+.kpis{display:block}
+.kpi{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:8px 0
+}
+.kpi .l{order:1;font-size:12px;color:var(--muted);margin:0}
+.kpi .n{order:2;font-size:16px;font-weight:800;direction:ltr;text-align:left}
+.subhead{font-size:13px;color:#e2e8f0;margin:14px 0 5px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.rows .row{padding:6px 0;font-size:12px}
+.classicCard{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:11px;background:#182233}
+.classicCard h3{margin:0 0 8px;font-size:14px}
+.classicCard .hint{font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:7px}
+.sensorItem{margin:7px 0}
+.sensorLine{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--muted)}
+.sensorLine b{color:#e2e8f0;direction:ltr}
+.sensorBar{height:6px;background:#334155;border-radius:999px;overflow:hidden;margin-top:3px;position:relative}
+.sensorBar i{display:block;height:100%;background:#e5e7eb;width:50%}
+.sensorBar.signed:after{content:"";position:absolute;top:0;bottom:0;left:50%;width:1px;background:#64748b}
+#brainMiniCanvas{width:100%;height:285px;display:block;background:#101827;border:1px solid var(--line);border-radius:8px}
+.quickBrainBtn{width:100%;margin-top:8px;border:1px solid #475569;background:#111827;color:#f8fafc;border-radius:8px;padding:7px 9px;cursor:pointer;font-weight:700}
+.classicLegend{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;color:var(--muted)}
+.classicLegend span{white-space:nowrap}
+.panel{border-radius:11px}
+.brainCanvas{height:560px}
+@media(max-width:1050px){
+  .app{display:block;direction:rtl}
+  .mainGrid{display:block}
+  .top{padding:10px 9px 8px}
+  .worldCard{margin:0 9px 10px}
+  .sideCard{position:relative;top:auto;height:auto;max-height:none;border-left:0;border-top:1px solid var(--line);border-radius:0;padding:12px}
+  .tabsWrap{padding:8px 9px 18px}
+  .tabs{position:relative;top:auto}
+  .grid3{grid-template-columns:1fr 1fr}
+}
+@media(max-width:720px){
+  .grid2,.grid3{grid-template-columns:1fr}
+  .titleRow h1{text-align:center;width:100%;font-size:29px}
+  .titleRow{justify-content:center}
+  .productSubtitle{text-align:center}
+  .primaryControls{justify-content:center}
+  .moreTools{text-align:center}
+  .secondaryControls{justify-content:center;text-align:right}
+  .saveLine{justify-content:center;text-align:center}
+  .worldHead{justify-content:center}
+  .brainCanvas{height:450px}
+}
+
+
+#selfTestOut{white-space:pre-wrap}.worldHead{flex-wrap:wrap}button{cursor:pointer}
 </style>
 </head>
 <body>
 <div class="app">
 <header class="top">
   <div class="titleRow">
-    <h1>Somik World Research 1.0</h1>
+    <h1>Somik World Research 1.1 Classic</h1>
     <span class="badge">Open Evolution Laboratory</span>
     <span class="badge mono" id="protocolBadge"></span>
     <span class="statusPill run" id="runStatus">רץ</span>
   </div>
+  <div class="productSubtitle">עולם אבולוציוני חי + מעבדת מחקר מלאה. פרוטוקול קבוע לכל הרצה; תצוגה וניתוחים ללא השפעה על העולם.</div>
   <div class="controls">
-    <button class="primary" id="pauseBtn">⏸ עצור</button>
-    <label>מהירות <select id="speedSel"><option>1</option><option>5</option><option>20</option><option selected>100</option><option>500</option></select></label>
-    <button id="renderBtn">👁 תצוגה: פעילה</button>
-    <button id="saveBtn">💾 שמור עכשיו</button>
-    <button id="exportBtn">⬇ ייצוא Run</button>
-    <button id="exportFullBtn">🗄 ייצוא ארכיון מלא</button>
-    <button id="importBtn">⬆ ייבוא</button><input type="file" id="importFile" accept="application/json,.json" hidden>
-    <label>Seed <input id="seedInput" type="number" min="1" step="1" value="1" style="width:110px"></label>
-    <button class="danger" id="newRunBtn">＋ Run חדש</button>
+    <div class="primaryControls">
+      <button class="primary" id="pauseBtn">⏸ עצור</button>
+      <button class="danger" id="newRunBtn">↻ Run חדש</button>
+      <label>מהירות <select id="speedSel"><option>1</option><option>5</option><option>20</option><option selected>100</option><option>500</option></select></label>
+      <button id="saveBtn">💾 שמור עכשיו</button>
+    </div>
+    <details class="moreTools">
+      <summary>כלי Run, קבצים ותצוגה</summary>
+      <div class="secondaryControls">
+        <button id="renderBtn">👁 תצוגה: פעילה</button>
+        <button id="exportBtn">⬇ ייצוא Run</button>
+        <button id="exportFullBtn">🗄 ייצוא ארכיון מלא</button>
+        <button id="importBtn">⬆ ייבוא</button><input type="file" id="importFile" accept="application/json,.json" hidden>
+        <label>Seed <input id="seedInput" type="number" min="1" step="1" value="1" style="width:110px"></label>
+      </div>
+    </details>
   </div>
   <div class="saveLine">
     <span id="saveStatus" class="saveWarn">Autosave מתחיל…</span>
@@ -59,7 +209,7 @@ button,input,select{font:inherit}.app{min-height:100vh}.top{position:sticky;top:
         <span><i class="dot sq" style="background:#94a3b8"></i>אובייקט</span>
         <span><i class="dot" style="background:#b45309"></i>גופה</span>
       </div>
-      <label class="small"><input type="checkbox" id="raysCheck"> חיישני הנבחר</label>
+      <label class="small"><input type="checkbox" id="layerResources" checked> משאבים</label><label class="small"><input type="checkbox" id="layerTrails"> מסלולים</label><label class="small"><input type="checkbox" id="layerInteractions" checked> קשרים פיזיים</label><label class="small"><input type="checkbox" id="raysCheck"> חיישני הנבחר</label>
     </div>
     <div class="worldWrap">
       <canvas id="world" width="1200" height="720"></canvas>
@@ -68,7 +218,8 @@ button,input,select{font:inherit}.app{min-height:100vh}.top{position:sticky;top:
   </div>
 
   <aside class="sideCard">
-    <div class="sectionTitle">מצב המחקר עכשיו</div>
+    <div class="sectionTitle">מצב העולם</div>
+    <div class="sideHint">לוח Observer קבוע — המדדים אינם משפיעים על ה־Somik-ים או על ה־RNG המדעי.</div>
     <div class="kpis">
       <div class="kpi"><div class="n" id="kPop">0</div><div class="l">אוכלוסייה</div></div>
       <div class="kpi"><div class="n" id="kGen">0</div><div class="l">דור חציוני</div></div>
@@ -84,8 +235,35 @@ button,input,select{font:inherit}.app{min-height:100vh}.top{position:sticky;top:
     <div class="rows" id="secondaryRows"></div>
     <div class="subhead">Exploratory — שינוי ומורכבות</div>
     <div class="rows" id="exploreRows"></div>
-    <div class="subhead">Somik נבחר</div>
-    <div id="selectedSide" class="small">לא נבחר Somik.</div>
+    <div class="classicCard">
+      <h3>Somik נבחר <span class="badge" id="selectedQuickBadge">לחץ על Somik</span></h3>
+      <div id="selectedSide" class="small">לא נבחר Somik.</div>
+    </div>
+    <div class="classicCard">
+      <h3>חיישנים חיים</h3>
+      <div class="hint">ערכים פיזיקליים גולמיים בלבד. Ray אינו יודע מה הוא רואה.</div>
+      <div id="selectedSensors"><div class="small">בחר Somik.</div></div>
+    </div>
+    <div class="classicCard">
+      <h3>פעולות גוף</h3>
+      <div id="selectedActions"><div class="small">בחר Somik.</div></div>
+    </div>
+    <div class="classicCard">
+      <h3>מפת מוח חיה</h3>
+      <canvas id="brainMiniCanvas" width="320" height="285"></canvas>
+      <button class="quickBrainBtn" id="openBrainTabBtn">פתח ניתוח מוח מלא</button>
+    </div>
+    <div class="classicCard">
+      <h3>מקרא העולם</h3>
+      <div class="classicLegend">
+        <span><i class="dot" style="background:#38bdf8"></i>Somik</span>
+        <span><i class="dot" style="background:#fde047"></i>משאב ראשוני</span>
+        <span><i class="dot" style="background:#a78bfa"></i>פסולת</span>
+        <span><i class="dot" style="background:#fb923c"></i>רקמה</span>
+        <span><i class="dot sq" style="background:#94a3b8"></i>אובייקט</span>
+        <span><i class="dot" style="background:#b45309"></i>גופה</span>
+      </div>
+    </div>
   </aside>
 </section>
 
@@ -129,7 +307,7 @@ button,input,select{font:inherit}.app{min-height:100vh}.top{position:sticky;top:
       <div class="panel">
         <h3>רשת עצבית — Somik נבחר</h3>
         <div class="labControls">
-          <button id="brainSelectedBtn">מוח נוכחי</button><button id="brainFounderBtn">אב קדמון</button><button id="brainHistoryBtn">Genome היסטורי</button>
+          <button id="brainSelectedBtn">מוח נוכחי</button><button id="brainFounderBtn">אב קדמון</button>
           <select id="connectionSelect"></select><button id="knockoutBtn">Knockout לקשר</button>
         </div>
         <canvas class="brainCanvas" id="brainCanvas"></canvas>
@@ -150,6 +328,7 @@ button,input,select{font:inherit}.app{min-height:100vh}.top{position:sticky;top:
       <div class="panel"><h3>Relative lineage reproductive fitness — cohorts</h3><div class="tableWrap"><table><thead><tr><th>Cohort</th><th>Lineage</th><th>Birth share</th><th>Exposure share</th><th>Relative fitness</th></tr></thead><tbody id="lineageFitnessTable"></tbody></table></div></div>
       <div class="panel"><h3>Founder ancestry באוכלוסייה</h3><div id="founderAncestry" class="rows"></div></div>
       <div class="panel"><h3>אירועי לידה/מוות/Checkpoint</h3><div id="eventLog"></div></div>
+      <div class="panel"><h3>שחזור פילוגניה היסטורי</h3><div class="labControls"><label>עומק <input id="ancestryDepth" type="number" value="8" min="1" max="30" style="width:70px"></label><button id="ancestryBtn">שחזר לנבחר</button></div><div class="small">משלב זיכרון פעיל עם ארכיון לידות ב־IndexedDB, גם לאחר מות הפרטים.</div><div class="tableWrap" style="margin-top:8px"><table><thead><tr><th>Depth</th><th>Agent</th><th>Generation</th><th>Parent A</th><th>Parent B</th><th>Genome</th></tr></thead><tbody id="ancestryTable"></tbody></table></div></div>
     </div>
   </div>
 
@@ -168,7 +347,7 @@ button,input,select{font:inherit}.app{min-height:100vh}.top{position:sticky;top:
   <div class="tabPane" id="tab-lab">
     <div class="grid2">
       <div class="panel">
-        <h3>Common Garden / Ancestor Replay</h3>
+        <h3>Common Garden / Ancestor Replay</h3><p class="small">בדיקה מבודדת: רבייה א־מינית, ללא חפצים וללא ערוץ כימי. יחס לא מוגדר כאשר לאב אין רבייה.</p>
         <div class="labControls"><label>Assay ticks <input id="assayTicks" type="number" value="4000" min="500" step="500" style="width:95px"></label><button id="commonGardenBtn">Common Garden לנבחר</button><button id="ancestorReplayBtn">Ancestor Replay</button></div>
         <div class="output" id="commonGardenOut">בחר Somik ואז הפעל ניסוי.</div>
       </div>
@@ -187,14 +366,15 @@ button,input,select{font:inherit}.app{min-height:100vh}.top{position:sticky;top:
         <div class="labControls"><label>Seeds <input id="multiN" type="number" value="5" min="2" max="30" style="width:65px"></label><label>Ticks <input id="multiTicks" type="number" value="4000" min="500" step="500" style="width:90px"></label><button id="multiSeedBtn">הרץ</button></div>
         <div class="output" id="multiOut">—</div>
       </div>
+      <div class="panel"><h3>Treatment Control — עולם מבודד</h3><div class="labControls"><label><input id="tMutation" type="checkbox" checked> Mutation</label><label><input id="tAsexual" type="checkbox"> Asexual</label><label><input id="tObjects" type="checkbox" checked> Objects</label><label><input id="tChemical" type="checkbox" checked> Chemical</label><label><input id="tMemory" type="checkbox" checked> Recurrent memory</label><label>Ticks <input id="treatmentTicks" type="number" value="2000" min="100" step="100" style="width:90px"></label><button id="treatmentBtn">הרץ Treatment</button></div><div class="output" id="treatmentOut">—</div></div>
     </div>
-    <div class="warningBox" style="margin-top:12px">כל כלי המעבדה רצים בעולמות נפרדים עם RNG משלהם ואינם מחזירים מידע לעולם הראשי. הם Observer-only.</div>
+    <div class="panel" style="margin-top:12px"><h3>v3 Scientific Baseline</h3><p class="small">מודל ביקורת מינימלי נפרד עם פרוטוקול משלו. אינו בר־השוואה ישירה להרצת Research.</p><button id="openV3Btn">פתח מודל ביקורת v3</button></div><div class="warningBox" style="margin-top:12px">כל כלי המעבדה רצים בעולמות נפרדים עם RNG משלהם ואינם מחזירים מידע לעולם הראשי. הם Observer-only.</div>
   </div>
 
   <div class="tabPane" id="tab-archive">
     <div class="grid2">
-      <div class="panel"><h3>Checkpoints גנטיים</h3><div class="tableWrap"><table><thead><tr><th>דור</th><th>Tick</th><th>Genomes</th><th>אוכלוסייה</th><th>מרחק גנטי</th><th></th></tr></thead><tbody id="checkpointTable"></tbody></table></div></div>
-      <div class="panel"><h3>Autosave / Runs</h3><div id="autosaveInfo" class="rows"></div><div class="labControls"><button id="persistStorageBtn">בקש אחסון מתמשך בדפדפן</button></div><h4>Runs שמורים במכשיר</h4><div class="tableWrap"><table><thead><tr><th>Run</th><th>Seed</th><th>Tick</th><th>נשמר</th><th></th></tr></thead><tbody id="runsTable"></tbody></table></div></div>
+      <div class="panel"><h3>Checkpoints גנטיים</h3><div class="tableWrap"><table><thead><tr><th>דור</th><th>Tick</th><th>Genomes</th><th>אוכלוסייה</th><th>מרחק גנטי</th></tr></thead><tbody id="checkpointTable"></tbody></table></div></div>
+      <div class="panel"><h3>Autosave / Runs</h3><div id="autosaveInfo" class="rows"></div><h4>אחסון דפדפן</h4><div id="storageInfo" class="rows"></div><div class="labControls"><button id="persistStorageBtn">בקש אחסון מתמשך</button></div><h4>Runs שמורים במכשיר</h4><div class="tableWrap"><table><thead><tr><th>Run</th><th>Seed</th><th>Tick</th><th>נשמר</th><th></th></tr></thead><tbody id="runsTable"></tbody></table></div></div>
       <div class="panel"><h3>ארכיון רב־רזולוציה</h3><div id="archiveRows" class="rows"></div><div class="small">היסטוריה קרובה נשמרת ברזולוציה גבוהה; היסטוריה ישנה נדחסת לרמות דגימה נמוכות יותר כדי לאפשר ריצות ארוכות.</div></div>
       <div class="panel"><h3>ארכיון אירועים</h3><div id="eventArchiveRows" class="rows"></div><div class="small">לידות נשמרות עם הורים, Genome hash ומוטציות; מוות ו־checkpoints נשמרים גם הם. אירועי Grip תכופים אינם נשמרים אחד־אחד — המונים האקולוגיים נשמרים.</div></div>
     </div>
@@ -208,137 +388,10 @@ button,input,select{font:inherit}.app{min-height:100vh}.top{position:sticky;top:
   </div>
 </section>
 </div>
+
+
+
 <script src="research-engine.js"></script>
-<script>
-'use strict';
-const E=SomikResearch;
-const $=id=>document.getElementById(id);
-const fmt=(v,d=2)=>Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{maximumFractionDigits:d}):'—';
-const pct=(v,d=1)=>Number.isFinite(Number(v))?(Number(v)*100).toFixed(d)+'%':'—';
-const nowIso=()=>new Date().toISOString();
-let world=null,running=true,speed=100,renderEnabled=true,selectedId=null,brainMode='selected',historicalGenome=null,historicalLabel='';
-let runMeta={runId:'',createdAt:'',lastSaveAt:'',lastSaveTick:-1,eventSeq:0};
-let db=null,lastMetrics=null,lastUiAt=0,lastDrawAt=0,lastAutosaveWall=0,lastAutosaveTick=0,lastPerfAt=performance.now(),ticksSincePerf=0,currentTPS=0,saveInFlight=null;
-const AUTOSAVE_MS=30000,AUTOSAVE_TICKS=5000,ROLLING_SAVES=5;
-const COLORS={agent:'#38bdf8',primary:'#fde047',waste:'#a78bfa',tissue:'#fb923c',object:'#94a3b8',corpse:'#b45309'};
-
-function makeRunId(seed){return `R1-${seed}-${new Date().toISOString().replace(/[-:.TZ]/g,'').slice(0,14)}`;}
-function treatmentName(){return world?.treatment?.reproductionMode==='sexual'?'Open Evolution — sexual':'Control';}
-
-function openDb(){return new Promise((resolve,reject)=>{const r=indexedDB.open('somik-world-research-1-0',2);r.onupgradeneeded=()=>{const d=r.result,tx=r.transaction;if(!d.objectStoreNames.contains('snapshots')){const s=d.createObjectStore('snapshots',{keyPath:'key'});s.createIndex('savedAt','savedAt');s.createIndex('runId','runId');}let e;if(!d.objectStoreNames.contains('events')){e=d.createObjectStore('events',{keyPath:['runId','seq']});e.createIndex('runId','runId');e.createIndex('type','type');e.createIndex('child','child');}else e=tx.objectStore('events');if(!e.indexNames.contains('runChild'))e.createIndex('runChild',['runId','child']);if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta',{keyPath:'key'});};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
-function txDone(tx){return new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('IDB abort'));});}
-async function persistEvents(){if(!db||!world?.eventBuffer?.length)return;const source=world.eventBuffer.slice(),keep=source.filter(e=>['birth','death','checkpoint','technical_failure'].includes(e.type));if(!keep.length){world.eventBuffer.splice(0,source.length);return;}const tx=db.transaction(['events'],'readwrite'),st=tx.objectStore('events');let seq=runMeta.eventSeq;for(const ev of keep){seq++;let compact;if(ev.type==='birth')compact={tick:ev.tick,type:ev.type,child:ev.child,parentA:ev.parentA,parentB:ev.parentB,generation:ev.generation,genomeHash:ev.genomeHash,mutations:ev.mutations||[]};else if(ev.type==='death')compact={tick:ev.tick,type:ev.type,agent:ev.agent,generation:ev.generation,genomeHash:ev.genomeHash,offspring:ev.offspring};else if(ev.type==='checkpoint')compact={tick:ev.tick,type:ev.type,generation:ev.generation,hashes:ev.hashes||[]};else compact={tick:ev.tick,type:ev.type,message:ev.message||''};st.put({...compact,runId:runMeta.runId,seq});}await txDone(tx);runMeta.eventSeq=seq;world.eventBuffer.splice(0,source.length);}
-async function saveNow(reason='manual'){
-  if(!db||!world)return;
-  if(saveInFlight)return saveInFlight;
-  saveInFlight=(async()=>{try{
-    await persistEvents();
-    const savedAt=nowIso(),key=`${runMeta.runId}:${String(world.tick).padStart(14,'0')}`;
-    runMeta.lastSaveAt=savedAt;runMeta.lastSaveTick=world.tick;
-    const record={key,runId:runMeta.runId,seed:world.seed,tick:world.tick,savedAt,reason,engineHash:E.ENGINE_HASH,protocolHash:E.PROTOCOL_HASH,state:world.dump(),appMeta:{...runMeta,selectedId}};
-    const tx=db.transaction(['snapshots','meta'],'readwrite');tx.objectStore('snapshots').put(record);tx.objectStore('meta').put({key:'latest',snapshotKey:key});await txDone(tx);
-    await pruneSnapshots(runMeta.runId);
-    lastAutosaveWall=Date.now();lastAutosaveTick=world.tick;
-    $('saveStatus').className='saveOk';$('saveStatus').textContent=`✓ נשמר אוטומטית — ${new Date(savedAt).toLocaleTimeString('he-IL')} · tick ${fmt(world.tick,0)}`;
-    refreshArchiveUi();
-  }catch(err){console.error(err);$('saveStatus').className='saveWarn';$('saveStatus').textContent='⚠ Autosave נכשל: '+err.message;}finally{saveInFlight=null;}})();
-  return saveInFlight;
-}
-async function pruneSnapshots(runId){const rtx=db.transaction('snapshots','readonly'),rows=await reqPromise(rtx.objectStore('snapshots').index('runId').getAll(IDBKeyRange.only(runId)));rows.sort((a,b)=>b.tick-a.tick);const stale=rows.slice(ROLLING_SAVES);if(!stale.length)return;const wtx=db.transaction('snapshots','readwrite'),st=wtx.objectStore('snapshots');for(const r of stale)st.delete(r.key);await txDone(wtx);}
-function reqPromise(r){return new Promise((resolve,reject)=>{r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
-async function latestSnapshot(){if(!db)return null;const tx=db.transaction('snapshots'),idx=tx.objectStore('snapshots').index('savedAt'),req=idx.openCursor(null,'prev');return new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result?.value||null);req.onerror=()=>reject(req.error);});}
-async function loadSnapshotRecord(rec){world=E.World.load(rec.state);runMeta={...rec.appMeta,lastSaveAt:rec.savedAt,lastSaveTick:rec.tick,eventSeq:rec.appMeta?.eventSeq||0};selectedId=rec.appMeta?.selectedId||null;running=!world.extinct&&!world.technicalFailure;speed=Number($('speedSel').value)||100;lastAutosaveWall=Date.now();lastAutosaveTick=world.tick;updateRunIdentity();updatePauseUi();fullRefresh();}
-async function loadSnapshotByKey(key){const tx=db.transaction('snapshots'),rec=await reqPromise(tx.objectStore('snapshots').get(key));if(rec){await saveNow('before-load');await loadSnapshotRecord(rec);}}
-async function countEvents(){if(!db||!runMeta.runId)return 0;const tx=db.transaction('events'),idx=tx.objectStore('events').index('runId');return await reqPromise(idx.count(IDBKeyRange.only(runMeta.runId)));}
-async function getAllEvents(){if(!db)return[];const tx=db.transaction('events'),idx=tx.objectStore('events').index('runId');return await reqPromise(idx.getAll(IDBKeyRange.only(runMeta.runId)));}
-async function listRuns(){if(!db)return[];const tx=db.transaction('snapshots'),rows=await reqPromise(tx.objectStore('snapshots').getAll());const best=new Map();for(const r of rows){const x=best.get(r.runId);if(!x||r.tick>x.tick)best.set(r.runId,r);}return[...best.values()].sort((a,b)=>b.savedAt.localeCompare(a.savedAt));}
-
-function newWorld(seed=1){seed=Math.max(1,Number(seed)>>>0);world=new E.World({seed});runMeta={runId:makeRunId(seed),createdAt:nowIso(),lastSaveAt:'',lastSaveTick:-1,eventSeq:0};selectedId=null;running=true;lastAutosaveWall=Date.now();lastAutosaveTick=0;$('seedInput').value=seed;updateRunIdentity();updatePauseUi();fullRefresh();saveNow('new-run');}
-function updateRunIdentity(){$('runIdLabel').textContent=runMeta.runId||'—';$('protocolBadge').textContent=`${E.PROTOCOL_ID} · ${E.PROTOCOL_HASH}`;$('identityRows').innerHTML=rowsHtml([['Run ID',runMeta.runId],['Seed',world?.seed],['Protocol',E.PROTOCOL_ID],['Protocol hash',E.PROTOCOL_HASH],['Engine hash',E.ENGINE_HASH],['Variant hash',world?.protocolVariantHash],['Founder genome',world?.ancestorHash]]);}
-function updatePauseUi(){$('pauseBtn').textContent=running?'⏸ עצור':'▶ הפעל';$('runStatus').textContent=world?.extinct?'נכחד':world?.technicalFailure?'תקלה':running?'רץ':'עצור';$('runStatus').className='statusPill '+(running?'run':'stop');}
-
-function rowsHtml(rows){return rows.map(([a,b,cls])=>`<div class="row"><span>${a}</span><b class="${cls||''}">${b??'—'}</b></div>`).join('');}
-function selectedAgent(){return world?.agents.find(a=>a.id===selectedId)||null;}
-function currentGenome(){if(brainMode==='founder')return world?.ancestorGenome;if(brainMode==='historical'&&historicalGenome)return historicalGenome;return selectedAgent()?.genome||historicalGenome||world?.ancestorGenome;}
-
-function updateMetrics(){if(!world)return;const m=world.metrics();lastMetrics=m;$('kPop').textContent=fmt(m.population,0);$('kGen').textContent=fmt(m.medianGeneration,1);$('kBirth').textContent=fmt(m.births,0);$('kTick').textContent=fmt(m.tick,0);$('kFitness').textContent=fmt(m.reproductionRatePer1000MatureTicks,3);$('kGenDist').textContent=fmt(m.meanGeneticDistance,4);$('stateHashLabel').textContent=world.stateHash();
-  $('primaryRows').innerHTML=rowsHtml([['צאצאים עד גיל קבוע',fmt(m.meanOffspringFixedAge,3)],['התרבו עד גיל קבוע',pct(m.reproducedFixedAgeFraction)],['LRS של חיים שהסתיימו',fmt(m.completedLRS,3)],['התרבו לפחות פעם אחת',pct(m.completedReproducedFraction)],['רבייה / 1000 mature-ticks',fmt(m.reproductionRatePer1000MatureTicks,4)],['הכחדה',m.extinct?'כן':'לא']]);
-  $('secondaryRows').innerHTML=rowsHtml([['אנרגיה ממוצעת',fmt(m.meanEnergy,2)],['בריאות ממוצעת',fmt(m.meanHealth,3)],['גיל ממוצע',fmt(m.meanAge,1)],['לידות / מוות',`${fmt(m.births,0)} / ${fmt(m.deaths,0)}`],['משאבים חופשיים',fmt(m.resources,0)],['גופות',fmt(m.corpses,0)]]);
-  $('exploreRows').innerHTML=rowsHtml([['מרחק גנטי מהאב',fmt(m.meanGeneticDistance,5)],['מגוון גנטי',fmt(m.geneticDiversity,5)],['Genomes ייחודיים במדגם',pct(m.uniqueGenomeFraction)],['Top genome share',pct(m.topGenomeShare)],['Brain complexity',fmt(m.brainComplexity,2)],['Novelty',fmt(m.phenotypeNovelty,4)],['Clusters תצפיתיים',fmt(m.observerClusters,0)]]);
-  updateSelectedSide();updateEvolutionUi();updateEcologyUi();updateArchiveSimple();
-}
-function updateSelectedSide(){const a=selectedAgent();if(!a){$('selectedSide').textContent='לא נבחר Somik.';$('selectedLabel').textContent='לחץ על Somik לבחירה';return;}const g=a.genome,p=a.pheno;$('selectedLabel').textContent=`Somik #${a.id} · דור ${a.generation} · genome ${E.genomeHash(g)}`;$('selectedSide').innerHTML=rowsHtml([['ID',a.id],['דור',a.generation],['גיל',fmt(a.age,0)],['אנרגיה',`${fmt(a.energy,1)} / ${fmt(p.energyCapacity,1)}`],['בריאות',fmt(a.health,3)],['צאצאים',a.offspring],['הורים',`${a.parentA||'—'} / ${a.parentB||'—'}`],['Genome',E.genomeHash(g),'mono'],['מרחק מהאב',fmt(E.genomeDistance(g,world.ancestorGenome),5)],['גודל גוף',fmt(p.radius,2)],['Hidden / Connections',`${g.hidden.length} / ${g.connections.filter(c=>c.enabled).length}`]]);}
-
-function drawWorld(){if(!world||!renderEnabled)return;const c=$('world'),ctx=c.getContext('2d'),W=c.width,H=c.height,sx=W/E.Protocol.world.width,sy=H/E.Protocol.world.height;ctx.clearRect(0,0,W,H);ctx.fillStyle='#0b4d42';ctx.fillRect(0,0,W,H);
-  // faint toroidal reference grid — observer only
-  ctx.strokeStyle='rgba(255,255,255,.035)';ctx.lineWidth=1;for(let x=100;x<E.Protocol.world.width;x+=100){ctx.beginPath();ctx.moveTo(x*sx,0);ctx.lineTo(x*sx,H);ctx.stroke();}for(let y=100;y<E.Protocol.world.height;y+=100){ctx.beginPath();ctx.moveTo(0,y*sy);ctx.lineTo(W,y*sy);ctx.stroke();}
-  for(const r of world.resources){ctx.fillStyle=COLORS[r.material]||'#fff';ctx.beginPath();ctx.arc(r.x*sx,r.y*sy,Math.max(1.4,E.Protocol.resources.resourceRadius*sx),0,Math.PI*2);ctx.fill();}
-  for(const o of world.objects){ctx.fillStyle=COLORS.object;ctx.strokeStyle='#64748b';ctx.lineWidth=1;ctx.beginPath();ctx.arc(o.x*sx,o.y*sy,o.radius*sx,0,Math.PI*2);ctx.fill();ctx.stroke();}
-  for(const co of world.corpses){ctx.fillStyle=COLORS.corpse;ctx.beginPath();ctx.arc(co.x*sx,co.y*sy,co.radius*sx,0,Math.PI*2);ctx.fill();}
-  const sel=selectedAgent();for(const a of world.agents){const r=Math.max(2,a.pheno.radius*sx),x=a.x*sx,y=a.y*sy;if(a.lastEmit>0.12){ctx.strokeStyle=`rgba(216,180,254,${Math.min(.28,a.lastEmit*.3)})`;ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,Math.min(90,28+a.lastEmit*70)*sx,0,Math.PI*2);ctx.stroke();}ctx.fillStyle=COLORS.agent;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#082f49';ctx.lineWidth=1;ctx.stroke();ctx.strokeStyle='#e0f2fe';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a.dir)*r*1.7,y+Math.sin(a.dir)*r*1.7);ctx.stroke();if(a.id===selectedId){ctx.strokeStyle='#fff';ctx.lineWidth=2.2;ctx.beginPath();ctx.arc(x,y,r+4,0,Math.PI*2);ctx.stroke();}}
-  if(sel&&$('raysCheck').checked){ctx.save();ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=1;for(const s of sel.genome.sensors){const ang=sel.dir+s.angle;ctx.beginPath();ctx.moveTo(sel.x*sx,sel.y*sy);ctx.lineTo((sel.x+Math.cos(ang)*s.range)*sx,(sel.y+Math.sin(ang)*s.range)*sy);ctx.stroke();}ctx.restore();}
-}
-function worldClick(ev){const rect=$('world').getBoundingClientRect(),x=(ev.clientX-rect.left)/rect.width*E.Protocol.world.width,y=(ev.clientY-rect.top)/rect.height*E.Protocol.world.height;let best=null,bd=Infinity;for(const a of world.agents){const d=E.helpers.dist2(x,y,a.x,a.y);if(d<bd){bd=d;best=a;}}if(best&&Math.sqrt(bd)<35){selectedId=best.id;brainMode='selected';fullRefresh();}}
-
-function canvasFit(c){const dpr=Math.min(2,devicePixelRatio||1),rect=c.getBoundingClientRect(),w=Math.max(320,Math.floor(rect.width*dpr)),h=Math.max(180,Math.floor(rect.height*dpr));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}return{ctx:c.getContext('2d'),w,h,dpr};}
-function chart(canvas,series){const {ctx,w,h}=canvasFit(canvas);ctx.clearRect(0,0,w,h);ctx.fillStyle='#0d1626';ctx.fillRect(0,0,w,h);const pad=34,pts=world?.archive?.flattened(1800)||[];if(pts.length<2){ctx.fillStyle='#94a3b8';ctx.font='12px Arial';ctx.fillText('ממתין לנתונים…',pad,30);return;}const xs=pts.map(p=>p.tick);let vals=[];for(const s of series)for(const p of pts){const v=s.get(p);if(Number.isFinite(v))vals.push(v);}if(!vals.length)return;let min=Math.min(...vals),max=Math.max(...vals);if(min===max){min-=1;max+=1;}const x0=Math.min(...xs),x1=Math.max(...xs)||1;ctx.strokeStyle='#334155';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad,8);ctx.lineTo(pad,h-pad);ctx.lineTo(w-8,h-pad);ctx.stroke();ctx.fillStyle='#94a3b8';ctx.font=`${11*(devicePixelRatio||1)}px Arial`;ctx.fillText(fmt(max,2),3,15);ctx.fillText(fmt(min,2),3,h-pad);for(const s of series){ctx.strokeStyle=s.color;ctx.lineWidth=1.7*(devicePixelRatio||1);ctx.beginPath();let started=false;for(const p of pts){const v=s.get(p);if(!Number.isFinite(v))continue;const x=pad+(p.tick-x0)/(x1-x0||1)*(w-pad-10),y=8+(max-v)/(max-min)*(h-pad-16);if(!started){ctx.moveTo(x,y);started=true;}else ctx.lineTo(x,y);}ctx.stroke();}let lx=pad+5;for(const s of series){ctx.fillStyle=s.color;ctx.fillRect(lx,10,9,9);ctx.fillStyle='#cbd5e1';ctx.fillText(s.name,lx+13,19);lx+=ctx.measureText(s.name).width+36;}}
-function updateCharts(){if(!world)return;chart($('chartPop'),[{name:'Population',color:'#38bdf8',get:p=>p.population},{name:'Median Gen',color:'#fbbf24',get:p=>p.medianGeneration}]);chart($('chartGenetic'),[{name:'Distance',color:'#f472b6',get:p=>p.meanGeneticDistance},{name:'Diversity',color:'#a78bfa',get:p=>p.geneticDiversity}]);chart($('chartFitness'),[{name:'Repro rate',color:'#4ade80',get:p=>p.reproductionRatePer1000MatureTicks},{name:'LRS',color:'#fbbf24',get:p=>p.completedLRS}]);chart($('chartComplex'),[{name:'Brain',color:'#38bdf8',get:p=>p.brainComplexity},{name:'Novelty',color:'#f472b6',get:p=>p.phenotypeNovelty},{name:'Clusters',color:'#fbbf24',get:p=>p.observerClusters}]);chart($('chartMorph'),[{name:'Radius',color:'#38bdf8',get:p=>p.phenotype?.radius},{name:'Metabolism',color:'#fb7185',get:p=>p.phenotype?.baseMet},{name:'Motor power',color:'#4ade80',get:p=>p.traits?.motorPower}]);chart($('chartMaterials'),[{name:'Primary',color:COLORS.primary,get:p=>p.materials?.primary},{name:'Waste',color:COLORS.waste,get:p=>p.materials?.waste},{name:'Tissue',color:COLORS.tissue,get:p=>p.materials?.tissue}]);}
-
-function updateEvolutionUi(){const m=lastMetrics;if(!m)return;const ms=m.mutationStats||{};$('mutationSummary').innerHTML=rowsHtml([['לידות עם mutation',fmt(ms.birthsWithMutations,0)],['שינויים גנטיים',fmt(ms.totalChanges,0)],['Trait',fmt(ms.byType?.trait,0)],['Sensor',fmt(ms.byType?.sensor,0)],['Weight',fmt(ms.byType?.weight,0)],['Bias',fmt(ms.byType?.bias,0)],['Structural',fmt(ms.byType?.structure,0)],['Mutation rate ממוצע',fmt(m.traits.mutationRate,5)],['Structural rate ממוצע',fmt(m.traits.structuralRate,5)]]);$('brainPopulation').innerHTML=rowsHtml([['Ray sensors',fmt(m.avgSensors,2)],['Hidden neurons',fmt(m.avgHidden,2)],['Connections',fmt(m.avgConnections,2)],['Brain complexity',fmt(m.brainComplexity,2)],['Unique genome fraction',pct(m.uniqueGenomeFraction)],['Top genome share',pct(m.topGenomeShare)]]);$('traitSummary').innerHTML=rowsHtml([['רדיוס',fmt(m.phenotype.radius,3)],['מסה',fmt(m.phenotype.mass,2)],['קיבולת אנרגיה',fmt(m.phenotype.energyCapacity,2)],['מטבוליזם בסיסי',fmt(m.phenotype.baseMet,5)],['מהירות פיזיקלית',fmt(m.phenotype.maxSpeed,3)],['בגרות',fmt(m.phenotype.maturity,1)],['שריון',fmt(m.traits.armor,3)],['תיקון',fmt(m.traits.repair,3)],['Digest primary',fmt(m.traits.digestPrimary,3)],['Digest waste',fmt(m.traits.digestWaste,3)],['Digest tissue',fmt(m.traits.digestTissue,3)]]);
-  const gmap=new Map();for(const a of world.agents){const h=E.genomeHash(a.genome),x=gmap.get(h)||{n:0,g:0};x.n++;x.g+=a.generation;gmap.set(h,x);}const arr=[...gmap].sort((a,b)=>b[1].n-a[1].n).slice(0,20);$('genomeTable').innerHTML=arr.map(([h,x])=>`<tr><td class="mono">${h}</td><td>${x.n}</td><td>${pct(x.n/Math.max(1,world.agents.length))}</td><td>${fmt(x.g/x.n,1)}</td></tr>`).join('');
-  const ev=world.recentEvents.filter(e=>e.type==='birth'&&e.mutations?.length).slice(-20).reverse();$('mutationEvents').innerHTML=ev.length?ev.map(e=>`<div class="event mut"><div class="t">tick ${fmt(e.tick,0)} · child ${e.child} · gen ${e.generation}</div><b>${e.mutations.length} שינויים</b> — ${e.mutations.slice(0,4).map(x=>x.action||x.type+':'+x.target).join(', ')}</div>`).join(''):'<div class="small">עדיין אין אירועי mutation.</div>';
-}
-
-function brainNodes(g){return{inputs:['energy','health','touch','chemical',...g.sensors.map(s=>'ray:'+s.id)],hidden:g.hidden.map(h=>h.id),outputs:['act:left_motor','act:right_motor','act:jaw','act:grip','act:chemical_emit']};}
-function drawBrain(){if(!world)return;const g=currentGenome();if(!g)return;const c=$('brainCanvas'),{ctx,w,h}=canvasFit(c),nodes=brainNodes(g),pad=48;ctx.clearRect(0,0,w,h);ctx.fillStyle='#0d1626';ctx.fillRect(0,0,w,h);const pos=new Map();function place(list,x){list.forEach((id,i)=>pos.set(id,{x,y:pad+(i+1)*(h-2*pad)/(list.length+1)}));}place(nodes.inputs,pad+30);place(nodes.hidden,w/2);place(nodes.outputs,w-pad-30);const maxW=Math.max(.1,...g.connections.map(c=>Math.abs(c.weight)));for(const cn of g.connections){if(!cn.enabled)continue;const a=pos.get(cn.from),b=pos.get(cn.to);if(!a||!b)continue;ctx.strokeStyle=cn.weight>=0?'rgba(56,189,248,.65)':'rgba(244,114,182,.65)';ctx.lineWidth=(.5+3*Math.abs(cn.weight)/maxW)*(devicePixelRatio||1);ctx.beginPath();ctx.moveTo(a.x,a.y);const mx=(a.x+b.x)/2;ctx.bezierCurveTo(mx,a.y,mx,b.y,b.x,b.y);ctx.stroke();}
-  const live=brainMode==='selected'?selectedAgent():null;for(const [id,p] of pos){let act=0;if(live){if(id.startsWith('act:'))act=live.outputs[id.slice(4)]||0;else if(id.startsWith('ray:')||['energy','health','touch','chemical'].includes(id))act=live.lastInputs?.[id]||0;else act=live.hiddenState?.[id]||0;}const rr=id.startsWith('ray:')||['energy','health','touch','chemical'].includes(id)?7:id.startsWith('act:')?9:9;ctx.fillStyle=act>=0?`rgba(56,189,248,${.25+.65*Math.min(1,Math.abs(act))})`:`rgba(244,114,182,${.25+.65*Math.min(1,Math.abs(act))})`;ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1;ctx.beginPath();ctx.arc(p.x,p.y,rr*(devicePixelRatio||1),0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#cbd5e1';ctx.font=`${10*(devicePixelRatio||1)}px Arial`;ctx.textAlign=id.startsWith('act:')?'right':id.startsWith('ray:')||['energy','health','touch','chemical'].includes(id)?'left':'center';const label=id.replace('act:','');ctx.fillText(label,p.x+(ctx.textAlign==='left'?12:ctx.textAlign==='right'?-12:0)*(devicePixelRatio||1),p.y-11*(devicePixelRatio||1));}ctx.textAlign='start';updateBrainDetails();}
-function updateBrainDetails(){if(!world)return;const g=currentGenome(),a=selectedAgent(),found=world.ancestorGenome;if(!g)return;const enabled=g.connections.filter(c=>c.enabled),gd=E.genomeDistance(g,found);$('brainDetails').innerHTML=rowsHtml([['מצב',brainMode==='founder'?'אב קדמון':brainMode==='historical'?(historicalLabel||'Genome היסטורי'):a?`Somik #${a.id}`:'אב קדמון'],['Genome',E.genomeHash(g),'mono'],['מרחק מהאב',fmt(gd,6)],['Sensors',g.sensors.length],['Hidden',g.hidden.length],['Connections enabled',enabled.length],['Mutation rate',fmt(g.traits.mutationRate,6)],['Structural rate',fmt(g.traits.structuralRate,6)]]);const fm=new Map(found.connections.map(c=>[c.id,c]));const changed=enabled.map(c=>({c,d:c.weight-(fm.get(c.id)?.weight||0),exists:fm.has(c.id)})).filter(x=>!x.exists||Math.abs(x.d)>1e-6).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d)).slice(0,120);$('connectionTable').innerHTML=changed.map(x=>`<tr><td class="mono">${x.c.id}</td><td>${x.c.from}</td><td>${x.c.to}</td><td>${fmt(x.c.weight,4)}</td><td>${x.exists?fmt(x.d,4):'חדש'}</td></tr>`).join('');$('connectionSelect').innerHTML=enabled.slice().sort((a,b)=>Math.abs(b.weight)-Math.abs(a.weight)).map(c=>`<option value="${c.id}">${c.id}: ${c.from} → ${c.to} (${fmt(c.weight,3)})</option>`).join('');}
-
-function drawLineage(){const c=$('lineageCanvas'),{ctx,w,h}=canvasFit(c);ctx.clearRect(0,0,w,h);ctx.fillStyle='#0d1626';ctx.fillRect(0,0,w,h);const root=selectedAgent();if(!root){ctx.fillStyle='#94a3b8';ctx.fillText('בחר Somik',20,30);return;}const byId=world.lineageRecent;const levels=[[root]],seen=new Set([root.id]);for(let d=1;d<6;d++){const prev=levels[d-1],cur=[];for(const x of prev){const rec=x.kind==='agent'?x:byId.get(x.id);for(const pid of [rec?.parentA,rec?.parentB])if(pid&&!seen.has(pid)&&byId.has(pid)){seen.add(pid);cur.push(byId.get(pid));}}if(!cur.length)break;levels.push(cur);}const pos=new Map();for(let d=0;d<levels.length;d++){const list=levels[d];for(let i=0;i<list.length;i++){const x=w/2+(i-(list.length-1)/2)*Math.min(90,w/Math.max(2,list.length+1)),y=35+d*(h-60)/Math.max(1,levels.length-1);pos.set(list[i].id,{x,y});}}ctx.strokeStyle='#64748b';for(let d=0;d<levels.length-1;d++)for(const x of levels[d]){const rec=x.kind==='agent'?x:byId.get(x.id),p=pos.get(x.id);for(const pid of [rec?.parentA,rec?.parentB])if(pos.has(pid)){const q=pos.get(pid);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();}}for(const [id,p] of pos){ctx.fillStyle=id===root.id?'#fff':'#38bdf8';ctx.beginPath();ctx.arc(p.x,p.y,6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#cbd5e1';ctx.font='10px Arial';ctx.fillText('#'+id,p.x+8,p.y+3);}}
-function updateLineages(){if(!world)return;drawLineage();const rows=[];const bins=Object.keys(world.cohortStats).map(Number).sort((a,b)=>a-b).slice(-8);for(const bin of bins){const c=world.cohortStats[bin],birthTotal=Object.values(c.birthAncestry||{}).reduce((a,b)=>a+b,0),expTotal=Object.values(c.eligibleExposure||{}).reduce((a,b)=>a+b,0);const keys=new Set([...Object.keys(c.birthAncestry||{}),...Object.keys(c.eligibleExposure||{})]);for(const k of keys){const bs=(c.birthAncestry?.[k]||0)/Math.max(1e-9,birthTotal),es=(c.eligibleExposure?.[k]||0)/Math.max(1e-9,expTotal);if(es<0.01)continue;rows.push({bin,k,bs,es,rf:bs/es});}}rows.sort((a,b)=>b.bin-a.bin||b.rf-a.rf);$('lineageFitnessTable').innerHTML=rows.slice(0,80).map(x=>`<tr><td>${x.bin}–${x.bin+49}</td><td>${x.k}</td><td>${pct(x.bs,2)}</td><td>${pct(x.es,2)}</td><td>${fmt(x.rf,3)}</td></tr>`).join('');const mass={};for(const a of world.agents)for(const[k,v]of Object.entries(a.ancestry||{}))mass[k]=(mass[k]||0)+v;const total=world.agents.length||1;$('founderAncestry').innerHTML=Object.entries(mass).sort((a,b)=>b[1]-a[1]).slice(0,15).map(([k,v])=>`<div class="row"><span>Founder ${k}</span><b>${pct(v/total,2)}</b></div>`).join('')||'<div class="small">—</div>';const ev=world.recentEvents.filter(e=>['birth','death','checkpoint','technical_failure'].includes(e.type)).slice(-40).reverse();$('eventLog').innerHTML=ev.map(e=>`<div class="event ${e.type}"><div class="t">tick ${fmt(e.tick,0)}</div><b>${e.type}</b> ${e.type==='birth'?`child ${e.child} · parents ${e.parentA}/${e.parentB||'—'} · gen ${e.generation}${e.mutations?.length?` · ${e.mutations.length} mutations`:''}`:e.type==='death'?`agent ${e.agent} · gen ${e.generation} · offspring ${e.offspring}`:e.type==='checkpoint'?`generation ${e.generation}`:(e.message||'')}</div>`).join('');}
-
-function updateEcologyUi(){const m=lastMetrics;if(!m)return;$('materialsRows').innerHTML=rowsHtml([['Primary',fmt(m.materials.primary,2)],['Waste',fmt(m.materials.waste,2)],['Tissue',fmt(m.materials.tissue,2)],['Corpse biomass',fmt(m.corpseBiomass,2)],['Loose resources',fmt(m.resources,0)],['Objects',fmt(m.objects,0)]]);const e=m.ecology;$('ecologyRows').innerHTML=rowsHtml([['Primary consumed',fmt(e.consumedPrimary,2)],['Waste consumed',fmt(e.consumedWaste,2)],['Tissue consumed',fmt(e.consumedTissue,2)],['Bites',fmt(e.bites,0)],['Predation damage',fmt(e.predationDamage,4)],['Grips',fmt(e.grips,0)],['Object carry ticks',fmt(e.objectCarryTicks,0)],['Chemical emission',fmt(e.chemicalEmission,2)],['Waste produced',fmt(e.wasteProduced,2)],['Corpses created',fmt(e.corpsesCreated,0)]]);const b=m.behavior;$('behaviorRows').innerHTML=rowsHtml([['Distance / 1000 age',fmt(b.distancePer1000Age,2)],['Primary / 1000 age',fmt(b.primaryPer1000Age,3)],['Waste / 1000 age',fmt(b.wastePer1000Age,3)],['Tissue / 1000 age',fmt(b.tissuePer1000Age,3)],['Grip lifetime fraction',pct(b.gripFraction,2)],['Chemical / 1000 age',fmt(b.chemicalPer1000Age,3)],['Damage given / 1000',fmt(b.damageGivenPer1000Age,5)],['Damage taken / 1000',fmt(b.damageTakenPer1000Age,5)]]);const a=selectedAgent();$('selectedEcology').innerHTML=a?rowsHtml([['מרחק חיים',fmt(a.distance,2)],['Primary eaten',fmt(a.foodPrimary,3)],['Waste eaten',fmt(a.foodWaste,3)],['Tissue eaten',fmt(a.foodTissue,3)],['Damage given',fmt(a.damageGiven,5)],['Damage taken',fmt(a.damageTaken,5)],['Grip ticks',fmt(a.gripTicks,0)],['Chemical total',fmt(a.chemicalTotal,3)],['Holding',a.holding?`${a.holding.kind} #${a.holding.id}`:'לא']]):'<div class="small">בחר Somik.</div>';drawTradeoff();}
-function drawTradeoff(){const c=$('tradeoffCanvas'),{ctx,w,h}=canvasFit(c),arr=world?.agents||[];ctx.clearRect(0,0,w,h);ctx.fillStyle='#0d1626';ctx.fillRect(0,0,w,h);if(!arr.length)return;const samp=arr.length>300?arr.filter((_,i)=>i%Math.ceil(arr.length/300)===0):arr;const pts=samp.map(a=>({x:a.pheno.baseMet,y:a.pheno.energyCapacity,r:a.pheno.radius})),xmin=Math.min(...pts.map(p=>p.x)),xmax=Math.max(...pts.map(p=>p.x)),ymin=Math.min(...pts.map(p=>p.y)),ymax=Math.max(...pts.map(p=>p.y)),pad=28;ctx.strokeStyle='#334155';ctx.beginPath();ctx.moveTo(pad,8);ctx.lineTo(pad,h-pad);ctx.lineTo(w-8,h-pad);ctx.stroke();for(const p of pts){const x=pad+(p.x-xmin)/(xmax-xmin||1)*(w-pad-10),y=8+(ymax-p.y)/(ymax-ymin||1)*(h-pad-16);ctx.fillStyle='rgba(56,189,248,.55)';ctx.beginPath();ctx.arc(x,y,Math.max(2,p.r*.5),0,Math.PI*2);ctx.fill();}}
-
-function updateArchiveSimple(){if(!world)return;const cps=Object.values(world.checkpoints||{}).sort((a,b)=>a.generation-b.generation);$('checkpointTable').innerHTML=cps.map(c=>`<tr><td>${c.generation}</td><td>${fmt(c.tick,0)}</td><td>${c.genomes.length}</td><td>${fmt(c.metrics.population,0)}</td><td>${fmt(c.metrics.meanGeneticDistance,5)}</td><td><button onclick="inspectCheckpoint(${c.generation},0)">נתח Genome</button></td></tr>`).join('');const levels=world.archive?.levels||[];$('archiveRows').innerHTML=rowsHtml([['Base stride',world.archive?.baseStride],['רמות',levels.length],['Samples',levels.reduce((s,x)=>s+x.length,0)],...levels.map((x,i)=>[`Level ${i}`,x.length])]);$('autosaveInfo').innerHTML=rowsHtml([['שמירה אחרונה',runMeta.lastSaveAt?new Date(runMeta.lastSaveAt).toLocaleString('he-IL'):'טרם נשמר'],['Tick אחרון',fmt(runMeta.lastSaveTick,0)],['Rolling snapshots',ROLLING_SAVES],['Autosave wall-time',AUTOSAVE_MS/1000+' sec'],['Autosave tick interval',fmt(AUTOSAVE_TICKS,0)]]);updateStorageEstimate();}
-async function refreshArchiveUi(){if(!db||!world)return;const runs=await listRuns();$('runsTable').innerHTML=runs.map(r=>`<tr><td class="mono">${r.runId}</td><td>${r.seed}</td><td>${fmt(r.tick,0)}</td><td>${new Date(r.savedAt).toLocaleString('he-IL')}</td><td><button onclick="loadSnapshotByKey('${r.key.replaceAll("'","\\'")}')">טען</button></td></tr>`).join('');const cnt=await countEvents();$('eventArchiveRows').innerHTML=rowsHtml([['אירועים שמורים ב־IndexedDB',fmt(cnt,0)],['Event sequence',fmt(runMeta.eventSeq,0)],['Persistent types','birth / death / checkpoint / failure'],['Birth mutation detail','כן']]);}
-
-function inspectCheckpoint(generation,index=0){const cp=world?.checkpoints?.[generation];if(!cp?.genomes?.[index])return;historicalGenome=E.cloneGenome(cp.genomes[index]);historicalLabel=`Checkpoint Gen ${generation} · sample ${index+1}`;brainMode='historical';document.querySelectorAll('.tabBtn').forEach(x=>x.classList.toggle('active',x.dataset.tab==='brain'));document.querySelectorAll('.tabPane').forEach(x=>x.classList.toggle('active',x.id==='tab-brain'));setTimeout(drawBrain,20);}
-async function updateStorageEstimate(){if(!navigator.storage?.estimate)return;try{const q=await navigator.storage.estimate(),persisted=navigator.storage.persisted?await navigator.storage.persisted():false;const extra=[['Storage used',q.usage?fmt(q.usage/1048576,1)+' MB':'—'],['Storage quota',q.quota?fmt(q.quota/1048576,1)+' MB':'—'],['Persistent storage',persisted?'כן':'לא']];const box=$('autosaveInfo');if(box)box.innerHTML+=rowsHtml(extra);}catch{}}
-async function requestPersistentStorage(){if(!navigator.storage?.persist)return alert('הדפדפן לא תומך בבקשת persistent storage.');try{const ok=await navigator.storage.persist();alert(ok?'האחסון הוגדר כמתמשך ככל שהדפדפן מאפשר.':'הדפדפן לא אישר persistent storage. מומלץ לבצע Export תקופתי.');updateArchiveSimple();}catch(e){alert(e.message);}}
-function checkpointGenome(){const cps=Object.values(world.checkpoints||{}).sort((a,b)=>b.generation-a.generation);return cps[0]?.genomes?.[0]||null;}
-function labWorker(){const url=new URL('research-engine.js',location.href).href;const code=`importScripts(${JSON.stringify(url)});const E=SomikResearch;onmessage=e=>{const m=e.data;try{let r;if(m.cmd==='assayPair'){const a=E.runAssay(m.ancestor,m.seed,m.opts),b=E.runAssay(m.genome,m.seed,m.opts);r={ancestor:a,evolved:b,ratio:a.reproRate>0?b.reproRate/a.reproRate:null};}else if(m.cmd==='common'){r=E.commonGarden([m.genome],m.ancestor,m.seeds,m.opts);}else if(m.cmd==='neighborhood'){r=E.mutationalNeighborhood(m.genome,m.seed,m.n,m.opts);}else if(m.cmd==='control'){const w=new E.World({seed:m.seed,mutationEnabled:false,reproductionMode:'sexual',objectsEnabled:true,chemicalEnabled:true});for(let i=0;i<m.ticks&&!w.extinct&&!w.technicalFailure;i++)w.step();r={metrics:w.metrics(),stateHash:w.stateHash(),uniqueGenomes:new Set(w.agents.map(a=>E.genomeHash(a.genome))).size};}else if(m.cmd==='multiseed'){const rows=[];for(let i=0;i<m.n;i++){const seed=m.base+i;const w=new E.World({seed});for(let t=0;t<m.ticks&&!w.extinct&&!w.technicalFailure;t++)w.step();rows.push({seed,...w.metrics(),stateHash:w.stateHash()});}r=rows;}else if(m.cmd==='knockout'){const ko=E.knockoutGenome(m.genome,m.conn);const base=E.runAssay(m.genome,m.seed,m.opts),knock=E.runAssay(ko,m.seed,m.opts);r={base,knockout:knock,ratio:base.reproRate>0?knock.reproRate/base.reproRate:null};}postMessage({ok:true,r});}catch(err){postMessage({ok:false,error:String(err.stack||err)});}}`;return new Worker(URL.createObjectURL(new Blob([code],{type:'text/javascript'})));}
-function runWorker(msg,outId,format=x=>JSON.stringify(x,null,2)){const out=$(outId);out.textContent='מריץ ניסוי…';const w=labWorker();w.onmessage=e=>{w.terminate();out.textContent=e.data.ok?format(e.data.r):'ERROR: '+e.data.error;};w.postMessage(msg);}
-function assayOpts(){return{ticks:Math.max(500,Number($('assayTicks').value)||4000),founderCount:20,reproductionMode:'asexual',objectsEnabled:false,chemicalEnabled:false};}
-
-function drawBrainAndLineage(){drawBrain();updateLineages();}
-function updateProtocolUi(){$('protocolText').textContent=JSON.stringify(E.Protocol,null,2);updateRunIdentity();}
-function runSelfTest(){const t=E.selfTest();$('selfTestOut').innerHTML=(t.ok?'<div class="okBox">כל בדיקות הליבה עברו.</div>':'<div class="warningBox">יש כשל בבדיקות.</div>')+t.results.map(x=>`<div class="event"><b>${x.ok?'✓':'✗'} ${x.name}</b>${x.detail?` — ${x.detail}`:''}</div>`).join('');}
-
-function fullRefresh(){updateMetrics();drawWorld();updateCharts();drawBrainAndLineage();updateProtocolUi();refreshArchiveUi();}
-function uiRefresh(){updateMetrics();drawChartsIfVisible();if(document.getElementById('tab-brain').classList.contains('active'))drawBrain();if(document.getElementById('tab-lineages').classList.contains('active'))updateLineages();if(document.getElementById('tab-ecology').classList.contains('active'))drawTradeoff();}
-function drawChartsIfVisible(){if($('tab-overview').classList.contains('active'))updateCharts();}
-
-function loop(now){requestAnimationFrame(loop);if(!world)return;let steps=0;if(running&&!world.extinct&&!world.technicalFailure){const target=speed,budget=speed>=500?15:speed>=100?10:8,start=performance.now();while(steps<target&&performance.now()-start<budget){world.step();steps++;if(world.extinct||world.technicalFailure)break;}ticksSincePerf+=steps;if(world.extinct||world.technicalFailure){running=false;updatePauseUi();saveNow(world.extinct?'extinction':'technical-failure');}}
-  if(now-lastPerfAt>1000){currentTPS=ticksSincePerf*1000/(now-lastPerfAt);ticksSincePerf=0;lastPerfAt=now;$('computeLine').textContent=`${fmt(currentTPS,0)} ticks/s · target x${speed}`;}
-  if(Date.now()-lastAutosaveWall>AUTOSAVE_MS||world.tick-lastAutosaveTick>=AUTOSAVE_TICKS)saveNow('autosave');
-  if(now-lastUiAt>500){uiRefresh();lastUiAt=now;}
-  if(renderEnabled&&now-lastDrawAt>(speed>=500?250:speed>=100?100:40)){drawWorld();lastDrawAt=now;}
-}
-
-async function exportRun(full=false){await saveNow('export');const data={schema:'SomikWorldResearchExport/1',exportedAt:nowIso(),runMeta,protocol:E.Protocol,protocolId:E.PROTOCOL_ID,protocolHash:E.PROTOCOL_HASH,engineHash:E.ENGINE_HASH,state:world.dump(),summary:world.metrics()};if(full)data.events=await getAllEvents();downloadJson(data,`somik-research-${runMeta.runId}-${full?'full-archive':'run'}.json`);}
-function downloadJson(obj,name){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);}
-async function importFile(file){const data=JSON.parse(await file.text());const state=data.state||data;if(state.protocolId!==E.PROTOCOL_ID)throw new Error('Protocol mismatch: '+state.protocolId);await saveNow('before-import');world=E.World.load(state);runMeta=data.runMeta||{runId:makeRunId(world.seed),createdAt:nowIso(),lastSaveAt:'',lastSaveTick:-1,eventSeq:0};selectedId=null;running=!world.extinct&&!world.technicalFailure;updatePauseUi();updateRunIdentity();fullRefresh();await saveNow('import');}
-
-function bind(){
-  $('pauseBtn').onclick=()=>{running=!running&&!world.extinct&&!world.technicalFailure;updatePauseUi();};$('speedSel').onchange=e=>speed=Number(e.target.value)||1;$('renderBtn').onclick=()=>{renderEnabled=!renderEnabled;$('renderBtn').textContent=`👁 תצוגה: ${renderEnabled?'פעילה':'חסכונית'}`;if(renderEnabled)drawWorld();};$('saveBtn').onclick=()=>saveNow('manual');$('exportBtn').onclick=()=>exportRun(false);$('exportFullBtn').onclick=()=>exportRun(true);$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=async e=>{try{if(e.target.files[0])await importFile(e.target.files[0]);}catch(err){alert(err.message);}e.target.value='';};$('newRunBtn').onclick=async()=>{if(!confirm('לשמור את ה־Run הנוכחי וליצור Run חדש?'))return;await saveNow('before-new-run');newWorld(Number($('seedInput').value)||1);};$('world').addEventListener('click',worldClick);
-  document.querySelectorAll('.tabBtn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabBtn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tabPane').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('tab-'+b.dataset.tab).classList.add('active');setTimeout(()=>{uiRefresh();drawBrainAndLineage();},20);});
-  $('brainSelectedBtn').onclick=()=>{brainMode='selected';drawBrain();};$('brainFounderBtn').onclick=()=>{brainMode='founder';drawBrain();};$('brainHistoryBtn').onclick=()=>{if(historicalGenome){brainMode='historical';drawBrain();}else alert('בחר Genome היסטורי מתוך Checkpoints.');};$('persistStorageBtn').onclick=requestPersistentStorage;$('knockoutBtn').onclick=()=>{const g=currentGenome(),conn=$('connectionSelect').value;if(!g||!conn)return;runWorker({cmd:'knockout',genome:g,conn,seed:93001,opts:assayOpts()},'commonGardenOut');};$('commonGardenBtn').onclick=()=>{const g=currentGenome();if(!g)return $('commonGardenOut').textContent='בחר Somik או Genome היסטורי.';runWorker({cmd:'common',genome:g,ancestor:world.ancestorGenome,seeds:[91001,91002,91003,91004,91005],opts:assayOpts()},'commonGardenOut',r=>`Mean ratio evolved/ancestor: ${fmt(r.meanRatio,4)}\nMean log ratio: ${fmt(r.meanLogRatio,4)}\n\n`+JSON.stringify(r.ratios,null,2));};$('ancestorReplayBtn').onclick=()=>{const g=currentGenome();if(!g)return $('commonGardenOut').textContent='בחר Somik או Genome היסטורי.';runWorker({cmd:'assayPair',genome:g,ancestor:world.ancestorGenome,seed:92001,opts:assayOpts()},'commonGardenOut');};$('mutationOffBtn').onclick=()=>runWorker({cmd:'control',seed:world.seed,ticks:Math.max(500,Number($('controlTicks').value)||5000)},'mutationOffOut',r=>`Mutation-Off · same seed ${world.seed}\nUnique genomes alive: ${r.uniqueGenomes}\nState hash: ${r.stateHash}\n\n${JSON.stringify(r.metrics,null,2)}`);$('neighborhoodBtn').onclick=()=>{const g=currentGenome();if(!g)return $('neighborhoodOut').textContent='בחר Somik או Genome היסטורי.';runWorker({cmd:'neighborhood',genome:g,seed:99001,n:Number($('mutantN').value)||48,opts:{ticks:2500,founderCount:14}},'neighborhoodOut',r=>`Beneficial >1.02: ${r.beneficial}\nNeutral 0.98–1.02: ${r.neutral}\nDeleterious <0.98: ${r.deleterious}\nMean relative: ${fmt(r.meanRelative,4)}\n\n${JSON.stringify(r.rows.slice(0,40),null,2)}`);};$('multiSeedBtn').onclick=()=>runWorker({cmd:'multiseed',base:200001,n:Number($('multiN').value)||5,ticks:Number($('multiTicks').value)||4000},'multiOut',r=>r.map(x=>`Seed ${x.seed}: pop=${x.population} gen=${fmt(x.medianGeneration,1)} repro=${fmt(x.reproductionRatePer1000MatureTicks,4)} dist=${fmt(x.meanGeneticDistance,4)} extinct=${x.extinct}`).join('\n'));$('selfTestBtn').onclick=runSelfTest;
-  addEventListener('beforeunload',()=>{try{saveNow('beforeunload');}catch{}});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveNow('hidden');});
-}
-
-async function init(){bind();db=await openDb();const rec=await latestSnapshot();if(rec){try{await loadSnapshotRecord(rec);$('saveStatus').className='saveOk';$('saveStatus').textContent=`✓ המשך אוטומטי מ־${new Date(rec.savedAt).toLocaleString('he-IL')} · tick ${fmt(rec.tick,0)}`;}catch(err){console.error(err);newWorld(1);}}else newWorld(1);runSelfTest();requestAnimationFrame(loop);}
-init().catch(err=>{console.error(err);alert('Initialization failed: '+err.message);});
-</script>
+<script src="app.js"></script>
 </body>
 </html>
