@@ -5,14 +5,15 @@
   "engineHash": "65b4530eee3a32880c8c0fa32c5259fd3ef2f42b148c19f63bb1eb432f39b49a",
   "engineHashRule": "SHA-256 of research-engine.js with ENGINE_HASH replaced by empty string",
   "files": {
+    "LIVING_RESEARCH_WORLD_SPEC.md": "20fd806a8fab9e402fea25da83f9dec8de08087d5ca5cc0caf95720321c1acbe",
     "QA_REPORT.md": "7b29a29d2f0ff07a08900e4d15466c274caa17c1f2b59e446e8fcf0b0d1c6fb2",
-    "README.md": "ac1239f31560c8a11f1136aa2c2e8e042b1559d75fa5defe7cfbe3c3f28bc603",
+    "README.md": "a46d314fe468cb9db90836593d463a1179f614716a460a7fd29ef6ed025a9cb9",
     "SCIENTIFIC_PROTOCOL.json": "0e8e19fcf2d55211cdca8557898bc3b43d618ae12a359ef67ab3364b0645aa52",
-    "Somik_World_Research_1.1_Classic.html": "1124a3afca23c102c95122ffbb72ef60535922f3d46ced36804c35eedad9716f",
-    "app.js": "ddfa6953e5ebf33193682c966595c62d50d1fd7fc1c37989678fc30f0605158d",
+    "Somik_World_Research_1.1_Classic.html": "d43c08b435b6076b88d20fa7bb47f44230013c1b27dda0e0cb8af6d3c9001af9",
+    "app.js": "f4026620ad76e75e24f864072ec31eb946b3a24dcb94278159946e40fc8c3a37",
     "build.js": "9327d281bce42bb2053d2f327767afd8384db4a38392141b1cad305ce46d8ad3",
     "headless-runner.js": "6060a2ac0a419707a6521586fd77cdc7139ff83677057b3979b99b6e3287ebf7",
-    "index.html": "daa9842697e60f93833c6ce6de29af1212f8472ba9823acf1ec975c1c55cf257",
+    "index.html": "ad4de1c13e9e204738b598fba754db1f8b694e6103fbceae5f0fb1b527fe48a9",
     "research-engine.js": "80291e9d6c905814ceab0bfea36223c65a18db8efe21f7712868580ec9dc75c2",
     "v3-baseline.html": "d1d0f8abd7b9bd39e5593fc4ace8fed019d4e4150ad5aa20f1ff59e7aad7f799"
   }

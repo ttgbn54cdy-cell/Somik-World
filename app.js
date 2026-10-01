@@ -8,8 +8,32 @@ let world=null,running=true,speed=100,renderEnabled=true,selectedId=null,brainMo
 let importedEvents=[];
 let runMeta={runId:'',createdAt:'',lastSaveAt:'',lastSaveTick:-1,eventSeq:0};
 let db=null,lastMetrics=null,lastUiAt=0,lastDrawAt=0,lastAutosaveWall=0,lastAutosaveTick=0,lastPerfAt=performance.now(),ticksSincePerf=0,currentTPS=0,saveInFlight=null;
+let livingObserver={runId:'',selectedId:null,lastTick:-1,prev:null,samples:[],events:[],counts:{moves:0,contacts:0,carries:0,holds:0,releases:0,clusters:0},clusterSum:0,clusterSamples:0};
 const AUTOSAVE_MS=30000,AUTOSAVE_TICKS=5000,ROLLING_SAVES=5;
 const COLORS={agent:'#38bdf8',primary:'#fde047',waste:'#a78bfa',tissue:'#fb923c',object:'#94a3b8',corpse:'#b45309'};
+
+function resetLivingObserver(){livingObserver={runId:runMeta.runId,selectedId:selectedId,lastTick:-1,prev:null,samples:[],events:[],counts:{moves:0,contacts:0,carries:0,holds:0,releases:0,clusters:0},clusterSum:0,clusterSamples:0};}
+function torusDelta(a,b,size){let d=a-b;if(d>size/2)d-=size;if(d<-size/2)d+=size;return d;}
+function torusDistance(a,b){const dx=torusDelta(a.x,b.x,E.Protocol.world.width),dy=torusDelta(a.y,b.y,E.Protocol.world.height);return Math.hypot(dx,dy);}
+function livingEvent(type,text,evidence={}){livingObserver.events.push({tick:world.tick,type,text,evidence});if(livingObserver.events.length>120)livingObserver.events.splice(0,livingObserver.events.length-120);}
+function observeLiving(){
+  if(!world)return; if(livingObserver.runId!==runMeta.runId||livingObserver.selectedId!==selectedId)resetLivingObserver();
+  const a=selectedAgent(); if(!a){livingObserver.lastTick=world.tick;return;}
+  if(livingObserver.lastTick===world.tick)return;
+  const near=world.agents.filter(x=>x.id!==a.id&&torusDistance(a,x)<=Math.max(28,a.pheno.radius*3.2));
+  const cluster=near.length+1, holding=a.holding?`${a.holding.kind}:${a.holding.id}`:null, prev=livingObserver.prev;
+  let moved=0;if(prev)moved=torusDistance(a,prev);
+  if(prev&&moved>0.35){livingObserver.counts.moves++;if(livingObserver.counts.moves===1||livingObserver.counts.moves%12===0)livingEvent('move',`תנועה של #${a.id}`,{distance:Math.round(moved*100)/100});}
+  if(prev&&!prev.holding&&holding){livingObserver.counts.holds++;livingObserver.counts.carries++;livingEvent('hold',`אחיזה ב־${holding}`,{kind:a.holding.kind,id:a.holding.id});}
+  if(prev&&prev.holding&&holding&&prev.holding===holding){livingObserver.counts.carries++;if(livingObserver.counts.carries===1||livingObserver.counts.carries%15===0)livingEvent('carry',`המשך נשיאה של ${holding}`,{ticks:livingObserver.counts.carries});}
+  if(prev&&prev.holding&&!holding){livingObserver.counts.releases++;livingEvent('release',`שחרור ${prev.holding}`,{releases:livingObserver.counts.releases});}
+  if(near.length>0&&(!prev||prev.near===0)){livingObserver.counts.contacts++;livingEvent('contact',`מגע קרוב עם ${near.map(x=>'#'+x.id).slice(0,3).join(', ')}`,{agents:near.map(x=>x.id),radius:Math.round(Math.max(28,a.pheno.radius*3.2))});}
+  if(cluster>=3){livingObserver.counts.clusters++;livingObserver.clusterSum+=cluster;livingObserver.clusterSamples++;if(livingObserver.counts.clusters===1||livingObserver.counts.clusters%10===0)livingEvent('cluster',`סביבת קרבה: ${cluster} פרטים`,{localGroup:cluster});}
+  livingObserver.samples.push({tick:world.tick,moved,cluster,near:near.length,holding,energy:a.energy,dir:a.dir});if(livingObserver.samples.length>180)livingObserver.samples.shift();
+  livingObserver.prev={x:a.x,y:a.y,holding,near:near.length};livingObserver.lastTick=world.tick;
+}
+function livingLabels(){const c=livingObserver.counts,s=livingObserver.samples;const labels=[];if(c.carries>=3)labels.push({name:'נשיאה חוזרת',evidence:`${c.carries} דגימות נשיאה`});if(c.contacts>=3)labels.push({name:'מגעים חוזרים',evidence:`${c.contacts} מפגשי קרבה`});if(c.clusters>=5&&livingObserver.clusterSamples&&livingObserver.clusterSum/livingObserver.clusterSamples>=3)labels.push({name:'התקבצות יציבה',evidence:`ממוצע ${fmt(livingObserver.clusterSum/livingObserver.clusterSamples,1)} פרטים בסביבה`});if(s.length>=12&&s.filter(x=>x.moved>.35).length>=8)labels.push({name:'תנועה מתמשכת',evidence:`${s.filter(x=>x.moved>.35).length} צעדי תנועה שנמדדו`});return labels;}
+function updateLivingUi(){const badges=$('livingBadges'),evidence=$('livingEvidence'),timeline=$('livingTimeline');if(!badges||!evidence||!timeline)return;const a=selectedAgent(),c=livingObserver.counts,s=livingObserver.samples;badges.innerHTML=a?livingLabels().map(x=>`<span class="livingBadge">${x.name}<small>${x.evidence}</small></span>`).join('')||'<span class="small">עדיין אין דפוס חוזר עם מספיק ראיות.</span>':'<span class="small">בחר Somik כדי להתחיל תצפית.</span>';const avg=s.length?livingObserver.clusterSum/Math.max(1,livingObserver.clusterSamples):0;evidence.innerHTML=rowsHtml([['נבחר',a?'#'+a.id:'—'],['דגימות',s.length],['תנועה',c.moves],['מגעים',c.contacts],['אחיזות / נשיאות',`${c.holds} / ${c.carries}`],['שחרורים',c.releases],['ממוצע קבוצה מקומית',avg?fmt(avg,1):'—']]);timeline.innerHTML=livingObserver.events.slice(-28).reverse().map(e=>`<div class="livingEvent"><div class="t">tick ${fmt(e.tick,0)} · ${e.type}</div><b>${e.text}</b><span>${Object.entries(e.evidence||{}).map(([k,v])=>`${k}: ${Array.isArray(v)?v.join(','):v}`).join(' · ')}</span></div>`).join('')||'<div class="small">הציר יתמלא כאשר הנבחר ינוע או ייצור מגעים.</div>';}
 
 function makeRunId(seed){return `R11-${seed}-${Date.now()}-${crypto.randomUUID?.()||Math.random().toString(36).slice(2)}`;}
 function treatmentName(){return world?.treatment?.reproductionMode==='sexual'?'Open Evolution — sexual':'Control';}
@@ -49,7 +73,7 @@ async function saveNow(reason='manual'){
 async function pruneSnapshots(runId){const tx=db.transaction('snapshots','readwrite'),idx=tx.objectStore('snapshots').index('runId'),req=idx.getAll(IDBKeyRange.only(runId));const rows=await reqPromise(req);rows.sort((a,b)=>b.tick-a.tick);for(const r of rows.slice(ROLLING_SAVES))tx.objectStore('snapshots').delete(r.key);await txDone(tx);}
 function reqPromise(r){return new Promise((resolve,reject)=>{r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
 async function latestSnapshot(){if(!db)return null;const tx=db.transaction('snapshots'),idx=tx.objectStore('snapshots').index('savedAt'),req=idx.openCursor(null,'prev');return new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result?.value||null);req.onerror=()=>reject(req.error);});}
-async function loadSnapshotRecord(rec){if(rec.snapshotHash&&E.snapshotHash(rec.state)!==rec.snapshotHash)throw new Error('Snapshot checksum mismatch');const loaded=E.World.load(rec.state);if(rec.stateHash&&loaded.stateHash()!==rec.stateHash)throw new Error('Scientific state checksum mismatch');world=loaded;importedEvents=[];runMeta={...rec.appMeta,lastSaveAt:rec.savedAt,lastSaveTick:rec.tick,eventSeq:rec.appMeta?.eventSeq||0};selectedId=rec.appMeta?.selectedId||null;running=!world.extinct&&!world.technicalFailure;speed=Number($('speedSel').value)||100;lastAutosaveWall=Date.now();lastAutosaveTick=world.tick;updateRunIdentity();updatePauseUi();fullRefresh();}
+async function loadSnapshotRecord(rec){if(rec.snapshotHash&&E.snapshotHash(rec.state)!==rec.snapshotHash)throw new Error('Snapshot checksum mismatch');const loaded=E.World.load(rec.state);if(rec.stateHash&&loaded.stateHash()!==rec.stateHash)throw new Error('Scientific state checksum mismatch');world=loaded;importedEvents=[];runMeta={...rec.appMeta,lastSaveAt:rec.savedAt,lastSaveTick:rec.tick,eventSeq:rec.appMeta?.eventSeq||0};selectedId=rec.appMeta?.selectedId||null;resetLivingObserver();running=!world.extinct&&!world.technicalFailure;speed=Number($('speedSel').value)||100;lastAutosaveWall=Date.now();lastAutosaveTick=world.tick;updateRunIdentity();updatePauseUi();fullRefresh();}
 async function loadSnapshotByKey(key){const tx=db.transaction('snapshots'),rec=await reqPromise(tx.objectStore('snapshots').get(key));if(!rec)return;const was=running;running=false;try{
   if(!await saveNow('before-load'))throw new Error('Save failed; current run retained');
   const entries=await getAllEvents(rec.runId);await loadSnapshotRecord(rec);running=false;
@@ -65,7 +89,7 @@ async function requestPersistentStorage(){try{const ok=await navigator.storage?.
 async function birthRecordFor(agentId){if(!db||!runMeta.runId)return null;const tx=db.transaction('events'),idx=tx.objectStore('events').index('runChild');return await reqPromise(idx.get([runMeta.runId,Number(agentId)]));}
 async function reconstructAncestry(){const root=selectedAgent();if(!root){$('ancestryTable').innerHTML='<tr><td colspan="6">בחר Somik.</td></tr>';return;}const maxDepth=Math.max(1,Math.min(30,Number($('ancestryDepth').value)||8)),seen=new Set(),queue=[{id:root.id,depth:0}],rows=[];while(queue.length&&rows.length<1000){const cur=queue.shift();if(seen.has(cur.id)||cur.depth>maxDepth)continue;seen.add(cur.id);let rec=world.lineageRecent.get(cur.id)||null;if(!rec){const ev=await birthRecordFor(cur.id);if(ev)rec={id:ev.child,parentA:ev.parentA,parentB:ev.parentB,generation:ev.generation,genomeHash:ev.genomeHash};}if(!rec&&cur.id===root.id)rec={id:root.id,parentA:root.parentA,parentB:root.parentB,generation:root.generation,genomeHash:E.genomeHash(root.genome)};if(!rec){rows.push({depth:cur.depth,id:cur.id,generation:'—',parentA:'—',parentB:'—',genomeHash:'archive unavailable'});continue;}rows.push({depth:cur.depth,...rec});if(cur.depth<maxDepth){if(rec.parentA)queue.push({id:rec.parentA,depth:cur.depth+1});if(rec.parentB)queue.push({id:rec.parentB,depth:cur.depth+1});}}$('ancestryTable').innerHTML=rows.map(r=>`<tr><td>${r.depth}</td><td>${r.id}</td><td>${r.generation??'—'}</td><td>${r.parentA||'—'}</td><td>${r.parentB||'—'}</td><td class="mono">${r.genomeHash||'—'}</td></tr>`).join('')||'<tr><td colspan="6">אין נתונים.</td></tr>';}
 
-function newWorld(seed=1){importedEvents=[];seed=Math.max(1,Number(seed)>>>0);world=new E.World({seed});runMeta={runId:makeRunId(seed),createdAt:nowIso(),lastSaveAt:'',lastSaveTick:-1,eventSeq:0};selectedId=null;running=true;lastAutosaveWall=Date.now();lastAutosaveTick=0;$('seedInput').value=seed;updateRunIdentity();updatePauseUi();fullRefresh();saveNow('new-run');}
+function newWorld(seed=1){importedEvents=[];seed=Math.max(1,Number(seed)>>>0);world=new E.World({seed});runMeta={runId:makeRunId(seed),createdAt:nowIso(),lastSaveAt:'',lastSaveTick:-1,eventSeq:0};selectedId=null;resetLivingObserver();running=true;lastAutosaveWall=Date.now();lastAutosaveTick=0;$('seedInput').value=seed;updateRunIdentity();updatePauseUi();fullRefresh();saveNow('new-run');}
 function updateRunIdentity(){$('runIdLabel').textContent=runMeta.runId||'—';$('protocolBadge').textContent=`${E.PROTOCOL_ID} · ${E.PROTOCOL_HASH}`;$('identityRows').innerHTML=rowsHtml([['Run ID',runMeta.runId],['Seed',world?.seed],['Protocol',E.PROTOCOL_ID],['Protocol hash',E.PROTOCOL_HASH],['Engine hash',E.ENGINE_HASH],['Variant hash',world?.protocolVariantHash],['Founder genome',world?.ancestorHash]]);}
 function updatePauseUi(){$('pauseBtn').textContent=running?'⏸ עצור':'▶ הפעל';$('runStatus').textContent=world?.extinct?'נכחד':world?.technicalFailure?'תקלה':running?'רץ':'עצור';$('runStatus').className='statusPill '+(running?'run':'stop');}
 
@@ -156,8 +180,8 @@ function drawBrainAndLineage(){drawBrain();updateLineages();}
 function updateProtocolUi(){$('protocolText').textContent=JSON.stringify(E.Protocol,null,2);updateRunIdentity();}
 function runSelfTest(){runWorker({cmd:'selftest'},'selfTestOut',t=>(t.ok?'PASS':'FAIL')+' · '+t.results.length+' checks\n'+t.results.map(x=>`${x.ok?'✓':'✗'} ${x.name}${x.detail?' — '+x.detail:''}`).join('\n'));}
 
-function fullRefresh(){updateMetrics();drawWorld();updateCharts();drawBrainAndLineage();updateProtocolUi();refreshArchiveUi();}
-function uiRefresh(){updateMetrics();drawBrainMini();drawChartsIfVisible();if(document.getElementById('tab-brain').classList.contains('active'))drawBrain();if(document.getElementById('tab-lineages').classList.contains('active'))updateLineages();if(document.getElementById('tab-ecology').classList.contains('active'))drawTradeoff();}
+function fullRefresh(){observeLiving();updateMetrics();updateLivingUi();drawWorld();updateCharts();drawBrainAndLineage();updateProtocolUi();refreshArchiveUi();}
+function uiRefresh(){observeLiving();updateMetrics();updateLivingUi();drawBrainMini();drawChartsIfVisible();if(document.getElementById('tab-brain').classList.contains('active'))drawBrain();if(document.getElementById('tab-lineages').classList.contains('active'))updateLineages();if(document.getElementById('tab-ecology').classList.contains('active'))drawTradeoff();}
 function drawChartsIfVisible(){if($('tab-overview').classList.contains('active'))updateCharts();}
 
 function loop(now){requestAnimationFrame(loop);if(!world)return;let steps=0;if(running&&!world.extinct&&!world.technicalFailure){const target=speed,budget=speed>=500?15:speed>=100?10:8,start=performance.now();while(steps<target&&performance.now()-start<budget){world.step();steps++;if(world.extinct||world.technicalFailure)break;}ticksSincePerf+=steps;if(world.extinct||world.technicalFailure){running=false;updatePauseUi();saveNow(world.extinct?'extinction':'technical-failure');}}
@@ -190,7 +214,7 @@ async function importFile(file){
   const was=running;running=false;if(db&&!await saveNow('before-import')){running=was;throw new Error('Save failed; current run retained');}
   world=loaded;importedEvents=entries;runMeta={runId:makeRunId(world.seed),sourceRunId:data.runMeta?.runId||null,
     createdAt:nowIso(),lastSaveAt:'',lastSaveTick:-1,eventSeq:0,archiveOrigin:data.events?'imported-full':'snapshot-only'};
-  selectedId=null;running=false;lastAutosaveWall=Date.now();lastAutosaveTick=world.tick;
+  selectedId=null;resetLivingObserver();running=false;lastAutosaveWall=Date.now();lastAutosaveTick=world.tick;
   $('seedInput').value=world.seed;updatePauseUi();updateRunIdentity();fullRefresh();await saveNow('import');
 }
 

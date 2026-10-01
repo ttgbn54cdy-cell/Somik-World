@@ -36,6 +36,7 @@ node headless-runner.js --seed 1 --ticks 100000 --mutation-off --out run-mutatio
 - `app.js` — שכבת התצוגה, IndexedDB, ייצוא וכלי המעבדה.
 - `headless-runner.js` — ריצות ארוכות ב־Node.
 - `v3-baseline.html` — מודל ביקורת v3 נפרד.
+- `LIVING_RESEARCH_WORLD_SPEC.md` — מפרט שכבת העולם החי והחזרת ה״איזומינקה״.
 - `SCIENTIFIC_PROTOCOL.json` — פרוטוקול המכונה.
 - `BUILD_MANIFEST.json` — זהות וחישובי SHA-256.
 - `tests/engine.test.js` — בדיקות פיזיקה, שמירה, שחזור, סדר מערכים, RNG, זיכרון ו־Common Garden.
@@ -45,3 +46,7 @@ node headless-runner.js --seed 1 --ticks 100000 --mutation-off --out run-mutatio
 אין rescue, אין התאמת אוכל לאוכלוסייה, אין fitness פנימי, אין חיישני `food`/`mate`/`hazard`, ואין פקודות מוכנות כמו `build` או `cooperate`. תוצאות חריגות, הכחדה ועצירה טכנית נשמרות.
 
 Research 1.1 כוללת זיכרון רקורנטי פנימי. שינוי משקלי המוח מלמידה אישית אינו חלק מהגרסה הזאת; למידה פלסטית תתווסף רק כניסוי בגרסה נפרדת.
+
+## Living Research World
+
+הכיוון המרכזי משלב את המחקריות של Research עם ההיסטוריה והדינמיקה שהיו חזקות ב־v0.6 וב־v1.3. תבניות מעניינות מוצגות עם ראיות גולמיות; אין פקודות או תגמולים עבור בנייה, שיתוף פעולה או מנהיגות. בפאנל «העולם החי» ניתן לבחור Somik, לראות ציר־זמן של תנועה, מגעים, אחיזה, נשיאה ושחרור, ולקבל תוויות תיאוריות רק לאחר סף ראיות מינימלי. שכבת התצפית אינה נכנסת ל־state hash ואינה משנה את ה־RNG.
