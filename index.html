@@ -292,7 +292,7 @@ canvas{max-width:100%;box-sizing:border-box}.chart,.brainCanvas,.miniCanvas{widt
     <div class="primaryControls controlBar">
       <button class="primary controlMain" id="pauseBtn">⏸ עצור</button>
       <button class="danger controlMain" id="newRunBtn">↻ עולם חדש</button>
-      <label class="speedControl" aria-label="מהירות סימולציה"><span class="speedCaption">מהירות</span><select id="speedSel"><option value="1">×1</option><option value="5">×5</option><option value="20">×20</option><option value="100" selected>×100</option><option value="500">×500</option></select></label>
+      <label class="speedControl" aria-label="מהירות סימולציה"><span class="speedCaption">מהירות</span><select id="speedSel"><option value="1">×1</option><option value="5">×5</option><option value="20">×20</option><option value="100" selected>×100</option><option value="500">MAX</option></select></label>
       <button class="controlMain" id="saveBtn">💾 שמור</button>
     </div>
     <div class="fileControls"><button id="exportBtn">⬇ ייצוא שמירה</button><button id="importBtn">⬆ ייבוא שמירה</button></div>
@@ -331,7 +331,6 @@ canvas{max-width:100%;box-sizing:border-box}.chart,.brainCanvas,.miniCanvas{widt
     </div>
     <div class="worldWrap">
       <canvas id="world" width="1200" height="720"></canvas>
-      <div class="selectedLabel" id="selectedLabel">לחץ על סומיק לבחירה</div>
     </div>
   </div>
 
@@ -930,7 +929,7 @@ let world=null,running=true,speed=100,renderEnabled=true,selectedId=null,brainMo
 let importedEvents=[];
 let runMeta={runId:'',createdAt:'',lastSaveAt:'',lastSaveTick:-1,eventSeq:0};
 let db=null,lastMetrics=null,lastUiAt=0,lastDrawAt=0,lastAutosaveWall=0,lastAutosaveTick=0,lastPerfAt=performance.now(),ticksSincePerf=0,currentTPS=0,saveInFlight=null;
-const BASE_TPS=60;let simClockLast=performance.now(),simAccumulator=0;
+const BASE_TPS=10;let simClockLast=performance.now(),simAccumulator=0;
 let livingObserver={runId:'',selectedId:null,lastTick:-1,prev:null,samples:[],events:[],counts:{moves:0,contacts:0,carries:0,holds:0,releases:0,clusters:0},clusterSum:0,clusterSamples:0};
 const AUTOSAVE_MS=30000,AUTOSAVE_TICKS=5000,ROLLING_SAVES=5;
 const COLORS={agent:'#38bdf8',primary:'#fde047',waste:'#a78bfa',tissue:'#fb923c',object:'#94a3b8',corpse:'#b45309'};
@@ -1036,7 +1035,7 @@ function updateClassicInspector(a){
   if(actions){const o=a.outputs||{};actions.innerHTML=rowsHtml([['מנוע שמאל',fmt(o.left_motor,3)],['מנוע ימין',fmt(o.right_motor,3)],['לסת',fmt(o.jaw,3)],['אחיזה',fmt(o.grip,3)],['פליטה כימית',fmt(o.chemical_emit,3)]]);}
   drawBrainMini();
 }
-function updateSelectedSide(){const a=selectedAgent();if(!a){$('selectedSide').textContent='לא נבחר סומיק.';$('selectedLabel').textContent='לחץ על סומיק לבחירה';updateClassicInspector(null);return;}const g=a.genome,p=a.pheno;$('selectedLabel').textContent=`סומיק #${a.id} · דור ${a.generation} · גנום ${E.genomeHash(g)}`;$('selectedSide').innerHTML=rowsHtml([['מזהה',a.id],['דור',a.generation],['גיל',fmt(a.age,0)],['אנרגיה',`${fmt(a.energy,1)} / ${fmt(p.energyCapacity,1)}`],['בריאות',fmt(a.health,3)],['צאצאים',a.offspring],['הורים',`${a.parentA||'—'} / ${a.parentB||'—'}`],['חתימה גנטית',E.genomeHash(g),'mono'],['מרחק מהאב',fmt(E.genomeDistance(g,world.ancestorGenome),5)],['גודל גוף',fmt(p.radius,2)],['תאים פנימיים / קשרים',`${g.hidden.length} / ${g.connections.filter(c=>c.enabled).length}`]]);updateClassicInspector(a);}
+function updateSelectedSide(){const a=selectedAgent();if(!a){$('selectedSide').textContent='לא נבחר סומיק.';if($('selectedLabel'))$('selectedLabel').textContent='';updateClassicInspector(null);return;}const g=a.genome,p=a.pheno;if($('selectedLabel'))$('selectedLabel').textContent=`סומיק #${a.id} · דור ${a.generation} · גנום ${E.genomeHash(g)}`;$('selectedSide').innerHTML=rowsHtml([['מזהה',a.id],['דור',a.generation],['גיל',fmt(a.age,0)],['אנרגיה',`${fmt(a.energy,1)} / ${fmt(p.energyCapacity,1)}`],['בריאות',fmt(a.health,3)],['צאצאים',a.offspring],['הורים',`${a.parentA||'—'} / ${a.parentB||'—'}`],['חתימה גנטית',E.genomeHash(g),'mono'],['מרחק מהאב',fmt(E.genomeDistance(g,world.ancestorGenome),5)],['גודל גוף',fmt(p.radius,2)],['תאים פנימיים / קשרים',`${g.hidden.length} / ${g.connections.filter(c=>c.enabled).length}`]]);updateClassicInspector(a);}
 
 let trailRun='',trails=new Map();
 function visualColor(id){const n=Math.abs(Number(id)||0);return ['#61c9ff','#ffd34d','#ff8a65','#bd8cff','#6ee7b7','#f78fb3'][n%6];}
@@ -1205,11 +1204,11 @@ function loop(now){requestAnimationFrame(loop);if(!world)return;
   const dt=Math.min(250,Math.max(0,now-simClockLast));simClockLast=now;let steps=0;
   if(running&&!world.extinct&&!world.technicalFailure){
     const targetTPS=BASE_TPS*speed;
-    simAccumulator=Math.min(simAccumulator+targetTPS*dt/1000,targetTPS*0.25);
-    const budget=speed>=500?14:speed>=100?12:speed>=20?10:8,start=performance.now();
+    simAccumulator=Math.min(simAccumulator+targetTPS*dt/1000,Math.max(2,targetTPS*0.50));
+    const budget=speed>=500?16:speed>=100?14:speed>=20?10:speed>=5?7:5,start=performance.now();
     while(simAccumulator>=1&&performance.now()-start<budget){world.step();simAccumulator-=1;steps++;if(world.extinct||world.technicalFailure)break;}
     /* Do not build an endless catch-up queue when hardware cannot reach a high mode. */
-    if(performance.now()-start>=budget&&simAccumulator>targetTPS*0.10)simAccumulator=targetTPS*0.10;
+    if(performance.now()-start>=budget&&simAccumulator>Math.max(1,targetTPS*0.15))simAccumulator=Math.max(1,targetTPS*0.15);
     ticksSincePerf+=steps;
     if(world.extinct||world.technicalFailure){running=false;simAccumulator=0;updatePauseUi();saveNow(world.extinct?'extinction':'technical-failure');}
   }else simAccumulator=0;
