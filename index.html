@@ -1022,7 +1022,7 @@ async function saveNow(reason='manual'){
 }
 async function pruneSnapshots(runId){const tx=db.transaction('snapshots','readwrite'),idx=tx.objectStore('snapshots').index('runId'),req=idx.getAll(IDBKeyRange.only(runId));const rows=await reqPromise(req);rows.sort((a,b)=>b.tick-a.tick);for(const r of rows.slice(ROLLING_SAVES))tx.objectStore('snapshots').delete(r.key);await txDone(tx);}
 function reqPromise(r){return new Promise((resolve,reject)=>{r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
-async function latestSnapshot(){if(!db)return null;const tx=db.transaction('snapshots'),idx=tx.objectStore('snapshots').index('savedAt'),req=idx.openCursor(null,'prev');return new Promise((resolve,reject)=>{req.onsuccess=()=>{const c=req.result;if(!c)return resolve(null);const rec=c.value,state=rec?.state;const compatible=state?.schema==='SomikWorldSemanticState/4.0'&&state?.protocolId===E.PROTOCOL_ID&&state?.protocolHash===E.PROTOCOL_HASH&&state?.engineHash===E.ENGINE_HASH;if(compatible)return resolve(rec);c.continue();};req.onerror=()=>reject(req.error);});}
+async function latestSnapshot(){if(!db)return null;const tx=db.transaction('snapshots'),idx=tx.objectStore('snapshots').index('savedAt'),req=idx.openCursor(null,'prev');return new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result?.value||null);req.onerror=()=>reject(req.error);});}
 async function loadSnapshotRecord(rec){renderState=null;if(rec.snapshotHash&&E.snapshotHash(rec.state)!==rec.snapshotHash)throw new Error('Snapshot checksum mismatch');const loaded=E.World.load(rec.state);if(rec.stateHash&&loaded.stateHash()!==rec.stateHash)throw new Error('Scientific state checksum mismatch');world=loaded;ensureWorker();workerPost('load',{state:rec.state,running:false});importedEvents=[];runMeta={...rec.appMeta,lastSaveAt:rec.savedAt,lastSaveTick:rec.tick,eventSeq:rec.appMeta?.eventSeq||0};selectedId=rec.appMeta?.selectedId||null;resetLivingObserver();running=!world.extinct&&!world.technicalFailure;speed=Number($('speedSel').value)||100;lastAutosaveWall=Date.now();lastAutosaveTick=world.tick;updateRunIdentity();updatePauseUi();fullRefresh();}
 async function loadSnapshotByKey(key){const tx=db.transaction('snapshots'),rec=await reqPromise(tx.objectStore('snapshots').get(key));if(!rec)return;const was=running;running=false;try{
   if(!await saveNow('before-load'))throw new Error('Save failed; current run retained');
@@ -1271,9 +1271,19 @@ function bind(){
 async function init(){
   bind();try{db=await openDb();}catch(err){db=null;$('saveStatus').className='saveWarn';$('saveStatus').textContent='אחסון מקומי אינו זמין — השתמש בייצוא קובץ לגיבוי.';}
   const rec=db?await latestSnapshot():null;
-  if(rec){try{await loadSnapshotRecord(rec);running=false;updatePauseUi();$('saveStatus').className='saveOk';$('saveStatus').textContent=`✓ שוחזר צעד ${fmt(rec.tick,0)} — לחץ הפעל להמשך`;}
-    catch(err){$('saveStatus').textContent='שמירה לא תואמת: '+heError(err);running=false;world=null;throw err;}}
-  else newWorld(1);
+  if(rec){
+    try{
+      await loadSnapshotRecord(rec);
+      running=false;updatePauseUi();
+      $('saveStatus').className='saveOk';
+      $('saveStatus').textContent=`✓ שוחזר צעד ${fmt(rec.tick,0)} — לחץ הפעל להמשך`;
+    }catch(err){
+      console.warn('Ignoring incompatible autosave:',err);
+      newWorld(1);
+      $('saveStatus').className='saveWarn';
+      $('saveStatus').textContent='שמירה אוטומטית ישנה אינה תואמת — נפתח עולם חדש. הקובץ הישן לא נמחק.';
+    }
+  }else newWorld(1);
   $('selfTestOut').textContent='לחץ להרצת בדיקות הליבה בעולם נפרד.';
   ensureWorker();workerPost('speed',{value:speed});workerPost('run',{value:running});requestAnimationFrame(loop);
 }
@@ -1286,7 +1296,7 @@ init().catch(err=>{console.error(err);$('saveStatus').className='saveWarn';$('sa
 @media(max-width:520px){.worldHead{grid-template-columns:1fr auto!important;grid-template-areas:"world world" "legend layers"!important}.worldHead>strong{grid-area:world!important}.worldHead .legend{grid-area:legend!important;flex-wrap:wrap!important;overflow:visible!important;justify-content:flex-start!important}.worldHead .layerMenu{grid-area:layers!important;align-self:start!important;justify-self:end!important}.worldHead .legend span{font-size:8px!important;padding:2px 4px!important}}
 </style>
 
-<style id="professional-readability-c8">
+<style id="tested-readability-c10">
 @media (max-width:720px){
   .sideCard .kpi .l{font-size:10.5px!important;line-height:1.25!important}
   .eventFeedHead h3{font-size:13px!important}
@@ -1299,8 +1309,6 @@ init().catch(err=>{console.error(err);$('saveStatus').className='saveWarn';$('sa
   .rows .row{font-size:12px!important;line-height:1.35!important}
   .subhead{font-size:12px!important}
 }
-@media (max-width:520px){
-  .worldHead .legend span{font-size:10px!important;line-height:1.15!important}
-}
+@media (max-width:520px){.worldHead .legend span{font-size:10px!important;line-height:1.15!important}}
 </style>
 
