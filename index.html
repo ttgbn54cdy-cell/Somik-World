@@ -928,7 +928,7 @@ const nowIso=()=>new Date().toISOString();
 let world=null,running=true,speed=100,renderEnabled=true,selectedId=null,brainMode='selected';
 let importedEvents=[];
 let runMeta={runId:'',createdAt:'',lastSaveAt:'',lastSaveTick:-1,eventSeq:0};
-let db=null,lastMetrics=null,lastUiAt=0,lastDrawAt=0,lastAutosaveWall=0,lastAutosaveTick=0,lastPerfAt=performance.now(),ticksSincePerf=0,currentTPS=0,saveInFlight=null;
+let db=null,lastMetrics=null,lastUiAt=0,lastHeavyUiAt=0,lastDrawAt=0,lastAutosaveWall=0,lastAutosaveTick=0,lastPerfAt=performance.now(),ticksSincePerf=0,currentTPS=0,saveInFlight=null;
 const BASE_TPS=10;let simClockLast=performance.now(),simAccumulator=0;
 let livingObserver={runId:'',selectedId:null,lastTick:-1,prev:null,samples:[],events:[],counts:{moves:0,contacts:0,carries:0,holds:0,releases:0,clusters:0},clusterSum:0,clusterSamples:0};
 const AUTOSAVE_MS=30000,AUTOSAVE_TICKS=5000,ROLLING_SAVES=5;
@@ -1196,7 +1196,8 @@ function updateProtocolUi(){$('protocolText').textContent=heReport(E.Protocol);u
 function runSelfTest(){runWorker({cmd:'selftest'},'selfTestOut',t=>(t.ok?'PASS':'FAIL')+' · '+t.results.length+' checks\n'+t.results.map(x=>`${x.ok?'✓':'✗'} ${x.name}${x.detail?' — '+x.detail:''}`).join('\n'));}
 
 function fullRefresh(){observeLiving();updateMetrics();updateLivingUi();updateWorldEventFeed();drawWorld();updateCharts();drawBrainAndLineage();updateProtocolUi();refreshArchiveUi();}
-function uiRefresh(){observeLiving();updateMetrics();updateLivingUi();updateWorldEventFeed();drawBrainMini();drawChartsIfVisible();if(document.getElementById('tab-brain').classList.contains('active'))drawBrain();if(document.getElementById('tab-lineages').classList.contains('active'))updateLineages();if(document.getElementById('tab-ecology').classList.contains('active'))drawTradeoff();}
+function uiRefresh(){observeLiving();updateMetrics();updateLivingUi();updateWorldEventFeed();}
+function heavyUiRefresh(){drawBrainMini();drawChartsIfVisible();if(document.getElementById('tab-brain').classList.contains('active'))drawBrain();if(document.getElementById('tab-lineages').classList.contains('active'))updateLineages();if(document.getElementById('tab-ecology').classList.contains('active'))drawTradeoff();}
 let responsiveDrawRAF=0;function redrawResponsiveDisplays(){cancelAnimationFrame(responsiveDrawRAF);responsiveDrawRAF=requestAnimationFrame(()=>{try{drawWorld();drawBrainMini();drawChartsIfVisible();if(document.getElementById('tab-brain')?.classList.contains('active'))drawBrain();if(document.getElementById('tab-lineages')?.classList.contains('active'))drawLineage();if(document.getElementById('tab-ecology')?.classList.contains('active'))drawTradeoff();}catch(e){console.warn('responsive redraw',e);}});}window.addEventListener('resize',redrawResponsiveDisplays,{passive:true});window.addEventListener('orientationchange',()=>setTimeout(redrawResponsiveDisplays,80),{passive:true});if('ResizeObserver'in window){const ro=new ResizeObserver(redrawResponsiveDisplays);document.querySelectorAll('.chart,.brainCanvas,.miniCanvas,.worldWrap').forEach(el=>ro.observe(el));}
 function drawChartsIfVisible(){if($('tab-overview').classList.contains('active'))updateCharts();}
 
@@ -1205,7 +1206,8 @@ function loop(now){requestAnimationFrame(loop);if(!world)return;
   if(running&&!world.extinct&&!world.technicalFailure){
     const targetTPS=BASE_TPS*speed;
     simAccumulator=Math.min(simAccumulator+targetTPS*dt/1000,Math.max(2,targetTPS*0.50));
-    const budget=speed>=500?16:speed>=100?14:speed>=20?10:speed>=5?7:5,start=performance.now();
+    /* Keep the main thread responsive. Simulation never owns more than a few ms of a frame. */
+    const budget=speed>=500?5:speed>=100?4.5:speed>=20?4:speed>=5?3:2.5,start=performance.now();
     while(simAccumulator>=1&&performance.now()-start<budget){world.step();simAccumulator-=1;steps++;if(world.extinct||world.technicalFailure)break;}
     /* Do not build an endless catch-up queue when hardware cannot reach a high mode. */
     if(performance.now()-start>=budget&&simAccumulator>Math.max(1,targetTPS*0.15))simAccumulator=Math.max(1,targetTPS*0.15);
@@ -1214,8 +1216,11 @@ function loop(now){requestAnimationFrame(loop);if(!world)return;
   }else simAccumulator=0;
   if(now-lastPerfAt>1000){const elapsed=now-lastPerfAt;currentTPS=ticksSincePerf*1000/elapsed;ticksSincePerf=0;lastPerfAt=now;const targetTPS=BASE_TPS*speed,cap=currentTPS<targetTPS*0.90?' · מוגבל ע״י המכשיר':'';$('computeLine').textContent=`×${speed} · ${fmt(currentTPS,0)} / ${fmt(targetTPS,0)} צעדים/שנייה${cap}`;}
   if(!saveInFlight&&(Date.now()-lastAutosaveWall>AUTOSAVE_MS||world.tick-lastAutosaveTick>=AUTOSAVE_TICKS))saveNow('autosave');
-  if(now-lastUiAt>500){uiRefresh();lastUiAt=now;}
-  if(renderEnabled&&now-lastDrawAt>(speed>=500?250:speed>=100?100:40)){drawWorld();lastDrawAt=now;}
+  if(now-lastUiAt>900){uiRefresh();lastUiAt=now;}
+  /* Charts/brain/lineage are observer tools and must not steal simulation/UI time. */
+  if(now-lastHeavyUiAt>3000){heavyUiRefresh();lastHeavyUiAt=now;}
+  /* Human-visible world does not need 25-60 redraws/s; 8-12 fps is smooth enough on mobile. */
+  if(renderEnabled&&now-lastDrawAt>(speed>=500?300:speed>=100?180:100)){drawWorld();lastDrawAt=now;}
 }
 
 async function exportRun(full=false){
