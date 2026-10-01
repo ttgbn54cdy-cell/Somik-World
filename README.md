@@ -1,14 +1,17 @@
-# Somik World Production 3.0 — Release Candidate
+# Somik World Production 3.1 — Physical Ecology
 
-Production candidate with bounded-world physics, Web Worker simulation, render snapshots, autosave, evolution and individual learning.
+Single-file browser artificial-life laboratory.
 
-Release gate completed in this build:
-- JavaScript syntax checks for all embedded scripts
-- Engine self-test: 24/24 PASS
-- Direct engine runs: 1,000 ticks on multiple seeds without technical failure
-- Save/load hash equality and deterministic continuation
-- Worker-path run with speed changes and atomic snapshot
-- Worker-path save/load and deterministic continuation
-- Verified distinct tick throughput at x1, x5, x20 and x100 on the test runtime
+## Baseline
+- 24 monomorphic founders born in water
+- bounded physical world
+- fixed external water-energy flux shared among organisms in water
+- tree-localized primary food from a population-independent flux
+- geometric block shielding in the hazard field (no magical proximity aura)
+- generic local sensing only; no water/tree/food/hazard semantic sensors
+- evolution + non-inherited lifetime neural plasticity
+- autosave / export / restore, lineage and research controls
 
-The tick-0 regression in `resolveObjects()` was caused by an out-of-scope `agentMap` reference and is fixed in this candidate.
+Protocol hash: `prod31-physical-ecology`
+
+Open `index.html` directly or publish with GitHub Pages.
