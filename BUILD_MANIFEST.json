@@ -1,0 +1,33 @@
+{
+  "product": "Somik World Research 1.0 — Open Evolution Laboratory",
+  "protocolId": "SW-R1-OEL-1.0",
+  "protocolHash": "a68eb2f7f223f7c0",
+  "engineHash": "f8caf1a27e225286",
+  "files": {
+    "index.html": {
+      "sha256": "21f382bbec47daaa34b964d658c2d8f4d69a1f5cf580fe6ec32036de37503fc4",
+      "bytes": 59519
+    },
+    "research-engine.js": {
+      "sha256": "b16df2b3536ca12edd6f7c65d0d58bd0e5677e4fd9a682001ce7d9ef77654764",
+      "bytes": 56297
+    },
+    "headless-runner.js": {
+      "sha256": "473bc48c2ee2017ee491a0cf4b9a60ca9c5e3d68f36f1da63dada672f374ea56",
+      "bytes": 3247
+    },
+    "SCIENTIFIC_PROTOCOL.md": {
+      "sha256": "c8c548130216c4e2bcd320450fa6a6edee699f46a21290dc7e38ac153b5f479a",
+      "bytes": 6761
+    },
+    "README.md": {
+      "sha256": "c2c0228f1de2673156c944e19d49086cd0dd42b6bd60773a233d945a80ebaf7e",
+      "bytes": 1165
+    }
+  },
+  "singleFile": {
+    "name": "Somik_World_Research_1.0_SINGLE.html",
+    "sha256": "030dd186a6b1dc9015ba043f6b7f9237e2267515dbbb7f059d966326d7e74457",
+    "bytes": 115793
+  }
+}
