@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Somik World v5 — Evolutionary Learning Brain</title>
+<title>Somik World v5 — Free Reproduction</title>
 <style>
 :root{
   --bg:#111827;
@@ -102,7 +102,7 @@ button{
 <div class="app">
   <main>
     <h1>Somik World v5</h1>
-    <div class="subtitle">עולם חיים מלאכותי פתוח שבו יצורים לומדים, משתנים ומתפתחים לאורך דורות. הם חווים את העולם דרך מידע גולמי בלבד — ללא ידע מוקדם על מזון, סכנה, הגנה או הדרך הנכונה לשרוד.<br><strong>אין אסטרטגיה מתוכנתת מראש. מה שיתפתח — יתפתח מתוך ניסיון, למידה ואבולוציה.</strong></div>
+    <div class="subtitle">עולם חיים מלאכותי פתוח שבו יצורים לומדים, משתנים ומתפתחים לאורך דורות — ללא ידע סמנטי מוקדם על מה שסביבם.</div>
 
     <div class="toolbar">
       <button id="pauseBtn">⏸ עצור</button>
@@ -289,7 +289,6 @@ button{
 
 <script>
 "use strict";
-const SOMIK_BUILD="v0.5 environment + neutral learning brain 1.0";
 
 const worldCanvas=document.getElementById("world");
 const ctx=worldCanvas.getContext("2d");
@@ -312,9 +311,9 @@ const REPRO_SIGNAL_THRESHOLD=0.58;
 const ACTION_THRESHOLD=0.68;
 const MIN_REPRO_INVEST=2;
 const MAX_REPRO_INVEST=80;
-const FOOD_TARGET=220;
+const FOOD_TARGET=120;
 const FOOD_REGEN_CHANCE=0.18;
-const INITIAL_BLOCKS=100;
+const INITIAL_BLOCKS=120;
 
 const HAZARD={
   x:430,
@@ -376,7 +375,7 @@ let nextId=1;
 let nextBlockId=1;
 let selectedId=null;
 
-const SAVE_KEY="somik-world-v05-newbrain-autosave";
+const SAVE_KEY="somik-world-v5-v05world-v4brain-autosave";
 const PRE_MEMORY_SAVE_KEY="somik-world-v05-pre-memory-backup";
 const PRE_METRICS_SAVE_KEY="somik-world-v05-pre-memory-metrics-backup";
 const LEGACY_SAVE_KEY="somik-world-v04-autosave";
@@ -1268,19 +1267,23 @@ function hazardProtectionAt(x,y){
 
 class Brain{
   constructor(parent=null,parent2=null){
-    // 25 generic/raw channels. No food/block/hazard/mate/sex semantic input exists.
     this.inputN=25;
     this.hiddenN=9;
     this.outputN=11;
-    this.plasticityRate=parent
-      ? clamp(((parent.plasticityRate??0.006)+(parent2?.plasticityRate??parent.plasticityRate??0.006))/2+rnd(-0.0015,0.0015),0,0.03)
-      : 0.006;
 
     if(parent&&parent2){
-      this.w1=parent.w1.map((row,i)=>row.map((v,j)=>mutateValue(Math.random()<0.5?v:parent2.w1[i][j])));
-      this.b1=parent.b1.map((v,i)=>mutateValue(Math.random()<0.5?v:parent2.b1[i]));
-      this.w2=parent.w2.map((row,i)=>row.map((v,j)=>mutateValue(Math.random()<0.5?v:parent2.w2[i][j])));
-      this.b2=parent.b2.map((v,i)=>mutateValue(Math.random()<0.5?v:parent2.b2[i]));
+      this.w1=parent.w1.map((row,i)=>row.map((v,j)=>
+        mutateValue(Math.random()<0.5?v:parent2.w1[i][j])
+      ));
+      this.b1=parent.b1.map((v,i)=>
+        mutateValue(Math.random()<0.5?v:parent2.b1[i])
+      );
+      this.w2=parent.w2.map((row,i)=>row.map((v,j)=>
+        mutateValue(Math.random()<0.5?v:parent2.w2[i][j])
+      ));
+      this.b2=parent.b2.map((v,i)=>
+        mutateValue(Math.random()<0.5?v:parent2.b2[i])
+      );
     }else if(parent){
       this.w1=parent.w1.map(row=>row.map(v=>mutateValue(v)));
       this.b1=parent.b1.map(v=>mutateValue(v));
@@ -1293,51 +1296,60 @@ class Brain{
       this.b2=Array.from({length:this.outputN},()=>rnd(-0.4,0.4));
     }
 
-    // Lifetime-acquired deltas are deliberately NOT inherited.
-    this.learnedW1=Array.from({length:this.hiddenN},()=>Array(this.inputN).fill(0));
-    this.learnedW2=Array.from({length:this.outputN},()=>Array(this.hiddenN).fill(0));
-    this.recurrent=Array(this.hiddenN).fill(0);
     this.lastInputs=Array(this.inputN).fill(0);
     this.lastHidden=Array(this.hiddenN).fill(0);
     this.lastOutputs=Array(this.outputN).fill(0);
-    this.learningUpdates=0;
   }
 
   think(inputs){
     this.lastInputs=inputs.slice();
-    const previous=this.recurrent.slice();
+
     const hidden=this.w1.map((row,i)=>{
-      let sum=this.b1[i]+0.22*previous[i];
-      for(let j=0;j<row.length;j++)sum+=(row[j]+this.learnedW1[i][j])*inputs[j];
+      let sum=this.b1[i];
+      for(let j=0;j<row.length;j++)sum+=row[j]*inputs[j];
       return Math.tanh(sum);
     });
+
     const raw=[];
     for(let o=0;o<this.outputN;o++){
       let sum=this.b2[o];
-      for(let h=0;h<this.hiddenN;h++)sum+=(this.w2[o][h]+this.learnedW2[o][h])*hidden[h];
+      for(let h=0;h<this.hiddenN;h++)sum+=this.w2[o][h]*hidden[h];
       raw.push(sum);
     }
-    const outputs=[Math.tanh(raw[0]),sigmoid(raw[1]),sigmoid(raw[2]),sigmoid(raw[3]),Math.tanh(raw[4]),sigmoid(raw[5]),Math.tanh(raw[6]),sigmoid(raw[7]),sigmoid(raw[8]),sigmoid(raw[9]),sigmoid(raw[10])];
-    this.recurrent=hidden.slice();
+
+    const outputs=[
+      Math.tanh(raw[0]),
+      sigmoid(raw[1]),
+      sigmoid(raw[2]),
+      sigmoid(raw[3]),
+      Math.tanh(raw[4]),
+      sigmoid(raw[5]),
+      Math.tanh(raw[6]),
+      sigmoid(raw[7]),
+      sigmoid(raw[8]),
+      sigmoid(raw[9]),
+      sigmoid(raw[10])
+    ];
+
     this.lastHidden=hidden.slice();
     this.lastOutputs=outputs.slice();
-    // Physical interface mapping only. The network receives no semantic label telling it what these channels accomplish.
-    return{turn:outputs[0],thrust:outputs[1],pick:outputs[2],drop:outputs[3],memory1Value:outputs[4],memory1Gate:outputs[5],memory2Value:outputs[6],memory2Gate:outputs[7],reproduce:outputs[8],eat:outputs[9],investment:outputs[10]};
-  }
 
-  learn(bodyDelta){
-    const reward=clamp(bodyDelta,-1,1);
-    if(!Number.isFinite(reward)||Math.abs(reward)<1e-9||this.plasticityRate<=0)return;
-    const lr=this.plasticityRate*reward;
-    for(let i=0;i<this.hiddenN;i++)for(let j=0;j<this.inputN;j++){
-      this.learnedW1[i][j]=clamp(this.learnedW1[i][j]+lr*this.lastHidden[i]*this.lastInputs[j],-1.5,1.5);
-    }
-    for(let o=0;o<this.outputN;o++)for(let h=0;h<this.hiddenN;h++){
-      this.learnedW2[o][h]=clamp(this.learnedW2[o][h]+lr*this.lastOutputs[o]*this.lastHidden[h],-1.5,1.5);
-    }
-    this.learningUpdates++;
+    return{
+      turn:outputs[0],
+      thrust:outputs[1],
+      pick:outputs[2],
+      drop:outputs[3],
+      memory1Value:outputs[4],
+      memory1Gate:outputs[5],
+      memory2Value:outputs[6],
+      memory2Gate:outputs[7],
+      reproduce:outputs[8],
+      eat:outputs[9],
+      investment:outputs[10]
+    };
   }
 }
+
 class Block{
   constructor(x,y){
     this.id=nextBlockId++;
@@ -1470,45 +1482,164 @@ class Somik{
   }
 
   sense(){
-    // Observer-only nearest-object references for drawing. They never enter the neural input vector.
-    this.nearestFood=null; this.nearestBlock=null;
-    let fd=Infinity,bd=Infinity;
-    for(const f of foods){const d=sq(f.x-this.x)+sq(f.y-this.y);if(d<fd){fd=d;this.nearestFood=f;}}
-    for(const b of blocks){const d=sq(b.x-this.x)+sq(b.y-this.y);if(d<bd){bd=d;this.nearestBlock=b;}}
+    let bestFood=null;
+    let bestFoodD2=Infinity;
 
-    const rayRange=VISION;
-    const rayAngles=[-1.20,-0.82,-0.48,-0.18,0.18,0.48,0.82,1.20];
-    const rayValue=(ang)=>{
-      const a=this.dir+ang,ux=Math.cos(a),uy=Math.sin(a);
-      let best=rayRange;
-      // Physical perimeter.
-      if(ux>1e-6)best=Math.min(best,(W-this.r-this.x)/ux); else if(ux<-1e-6)best=Math.min(best,(this.r-this.x)/(-ux));
-      if(uy>1e-6)best=Math.min(best,(H-this.r-this.y)/uy); else if(uy<-1e-6)best=Math.min(best,(this.r-this.y)/(-uy));
-      const hit=(x,y,r)=>{
-        const dx=x-this.x,dy=y-this.y,proj=dx*ux+dy*uy;
-        if(proj<=0||proj>=best||proj>rayRange)return;
-        const perp2=dx*dx+dy*dy-proj*proj,rr=r+this.r*0.25;
-        if(perp2<=rr*rr){const along=Math.sqrt(Math.max(0,rr*rr-perp2));best=Math.max(0,proj-along);}
-      };
-      // All entities are sensed through the same geometric channel: no type/material bit.
-      for(const f of foods)hit(f.x,f.y,f.r??5);
-      for(const b of blocks)hit(b.x,b.y,(b.size??BLOCK_SIZE)*0.71);
-      for(const o of somiks)if(o!==this)hit(o.x,o.y,o.r??9);
-      return clamp(1-best/rayRange,0,1);
-    };
-    const rays=rayAngles.map(rayValue);
-    const contact=Math.max(...rays)>0.94?1:0;
-    const bodyEnergy=clamp(this.energy/180,0,1);
-    const carryingAny=(this.carrying||this.carryingFood)?1:0;
-    const damage=clamp((this.lastHazardDamage??0)/Math.max(HAZARD_DAMAGE,1e-9),0,1);
-    const ageInternal=1-Math.exp(-this.age/2500);
+    for(const f of foods){
+      const dx=f.x-this.x,dy=f.y-this.y;
+      const d2=dx*dx+dy*dy;
+      if(d2<bestFoodD2){
+        bestFoodD2=d2;
+        bestFood=f;
+      }
+    }
+
+    let foodNear=0,foodAhead=0,foodSide=0;
+    this.nearestFood=null;
+
+    if(bestFood){
+      const d=Math.sqrt(bestFoodD2);
+      if(d<=VISION){
+        const closeness=1-d/VISION;
+        const abs=Math.atan2(bestFood.y-this.y,bestFood.x-this.x);
+        const rel=angleDiff(abs,this.dir);
+
+        foodNear=closeness;
+        foodAhead=Math.cos(rel)*closeness;
+        foodSide=Math.sin(rel)*closeness;
+        this.nearestFood=bestFood;
+      }
+    }
+
+    let bestBlock=null;
+    let bestBlockD2=Infinity;
+
+    for(const b of blocks){
+      const dx=b.x-this.x,dy=b.y-this.y;
+      const d2=dx*dx+dy*dy;
+      if(d2<bestBlockD2){
+        bestBlockD2=d2;
+        bestBlock=b;
+      }
+    }
+
+    let blockNear=0,blockAhead=0,blockSide=0;
+    this.nearestBlock=null;
+
+    if(bestBlock){
+      const d=Math.sqrt(bestBlockD2);
+      if(d<=BLOCK_VISION){
+        const closeness=1-d/BLOCK_VISION;
+        const abs=Math.atan2(bestBlock.y-this.y,bestBlock.x-this.x);
+        const rel=angleDiff(abs,this.dir);
+
+        blockNear=closeness;
+        blockAhead=Math.cos(rel)*closeness;
+        blockSide=Math.sin(rel)*closeness;
+        this.nearestBlock=bestBlock;
+      }
+    }
+
+    let nearestNeighbor=Infinity;
+    let nearestMate=null;
+    let nearestMateD2=Infinity;
+
+    for(const other of somiks){
+      if(other===this)continue;
+      const dx=other.x-this.x,dy=other.y-this.y;
+      const d2=dx*dx+dy*dy;
+
+      if(d2<nearestNeighbor)nearestNeighbor=d2;
+
+      // כל Somik אחר הוא שותף רבייה אפשרי. המין אינו מגבלה פיזית.
+      if(d2<nearestMateD2){
+        nearestMate=other;
+        nearestMateD2=d2;
+      }
+    }
+
+    let neighborNear=0;
+    if(nearestNeighbor<Infinity){
+      const d=Math.sqrt(nearestNeighbor);
+      if(d<100)neighborNear=1-d/100;
+    }
+
+    let mateNear=0,mateAhead=0,mateSide=0,mateSexSignal=0,mateReproSignal=0,mateInvestSignal=0;
+    if(nearestMate){
+      const d=Math.sqrt(nearestMateD2);
+      if(d<=MATE_VISION){
+        const closeness=1-d/MATE_VISION;
+        const abs=Math.atan2(nearestMate.y-this.y,nearestMate.x-this.x);
+        const rel=angleDiff(abs,this.dir);
+        mateNear=closeness;
+        mateAhead=Math.cos(rel)*closeness;
+        mateSide=Math.sin(rel)*closeness;
+        mateSexSignal=nearestMate.sex==="male"?-1:1;
+        mateReproSignal=clamp(nearestMate.prevReproduceSignal??nearestMate.lastDecision?.reproduce??0,0,1);
+        mateInvestSignal=clamp(nearestMate.prevInvestmentSignal??nearestMate.lastDecision?.investment??0,0,1);
+      }
+    }
+
+    const energy=clamp(this.energy/180,0,1);
+    const carrying=(this.carrying||this.carryingFood)?1:0;
+    const carryBlock=this.carrying?1:0;
+    const carryFood=this.carryingFood?1:0;
+    const sexSignal=this.sex==="male"?-1:1;
+    const ageSignal=1-Math.exp(-this.age/2500);
+
+    const hazardHere=insideHazard(this.x,this.y)?1:0;
+
+    const lookX=this.x+Math.cos(this.dir)*55;
+    const lookY=this.y+Math.sin(this.dir)*55;
+    let hazardAhead=0;
+
+    if(insideHazard(lookX,lookY)){
+      hazardAhead=1;
+    }else{
+      const d=distanceToHazard(lookX,lookY);
+      hazardAhead=clamp(1-d/100,0,1);
+    }
+
+    const protection=hazardProtectionAt(this.x,this.y);
     const noise=rnd(-1,1);
-    // 25 channels exactly: body(5) + 8 rays + 8 previous neural outputs + two memory cells + noise + contact.
-    const prev=(this.brain?.lastOutputs||Array(11).fill(0));
-    const inputs=[bodyEnergy,carryingAny,damage,ageInternal,clamp(this.actionCooldown/20,0,1),...rays,...prev.slice(0,8),this.memory[0],this.memory[1],noise,contact];
-    this.lastSensors={energy:bodyEnergy,carrying:carryingAny,damage,ageSignal:ageInternal,noise,contact,rays:rays.slice(),memory1:this.memory[0],memory2:this.memory[1]};
-    return inputs.slice(0,25);
+
+    this.lastSensors={
+      energy,foodNear,foodAhead,foodSide,neighborNear,
+      blockNear,blockAhead,blockSide,carrying,
+      hazardHere,hazardAhead,protection,noise,
+      sexSignal,ageSignal,mateNear,mateAhead,mateSide,
+      carryBlock,carryFood,mateSexSignal,mateReproSignal,mateInvestSignal
+    };
+
+    return[
+      energy,
+      foodNear,
+      foodAhead,
+      foodSide,
+      neighborNear,
+      blockNear,
+      blockAhead,
+      blockSide,
+      carrying,
+      hazardHere,
+      hazardAhead,
+      protection,
+      noise,
+      sexSignal,
+      ageSignal,
+      mateNear,
+      mateAhead,
+      mateSide,
+      this.memory[0],
+      this.memory[1],
+      carryBlock,
+      carryFood,
+      mateSexSignal,
+      mateReproSignal,
+      mateInvestSignal
+    ];
   }
+
   tryPick(){
     if(this.carrying||this.carryingFood||this.actionCooldown>0)return false;
 
@@ -1666,7 +1797,6 @@ class Somik{
   }
 
   update(){
-    const energyBeforeLearning=this.energy;
     this.age++;
     if(this.actionCooldown>0)this.actionCooldown--;
 
@@ -1786,8 +1916,6 @@ class Somik{
       if(!this.tryDropFood())this.tryDrop();
     }
 
-    // Lifetime learning sees only change in the Somik's own physical body state.
-    this.brain.learn((this.energy-energyBeforeLearning)/42);
   }
 
   draw(){
@@ -1879,28 +2007,55 @@ function serializeBrain(brain){
     w1:brain.w1,
     b1:brain.b1,
     w2:brain.w2,
-    b2:brain.b2,
-    plasticityRate:brain.plasticityRate,
-    learnedW1:brain.learnedW1,
-    learnedW2:brain.learnedW2,
-    recurrent:brain.recurrent,
-    learningUpdates:brain.learningUpdates
+    b2:brain.b2
   };
 }
 
 function deserializeBrain(data){
   const brain=Object.create(Brain.prototype);
-  brain.inputN=25; brain.hiddenN=data.hiddenN??9; brain.outputN=11;
-  brain.w1=(data.w1||[]).map(row=>{const r=row.slice(0,25);while(r.length<25)r.push(0);return r;});
-  while(brain.w1.length<brain.hiddenN)brain.w1.push(Array(25).fill(0));
-  brain.b1=(data.b1||[]).slice(0,brain.hiddenN);while(brain.b1.length<brain.hiddenN)brain.b1.push(0);
-  brain.w2=[];brain.b2=[];
-  for(let i=0;i<11;i++){const row=(data.w2?.[i]||[]).slice(0,brain.hiddenN);while(row.length<brain.hiddenN)row.push(0);brain.w2.push(row);brain.b2.push(data.b2?.[i]??0);}
-  brain.plasticityRate=clamp(data.plasticityRate??0.006,0,0.03);
-  brain.learnedW1=Array.from({length:brain.hiddenN},(_,i)=>Array.from({length:25},(_,j)=>data.learnedW1?.[i]?.[j]??0));
-  brain.learnedW2=Array.from({length:11},(_,i)=>Array.from({length:brain.hiddenN},(_,j)=>data.learnedW2?.[i]?.[j]??0));
-  brain.recurrent=Array.from({length:brain.hiddenN},(_,i)=>data.recurrent?.[i]??0);
-  brain.lastInputs=Array(25).fill(0);brain.lastHidden=brain.recurrent.slice();brain.lastOutputs=Array(11).fill(0);brain.learningUpdates=data.learningUpdates??0;
+  const oldInputN=data.inputN??13;
+  const oldOutputN=data.outputN??4;
+
+  brain.inputN=25;
+  brain.hiddenN=data.hiddenN??9;
+  brain.outputN=11;
+
+  brain.w1=data.w1.map(row=>{
+    const r=row.slice(0,Math.min(oldInputN,25));
+    while(r.length<25)r.push(0);
+    return r;
+  });
+  brain.b1=data.b1.slice();
+
+  brain.w2=[];
+  brain.b2=[];
+  const preserve=Math.min(oldOutputN,11);
+  for(let i=0;i<preserve;i++){
+    brain.w2.push(data.w2[i].slice());
+    brain.b2.push(data.b2[i]??0);
+  }
+  while(brain.w2.length<8){
+    brain.w2.push(Array.from({length:brain.hiddenN},()=>rnd(-0.35,0.35)));
+    brain.b2.push(rnd(-0.15,0.15));
+  }
+  if(brain.w2.length<9){
+    brain.w2.push(Array.from({length:brain.hiddenN},()=>rnd(-0.35,0.35)));
+    brain.b2.push(rnd(-0.15,0.15));
+  }
+  if(brain.w2.length<10){
+    brain.w2.push(Array(brain.hiddenN).fill(0));
+    brain.b2.push(1.0);
+  }
+  // השקעה חדשה מתחילה סביב העלות הישנה (~35) כדי לשמור רציפות, ומכאן עוברת אבולוציה.
+  if(brain.w2.length<11){
+    const p=(35-MIN_REPRO_INVEST)/(MAX_REPRO_INVEST-MIN_REPRO_INVEST);
+    brain.w2.push(Array(brain.hiddenN).fill(0));
+    brain.b2.push(Math.log(p/(1-p)));
+  }
+
+  brain.lastInputs=Array(brain.inputN).fill(0);
+  brain.lastHidden=Array(brain.hiddenN).fill(0);
+  brain.lastOutputs=Array(brain.outputN).fill(0);
   return brain;
 }
 function serializeBlock(block){
@@ -2396,7 +2551,7 @@ function addBlocks(n){
   }
 }
 
-function createPopulation(n=20){
+function createPopulation(n=120){
   for(let i=0;i<n;i++){
     let created=false;
 
@@ -2461,8 +2616,8 @@ function resetWorld(){
   selectedId=null;
 
   addBlocks(INITIAL_BLOCKS);
-  createPopulation(20);
-  addFood(135);
+  createPopulation(120);
+  addFood(120);
   populationHistory.push({t:0,p:somiks.length,f:totalFoodUnits(),g:0});
 }
 
@@ -3037,14 +3192,30 @@ function drawInspector(){
 
   const x=s.lastSensors;
 
-  const rr=Array.isArray(x.rays)?x.rays:[];
   sensors.innerHTML=
-    sensorHtml("אנרגיה פנימית",x.energy??0)+
-    sensorHtml("מגע",x.contact??0)+
-    sensorHtml("נושא אובייקט",x.carrying??0)+
-    sensorHtml("נזק גופני אחרון",x.damage??0)+
-    rr.map((v,i)=>sensorHtml("קרן גאומטרית "+(i+1),v)).join("")+
-    sensorHtml("רעש פנימי",x.noise??0,true)+
+    sensorHtml("רמת אנרגיה",x.energy)+
+    sensorHtml("כמה אוכל קרוב",x.foodNear)+
+    sensorHtml("כיוון האוכל: קדימה / אחורה",x.foodAhead,true)+
+    sensorHtml("כיוון האוכל: ימין / שמאל",x.foodSide,true)+
+    sensorHtml("Somik אחר קרוב",x.neighborNear)+
+    sensorHtml("שותף רבייה אפשרי קרוב",x.mateNear??0)+
+    sensorHtml("כיוון שותף אפשרי: קדימה / אחורה",x.mateAhead??0,true)+
+    sensorHtml("כיוון שותף אפשרי: ימין / שמאל",x.mateSide??0,true)+
+    sensorHtml("גיל פנימי",x.ageSignal??0)+
+    sensorHtml("המין שלי",x.sexSignal??0,true)+
+    sensorHtml("מין השותף הקרוב",x.mateSexSignal??0,true)+
+    sensorHtml("רצון הרבייה שלו מהצעד הקודם",x.mateReproSignal??0)+
+    sensorHtml("השקעת הרבייה שלו מהצעד הקודם",x.mateInvestSignal??0)+
+    sensorHtml("כמה בלוק קרוב",x.blockNear)+
+    sensorHtml("כיוון הבלוק: קדימה / אחורה",x.blockAhead,true)+
+    sensorHtml("כיוון הבלוק: ימין / שמאל",x.blockSide,true)+
+    sensorHtml("נושא משהו",x.carrying)+
+    sensorHtml("נושא בלוק",x.carryBlock??0)+
+    sensorHtml("נושא אוכל",x.carryFood??0)+
+    sensorHtml("נמצא באזור המסוכן",x.hazardHere)+
+    sensorHtml("סכנה בכיוון התנועה",x.hazardAhead)+
+    sensorHtml("רמת הגנה מבלוק",x.protection)+
+    sensorHtml("דחף אקראי",x.noise,true)+
     sensorHtml("זיכרון פנימי M1",s.memory[0],true)+
     sensorHtml("זיכרון פנימי M2",s.memory[1],true);
 
@@ -3192,6 +3363,75 @@ function loop(){
 
   requestAnimationFrame(loop);
 }
+
+
+/* SOMIK WORLD v5 — v0.5 WORLD + v4 NEURAL/BEHAVIOR CORE
+   World/environment constants and rendering remain v0.5. The neural controller below
+   uses the v4 recurrent graph, generic ray sensing, lifetime reward-modulated plasticity,
+   and inherited structural/weight mutation. Observer labels never enter neural inputs. */
+const V5BrainCfg={minHidden:4,maxHidden:32,minRays:2,maxRays:12,weightSigma:.14,biasSigma:.10,basePerGene:.008,baseStructural:.0025,maxLearnedDelta:1.5,weightDecay:.00005};
+let V5_CONN_SERIAL=1;
+function v5clone(x){return JSON.parse(JSON.stringify(x));}
+function v5mut(v,sd){return v+rnd(-1,1)*sd;}
+function v5FounderNeural(){
+  const sensors=[];for(let i=0;i<6;i++)sensors.push({id:'r'+i,angle:(i/6)*Math.PI*2,range:82,gain:1});
+  const hidden=[];for(let i=0;i<8;i++)hidden.push({id:'h'+i,bias:rnd(-.08,.08)});
+  const fixed=['energy','health','touch','chemical',...sensors.map(x=>'ray:'+x.id)], acts=['act:left_motor','act:right_motor','act:jaw','act:grip','act:chemical_emit'];
+  const connections=[];for(const f of fixed)for(const h of hidden)if(Math.random()<.55)connections.push({id:'v5c'+V5_CONN_SERIAL++,from:f,to:h.id,weight:rnd(-.30,.30),enabled:true});
+  for(const a of hidden)for(const b of hidden)if(Math.random()<.18)connections.push({id:'v5c'+V5_CONN_SERIAL++,from:a.id,to:b.id,weight:rnd(-.22,.22),enabled:true});
+  for(const h of hidden)for(const a of acts)if(Math.random()<.70)connections.push({id:'v5c'+V5_CONN_SERIAL++,from:h.id,to:a,weight:rnd(-.32,.32),enabled:true});
+  return{sensors,hidden,connections,plasticityRate:.006,mutationRate:.008,structuralRate:.0025};
+}
+function v5Sanitize(g){
+  g.sensors=g.sensors.slice(0,V5BrainCfg.maxRays);while(g.sensors.length<V5BrainCfg.minRays){let i=g.sensors.length;g.sensors.push({id:'rs'+i,angle:i*Math.PI,range:70,gain:1});}
+  g.hidden=g.hidden.slice(0,V5BrainCfg.maxHidden);while(g.hidden.length<V5BrainCfg.minHidden){let i=g.hidden.length;g.hidden.push({id:'rh'+i,bias:0});}
+  const src=new Set(['energy','health','touch','chemical',...g.sensors.map(x=>'ray:'+x.id),...g.hidden.map(x=>x.id)]),dst=new Set([...g.hidden.map(x=>x.id),'act:left_motor','act:right_motor','act:jaw','act:grip','act:chemical_emit']);
+  g.connections=g.connections.filter(c=>src.has(c.from)&&dst.has(c.to)&&c.from!==c.to);return g;
+}
+function v5CrossMut(a,b){
+  if(!a&&!b)return v5FounderNeural(); if(!b)b=a;
+  const g={sensors:v5clone(Math.random()<.5?a.sensors:b.sensors),hidden:v5clone(Math.random()<.5?a.hidden:b.hidden),connections:[],plasticityRate:clamp(((a.plasticityRate??.006)+(b.plasticityRate??.006))/2+rnd(-.001,.001),0,.03),mutationRate:clamp(((a.mutationRate??.008)+(b.mutationRate??.008))/2*rnd(.85,1.15),.001,.04),structuralRate:clamp(((a.structuralRate??.0025)+(b.structuralRate??.0025))/2*rnd(.85,1.15),.0002,.012)};
+  const A=new Map(a.connections.map(c=>[c.id,c])),B=new Map(b.connections.map(c=>[c.id,c]));for(const id of new Set([...A.keys(),...B.keys()])){const x=A.get(id),y=B.get(id);if(x&&y)g.connections.push(v5clone(Math.random()<.5?x:y));else if(Math.random()<.52)g.connections.push(v5clone(x||y));}
+  const p=g.mutationRate,sp=g.structuralRate;for(const h of g.hidden)if(Math.random()<p)h.bias=v5mut(h.bias,V5BrainCfg.biasSigma);for(const c of g.connections)if(Math.random()<p)c.weight=v5mut(c.weight,V5BrainCfg.weightSigma);
+  for(const q of g.sensors){if(Math.random()<p)q.angle=(q.angle+rnd(-.18,.18)+Math.PI*2)%(Math.PI*2);if(Math.random()<p)q.range=clamp(q.range+rnd(-9,9),25,180);if(Math.random()<p)q.gain=clamp(q.gain+rnd(-.1,.1),.2,2);}
+  if(Math.random()<sp&&g.hidden.length<V5BrainCfg.maxHidden)g.hidden.push({id:'vh'+V5_CONN_SERIAL++,bias:rnd(-.05,.05)});
+  if(Math.random()<sp&&g.hidden.length>V5BrainCfg.minHidden){const h=g.hidden.splice(Math.floor(Math.random()*g.hidden.length),1)[0];g.connections=g.connections.filter(c=>c.from!==h.id&&c.to!==h.id);}
+  if(Math.random()<sp&&g.sensors.length<V5BrainCfg.maxRays){const q=v5clone(g.sensors[Math.floor(Math.random()*g.sensors.length)]);q.id='vr'+V5_CONN_SERIAL++;q.angle=(q.angle+rnd(-.16,.16)+Math.PI*2)%(Math.PI*2);g.sensors.push(q);}
+  if(Math.random()<sp&&g.sensors.length>V5BrainCfg.minRays){const q=g.sensors.splice(Math.floor(Math.random()*g.sensors.length),1)[0];g.connections=g.connections.filter(c=>c.from!=='ray:'+q.id);}
+  if(Math.random()<sp*2){const src=['energy','health','touch','chemical',...g.sensors.map(x=>'ray:'+x.id),...g.hidden.map(x=>x.id)],dst=[...g.hidden.map(x=>x.id),'act:left_motor','act:right_motor','act:jaw','act:grip','act:chemical_emit'];for(let k=0;k<8;k++){const f=src[Math.floor(Math.random()*src.length)],t=dst[Math.floor(Math.random()*dst.length)];if(f!==t&&!g.connections.some(c=>c.from===f&&c.to===t)){g.connections.push({id:'v5c'+V5_CONN_SERIAL++,from:f,to:t,weight:rnd(-.25,.25),enabled:true});break;}}}
+  if(Math.random()<sp&&g.connections.length>8)g.connections.splice(Math.floor(Math.random()*g.connections.length),1);return v5Sanitize(g);
+}
+class V4Brain{
+  constructor(parent=null,parent2=null){this.genome=v5CrossMut(parent?.genome,parent2?.genome);this.hiddenState={};this.learnedWeights={};this.lastTrace=null;this.learningUpdates=0;this.lastInputs=[];this.lastHidden=[];this.lastOutputs=[];}
+  think(input){
+    const g=this.genome,prev=this.hiddenState,next={},incoming=new Map();for(const c of g.connections){if(!c.enabled)continue;if(!incoming.has(c.to))incoming.set(c.to,[]);incoming.get(c.to).push(c);}const ew=c=>c.weight+(this.learnedWeights[c.id]||0);
+    for(const h of g.hidden){let z=h.bias;for(const c of incoming.get(h.id)||[]){let v=c.from.startsWith('ray:')||['energy','health','touch','chemical'].includes(c.from)?(input[c.from]||0):(prev[c.from]||0);z+=v*ew(c);}next[h.id]=Math.tanh(z);}
+    const raw={},out={};for(const k of ['left_motor','right_motor','jaw','grip','chemical_emit']){let z=0;for(const c of incoming.get('act:'+k)||[]){const v=next[c.from]??prev[c.from]??input[c.from]??0;z+=v*ew(c);}raw[k]=Math.tanh(z);out[k]=(k==='jaw'||k==='grip'||k==='chemical_emit')?(raw[k]+1)/2:raw[k];}
+    this.hiddenState=next;this.lastTrace={inputs:{...input},prev:{...prev},hidden:{...next},rawOutputs:{...raw}};this.lastInputs=Object.values(input);this.lastHidden=Object.values(next);this.lastOutputs=Object.values(out);
+    const turn=clamp((out.right_motor-out.left_motor),-1,1),thrust=clamp((out.right_motor+out.left_motor+2)/4,0,1),grip=out.grip,jaw=out.jaw;
+    return{turn,thrust,pick:grip,drop:1-grip,memory1Value:0,memory1Gate:0,memory2Value:0,memory2Gate:0,reproduce:0,eat:jaw,investment:.42,_v4:out};
+  }
+  learn(deltaEnergy){const tr=this.lastTrace;if(!tr)return;const reward=Math.tanh(deltaEnergy/180);if(Math.abs(reward)<1e-7)return;const lr=this.genome.plasticityRate??.006;for(const c of this.genome.connections){if(!c.enabled)continue;let pre=c.from.startsWith('ray:')||['energy','health','touch','chemical'].includes(c.from)?(tr.inputs[c.from]||0):(tr.prev[c.from]||0);let post=c.to.startsWith('act:')?(tr.rawOutputs[c.to.slice(4)]||0):(tr.hidden[c.to]||0),old=this.learnedWeights[c.id]||0;this.learnedWeights[c.id]=clamp(old*(1-V5BrainCfg.weightDecay)+lr*reward*pre*post,-V5BrainCfg.maxLearnedDelta,V5BrainCfg.maxLearnedDelta);}this.learningUpdates++;}
+}
+Brain=V4Brain;
+function v5GenericSense(s){
+  const input={energy:clamp(s.energy/180,0,1)*2-1,health:1,touch:-1,chemical:0};
+  const entities=[];for(const f of foods)entities.push({x:f.x,y:f.y,r:f.r||5});for(const b of blocks)entities.push({x:b.x,y:b.y,r:b.size*.71});for(const o of somiks)if(o!==s)entities.push({x:o.x,y:o.y,r:o.r});
+  const wallTouch=s.x-s.r<=0||s.y-s.r<=0||W-s.x-s.r<=0||H-s.y-s.r<=0;let touch=wallTouch;
+  for(const e of entities)if(Math.hypot(e.x-s.x,e.y-s.y)<=e.r+s.r){touch=true;break;}input.touch=touch?1:-1;
+  for(const q of s.brain.genome.sensors){let best=q.range,ang=s.dir+q.angle,ux=Math.cos(ang),uy=Math.sin(ang);let wall=q.range;if(ux>1e-9)wall=Math.min(wall,(W-s.r-s.x)/ux);else if(ux<-1e-9)wall=Math.min(wall,(s.x-s.r)/-ux);if(uy>1e-9)wall=Math.min(wall,(H-s.r-s.y)/uy);else if(uy<-1e-9)wall=Math.min(wall,(s.y-s.r)/-uy);best=Math.min(best,Math.max(0,wall));for(const e of entities){const dx=e.x-s.x,dy=e.y-s.y,d=Math.hypot(dx,dy),surface=d-e.r-s.r;if(surface>q.range)continue;const rel=Math.abs(angleDiff(Math.atan2(dy,dx),ang));const ar=Math.asin(clamp((e.r+s.r)/Math.max(1,d),-1,1));if(rel<=Math.max(.055,ar)&&surface<best)best=Math.max(0,surface);}input['ray:'+q.id]=clamp((1-best/q.range)*q.gain,0,1)*2-1;}
+  return input;
+}
+Somik.prototype.sense=function(){return v5GenericSense(this);};
+const V5_OLD_UPDATE=Somik.prototype.update;
+Somik.prototype.update=function(){const before=this.energy;V5_OLD_UPDATE.call(this);this.brain.learn(this.energy-before);};
+serializeBrain=function(brain){return{v5v4:true,genome:brain.genome,hiddenState:brain.hiddenState,learnedWeights:brain.learnedWeights,learningUpdates:brain.learningUpdates};};
+deserializeBrain=function(data){if(!data?.v5v4){return new V4Brain();}const b=Object.create(V4Brain.prototype);b.genome=v5Sanitize(v5clone(data.genome));b.hiddenState=data.hiddenState||{};b.learnedWeights=data.learnedWeights||{};b.learningUpdates=data.learningUpdates||0;b.lastTrace=null;b.lastInputs=[];b.lastHidden=[];b.lastOutputs=[];return b;};
+// v4 behavior has no semantic "reproduce" actuator. Reproduction readiness is a body-state/contact process.
+processFreeReproduction=function(){
+  if(somiks.length>=EMERGENCY_MAX_POP)return;const willing=somiks.filter(s=>s.energy>78&&s.age>=300);if(willing.length<2)return;const used=new Set(),contactD2=MATE_CONTACT_RADIUS*MATE_CONTACT_RADIUS;
+  for(const a of willing){if(used.has(a.id))continue;let partner=null,best=Infinity;for(const b of willing){if(b===a||used.has(b.id))continue;const d=(b.x-a.x)**2+(b.y-a.y)**2;if(d<=contactD2&&d<best){partner=b;best=d;}}if(!partner)continue;matingAttempts++;used.add(a.id);used.add(partner.id);const investA=desiredReproInvestment(a),investB=desiredReproInvestment(partner);if(a.energy<=investA||partner.energy<=investB||somiks.length>=EMERGENCY_MAX_POP)continue;a.energy-=investA;partner.energy-=investB;a.childrenCount++;partner.childrenCount++;a.birthsAsParent++;partner.birthsAsParent++;a.totalReproInvestment+=investA;partner.totalReproInvestment+=investB;const child=new Somik(clamp((a.x+partner.x)/2+rnd(-8,8),15,W-15),clamp((a.y+partner.y)/2+rnd(-8,8),15,H-15),Math.max(a.generation,partner.generation)+1,a,partner);child.energy=investA+investB;somiks.push(child);births++;successfulMatings++;totalParentInvestment+=investA+investB;totalChildBirthEnergy+=child.energy;minChildBirthEnergy=minChildBirthEnergy===null?child.energy:Math.min(minChildBirthEnergy,child.energy);maxChildBirthEnergy=Math.max(maxChildBirthEnergy,child.energy);if(a.sex!==partner.sex)mixedBirths++;else if(a.sex==='male')maleMaleBirths++;else femaleFemaleBirths++;}
+};
 
 if(!loadGame()){
   resetWorld();
