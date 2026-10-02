@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Somik World v5.2 — Neutral Spatial Baseline</title>
+<title>Somik World v5.3 — Tree Ecology</title>
 <meta name="theme-color" content="#111827">
 <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
 <style>
@@ -104,8 +104,8 @@ button{
 <body>
 <div class="app">
   <main>
-    <h1>Somik World v5.2</h1>
-    <div class="subtitle">עולם חיים מלאכותי פתוח שבו יצורים לומדים, משתנים ומתפתחים לאורך דורות — ללא ידע סמנטי מוקדם על מה שסביבם.</div>
+    <h1>Somik World v5.3</h1>
+    <div class="subtitle">עולם חיים מלאכותי פתוח: מזון מתחדש סביב מקורות פיזיים קבועים ונרקב באיטיות — בלי שה-Somik יודע מהו עץ או מהו אוכל.</div>
 
     <div class="toolbar">
       <button id="pauseBtn">⏸ עצור</button>
@@ -147,6 +147,8 @@ button{
     <div class="row"><span>אוכל על הקרקע</span><b id="foodCount">0</b></div>
     <div class="row"><span>אוכל שנישא עכשיו</span><b id="carriedFoodCount">0</b></div>
     <div class="row"><span>סה"כ אוכל בעולם</span><b id="totalFoodCount">0</b></div>
+    <div class="row"><span>עצים</span><b id="treeCount">0</b></div>
+    <div class="row"><span>מזון שנרקב</span><b id="rottenFoodCount">0</b></div>
     <div class="row"><span>אוכל שהורם</span><b id="foodPickCount">0</b></div>
     <div class="row"><span>אוכל שהונח מחדש</span><b id="foodDropCount">0</b></div>
     <div class="row"><span>בלוקים על הקרקע</span><b id="blockCount">0</b></div>
@@ -271,6 +273,7 @@ button{
       <h3>מקרא</h3>
       <div class="legend">
         <div><span class="swatch" style="background:#ef4444;border-radius:50%"></span>אוכל</div>
+        <div><span class="swatch" style="background:#166534;border-radius:50%"></span>עץ</div>
         <div><span class="swatch" style="background:#a8b3c2"></span>בלוק</div>
         <div><span class="swatch" style="background:#fbbf24"></span>בלוק בנשיאה</div>
         <div><span class="swatch" style="background:#7f1d1d"></span>אזור סכנה</div>
@@ -338,6 +341,10 @@ const REPRO_MIN_CONTRIBUTION=18;
 const FOOD_TARGET=120;
 const FOOD_REGEN_CHANCE=0.18;
 const INITIAL_BLOCKS=120;
+const TREE_COUNT=8;
+const TREE_RADIUS=17;
+const TREE_FOOD_RADIUS=95;
+const FOOD_LIFETIME_TICKS=30000; // slow decay: storage remains potentially useful
 
 const HAZARD={
   x:430,
@@ -355,6 +362,8 @@ const COLORS=["#60a5fa","#f59e0b","#a78bfa","#34d399","#f472b6","#facc15","#22d3
 let somiks=[];
 let foods=[];
 let blocks=[];
+let trees=[];
+let rottenFoodCount=0;
 
 let running=true;
 let speed=1;
@@ -399,7 +408,7 @@ let nextId=1;
 let nextBlockId=1;
 let selectedId=null;
 
-const SAVE_KEY="somik-world-v5-2-neutral-spatial-baseline-autosave";
+const SAVE_KEY="somik-world-v5-3-tree-ecology-autosave";
 const PRE_MEMORY_SAVE_KEY="somik-world-v05-pre-memory-backup";
 const PRE_METRICS_SAVE_KEY="somik-world-v05-pre-memory-metrics-backup";
 const LEGACY_SAVE_KEY="somik-world-v04-autosave";
@@ -411,7 +420,7 @@ const PRE_SEX_MARKER_SAVE_KEY="somik-world-v05-pre-sex-marker-backup";
 const PRE_SIMPLE_SEX_COLOR_SAVE_KEY="somik-world-v05-pre-simple-sex-color-backup";
 const PRE_EAT_SAVE_KEY="somik-world-v05-pre-eat-output-backup";
 const PRE_EMERGENCE_V14_SAVE_KEY="somik-world-v05-pre-emergence-v14-backup";
-const SAVE_VERSION=15;
+const SAVE_VERSION=16;
 
 const MEMORY_GATE_OPEN=0.65;
 const MEMORY_WRITE_DELTA=0.03;
@@ -1453,6 +1462,7 @@ class Somik{
     let touching=(this.x<=this.r||this.x>=W-this.r||this.y<=this.r||this.y>=H-this.r);
     const entities=[];
     for(const b of blocks)entities.push({x:b.x,y:b.y,r:b.size/2});
+    for(const t of trees)entities.push({x:t.x,y:t.y,r:t.r});
     for(const f of foods)entities.push({x:f.x,y:f.y,r:f.r||5});
     for(const s of somiks)if(s!==this)entities.push({x:s.x,y:s.y,r:s.r});
     for(const q of entities){const d=Math.hypot(q.x-this.x,q.y-this.y)-q.r-this.r;if(d<=0){touching=true;break;}}
@@ -1519,7 +1529,8 @@ class Somik{
     foods.push({
       x,y,r:carried.r??5,
       everMoved:true,
-      movedDistance:totalMoved
+      movedDistance:totalMoved,
+      bornTick:carried.bornTick??ticks
     });
     this.carryingFood=null;
     this.energy-=0.10;
@@ -1587,6 +1598,10 @@ class Somik{
   }
 
   collidesAt(nx,ny){
+    for(const t of trees){
+      const dx=nx-t.x,dy=ny-t.y;
+      if(dx*dx+dy*dy<sq(this.r+t.r))return true;
+    }
     for(const b of blocks){
       const half=b.size/2;
       const nearestX=clamp(nx,b.x-half,b.x+half);
@@ -1688,7 +1703,7 @@ class Somik{
       for(let i=0;i<foods.length;i++){const f=foods[i],dx=f.x-this.x,dy=f.y-this.y,d2=dx*dx+dy*dy;if(d2<bestD2&&d2<28*28){bestD2=d2;bestFood=i;}}
       if(bestFood>=0 && this.actionCooldown<=0){
         const f=foods.splice(bestFood,1)[0];
-        this.carryingFood={r:f.r??5,pickedAtTick:ticks,pickupX:f.x,pickupY:f.y,everMoved:!!f.everMoved,movedDistance:f.movedDistance??0};
+        this.carryingFood={r:f.r??5,pickedAtTick:ticks,pickupX:f.x,pickupY:f.y,everMoved:!!f.everMoved,movedDistance:f.movedDistance??0,bornTick:f.bornTick??ticks};
         this.energy-=0.12; this.actionCooldown=12; this.foodPicked++; foodPickCount++;
       }else this.tryPick();
     }
@@ -1961,6 +1976,8 @@ function stateObject(){
     nextBlockId,
     selectedId,
     speed,
+    trees,
+    rottenFoodCount,
     foods,
     blocks:blocks.map(serializeBlock),
     somiks:somiks.map(serializeSomik)
@@ -2025,6 +2042,8 @@ function restoreState(state){
   meaningfulFoodTransfers=state.meaningfulFoodTransfers??0;
   foodTransportDistanceTotal=state.foodTransportDistanceTotal??0;
   outcomeArchive=normalizeOutcomeArchive(state.outcomeArchive);
+  trees=Array.isArray(state.trees)&&state.trees.length?state.trees:makeTrees();
+  rottenFoodCount=state.rottenFoodCount??0;
 
   foods=Array.isArray(state.foods)?state.foods:[];
   blocks=Array.isArray(state.blocks)?state.blocks.map(deserializeBlock):[];
@@ -2184,20 +2203,55 @@ function totalFoodUnits(){
   return foods.length+carriedFoodCount();
 }
 
+function pointInsideTree(x,y,pad=0){
+  for(const t of trees){
+    const dx=x-t.x,dy=y-t.y;
+    if(dx*dx+dy*dy<sq(t.r+pad))return true;
+  }
+  return false;
+}
+
+function makeTrees(){
+  // Fixed physical resource sources. No tree/food label is exposed to the brain.
+  const margin=TREE_FOOD_RADIUS+25;
+  const candidates=[
+    [margin,margin],[W/2,margin],[W-margin,margin],
+    [margin,H/2],[W-margin,H/2],
+    [margin,H-margin],[W/2,H-margin],[W-margin,H-margin]
+  ];
+  return candidates.slice(0,TREE_COUNT).map(([x,y],i)=>({id:i+1,x,y,r:TREE_RADIUS}));
+}
+
+function spawnFoodAroundTree(){
+  if(!trees.length)trees=makeTrees();
+  for(let tries=0;tries<80;tries++){
+    const t=trees[Math.floor(Math.random()*trees.length)];
+    // sqrt(U) makes points uniform by area inside the disk, not center-biased.
+    const a=rnd(0,Math.PI*2);
+    const d=Math.sqrt(Math.random())*TREE_FOOD_RADIUS;
+    const x=t.x+Math.cos(a)*d;
+    const y=t.y+Math.sin(a)*d;
+    if(x<8||x>W-8||y<8||y>H-8)continue;
+    if(pointInsideTree(x,y,7)||pointInsideBlock(x,y,5))continue;
+    foods.push({x,y,r:5,bornTick:ticks});
+    return true;
+  }
+  return false;
+}
+
 function addFood(n){
-  for(let i=0;i<n;i++){
-    let tries=0;
+  for(let i=0;i<n;i++)spawnFoodAroundTree();
+}
 
-    while(tries++<40){
-      // Neutral spatial baseline: every legal point has the same spawn rule.
-      // The hazard does not affect food placement or regeneration.
-      const x=rnd(12,W-12);
-      const y=rnd(12,H-12);
-
-      if(!pointInsideBlock(x,y,5)){
-        foods.push({x,y,r:5});
-        break;
-      }
+function decayFood(){
+  for(let i=foods.length-1;i>=0;i--){
+    const born=foods[i].bornTick??ticks;
+    if(ticks-born>=FOOD_LIFETIME_TICKS){foods.splice(i,1);rottenFoodCount++;}
+  }
+  for(const s of somiks){
+    if(s.carryingFood&&ticks-(s.carryingFood.bornTick??ticks)>=FOOD_LIFETIME_TICKS){
+      s.carryingFood=null;
+      rottenFoodCount++;
     }
   }
 }
@@ -2213,7 +2267,7 @@ function addBlocks(n){
     const x=Math.round(rnd(2,W/BLOCK_GRID-2))*BLOCK_GRID;
     const y=Math.round(rnd(2,H/BLOCK_GRID-2))*BLOCK_GRID;
 
-    let ok=true;
+    let ok=!pointInsideTree(x,y,BLOCK_SIZE);
 
     for(const b of blocks){
       if(sq(b.x-x)+sq(b.y-y)<sq(BLOCK_GRID*1.1)){
@@ -2239,7 +2293,7 @@ function createPopulation(n=120){
       const x=rnd(30,W-30);
       const y=rnd(30,H-30);
 
-      if(!pointInsideBlock(x,y,20)){
+      if(!pointInsideBlock(x,y,20)&&!pointInsideTree(x,y,20)){
         somiks.push(new Somik(x,y));
         created=true;
       }
@@ -2251,6 +2305,7 @@ function resetWorld(){
   somiks=[];
   foods=[];
   blocks=[];
+  trees=[];
 
   ticks=0;
   births=0;
@@ -2282,11 +2337,13 @@ function resetWorld(){
   meaningfulFoodTransfers=0;
   foodTransportDistanceTotal=0;
   outcomeArchive=makeOutcomeArchive();
+  rottenFoodCount=0;
 
   nextId=1;
   nextBlockId=1;
   selectedId=null;
 
+  trees=makeTrees();
   addBlocks(INITIAL_BLOCKS);
   createPopulation(120);
   addFood(120);
@@ -2337,6 +2394,10 @@ function processFreeReproduction(){
       a,partner
     );
 
+    if(pointInsideTree(child.x,child.y,child.r)){
+      for(let k=0;k<30;k++){const cx=clamp((a.x+partner.x)/2+rnd(-30,30),15,W-15),cy=clamp((a.y+partner.y)/2+rnd(-30,30),15,H-15);if(!pointInsideTree(cx,cy,child.r)&&!pointInsideBlock(cx,cy,child.r)){child.x=cx;child.y=cy;break;}}
+    }
+
     const childEnergy=investA+investB;
     child.energy=childEnergy;
     somiks.push(child);
@@ -2384,7 +2445,8 @@ function updateWorld(){
         foods.push({
           x:clamp(s.x,8,W-8),y:clamp(s.y,8,H-8),r:s.carryingFood.r??5,
           everMoved:!!s.carryingFood.everMoved,
-          movedDistance:s.carryingFood.movedDistance??0
+          movedDistance:s.carryingFood.movedDistance??0,
+          bornTick:s.carryingFood.bornTick??ticks
         });
         s.carryingFood=null;
       }
@@ -2395,7 +2457,10 @@ function updateWorld(){
 
   somiks=alive;
 
-  // משאבים אינם גדלים עם האוכלוסייה: יותר Somik-ים = יותר תחרות על אותו קצב התחדשות.
+  // Food has a long but finite physical lifetime, whether on the ground or carried.
+  decayFood();
+
+  // Resources regenerate only around fixed tree sources; population does not increase the flux.
   if(totalFoodUnits()<FOOD_TARGET&&Math.random()<FOOD_REGEN_CHANCE){
     addFood(1);
   }
@@ -2621,6 +2686,12 @@ function drawPopulationChart(){
 function drawWorld(){
   drawBackground();
 
+  for(const t of trees){
+    ctx.beginPath();ctx.arc(t.x,t.y,t.r+5,0,Math.PI*2);ctx.fillStyle="#14532d";ctx.fill();
+    ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,Math.PI*2);ctx.fillStyle="#166534";ctx.fill();
+    ctx.fillStyle="#713f12";ctx.fillRect(t.x-3,t.y+t.r-2,6,10);
+  }
+
   for(const b of blocks)b.draw();
 
   for(const f of foods){
@@ -2663,6 +2734,8 @@ function drawWorld(){
   document.getElementById("foodCount").textContent=foods.length;
   document.getElementById("carriedFoodCount").textContent=carriedFoodCount();
   document.getElementById("totalFoodCount").textContent=totalFoodUnits();
+  document.getElementById("treeCount").textContent=trees.length;
+  document.getElementById("rottenFoodCount").textContent=rottenFoodCount.toLocaleString("he-IL");
   document.getElementById("foodPickCount").textContent=foodPickCount.toLocaleString("he-IL");
   document.getElementById("foodDropCount").textContent=foodDropCount.toLocaleString("he-IL");
   document.getElementById("blockCount").textContent=blocks.length;
