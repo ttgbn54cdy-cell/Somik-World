@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Somik World v5</title>
+<title>Somik World v5.2 — Neutral Spatial Baseline</title>
 <meta name="theme-color" content="#111827">
 <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
 <style>
@@ -104,7 +104,7 @@ button{
 <body>
 <div class="app">
   <main>
-    <h1>Somik World v5</h1>
+    <h1>Somik World v5.2</h1>
     <div class="subtitle">עולם חיים מלאכותי פתוח שבו יצורים לומדים, משתנים ומתפתחים לאורך דורות — ללא ידע סמנטי מוקדם על מה שסביבם.</div>
 
     <div class="toolbar">
@@ -399,7 +399,7 @@ let nextId=1;
 let nextBlockId=1;
 let selectedId=null;
 
-const SAVE_KEY="somik-world-v5-v05world-v4brain-autosave";
+const SAVE_KEY="somik-world-v5-2-neutral-spatial-baseline-autosave";
 const PRE_MEMORY_SAVE_KEY="somik-world-v05-pre-memory-backup";
 const PRE_METRICS_SAVE_KEY="somik-world-v05-pre-memory-metrics-backup";
 const LEGACY_SAVE_KEY="somik-world-v04-autosave";
@@ -2189,16 +2189,10 @@ function addFood(n){
     let tries=0;
 
     while(tries++<40){
-      let x,y;
-
-      // 52% מהמזון מופיע באזור הסכנה: יש תמריץ אמיתי להיכנס.
-      if(Math.random()<0.52){
-        x=rnd(HAZARD.x+12,HAZARD.x+HAZARD.w-12);
-        y=rnd(12,H-12);
-      }else{
-        x=rnd(12,W-12);
-        y=rnd(12,H-12);
-      }
+      // Neutral spatial baseline: every legal point has the same spawn rule.
+      // The hazard does not affect food placement or regeneration.
+      const x=rnd(12,W-12);
+      const y=rnd(12,H-12);
 
       if(!pointInsideBlock(x,y,5)){
         foods.push({x,y,r:5});
@@ -2214,17 +2208,9 @@ function addBlocks(n){
   while(placed<n&&tries<n*100){
     tries++;
 
-    // רוב הבלוקים מתחילים מחוץ לאזור הסכנה.
-    let x;
-    if(Math.random()<0.78){
-      const left=Math.random()<0.5;
-      x=left
-        ? Math.round(rnd(2,(HAZARD.x-35)/BLOCK_GRID))*BLOCK_GRID
-        : Math.round(rnd((HAZARD.x+HAZARD.w+35)/BLOCK_GRID,W/BLOCK_GRID-2))*BLOCK_GRID;
-    }else{
-      x=Math.round(rnd(2,W/BLOCK_GRID-2))*BLOCK_GRID;
-    }
-
+    // Neutral spatial baseline: choose uniformly from the same legal grid
+    // everywhere; the hazard does not bias initial block placement.
+    const x=Math.round(rnd(2,W/BLOCK_GRID-2))*BLOCK_GRID;
     const y=Math.round(rnd(2,H/BLOCK_GRID-2))*BLOCK_GRID;
 
     let ok=true;
@@ -2248,15 +2234,9 @@ function createPopulation(n=120){
     let created=false;
 
     for(let tries=0;tries<60&&!created;tries++){
-      let x;
-
-      // אוכלוסייה ראשונית מתחילה בעיקר משני צדי הסכנה.
-      if(Math.random()<0.5){
-        x=rnd(30,HAZARD.x-35);
-      }else{
-        x=rnd(HAZARD.x+HAZARD.w+35,W-30);
-      }
-
+      // Neutral spatial baseline: founders are uniform across the legal world.
+      // The hazard does not affect founder placement.
+      const x=rnd(30,W-30);
       const y=rnd(30,H-30);
 
       if(!pointInsideBlock(x,y,20)){
