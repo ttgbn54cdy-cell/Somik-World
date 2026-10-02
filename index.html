@@ -40,7 +40,7 @@ Browser layout and real iPhone interaction were not tested in this environment.
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Somik World — Candidate 11 · Observer Panels</title>
+<title>Somik World — v0.5 Visual / New Logic</title>
 <link rel="icon" href="data:,">
 <style>
 :root{
@@ -314,22 +314,6 @@ canvas{max-width:100%;box-sizing:border-box}.chart,.brainCanvas,.miniCanvas{widt
 }
 
 </style>
-
-<!-- MAP_DISPLAY_BASE_INDEX2 — observer-only presentation adapted from user supplied index(2).html. Scientific engine unchanged. -->
-<style id="map-display-index2-override">
-:root{--bg:#111827;--panel:#1f2937;--panel2:#182233;--line:#374151;--text:#f9fafb;--muted:#cbd5e1}
-html,body{background:#111827}
-.top{background:rgba(17,24,39,.98);border-bottom:1px solid #374151}
-.mainGrid{grid-template-columns:minmax(0,1fr) 340px;gap:0;padding:0}
-.worldCard{margin:14px;border:2px solid #374151;border-radius:12px;background:#0b1220}
-.sideCard{border-radius:0;border-width:0 0 0 1px;border-color:#374151;background:#1f2937}
-.worldHead{background:#182233;border-bottom:1px solid #374151}
-.worldWrap{background:#4b9b4f;box-shadow:none}
-.worldWrap canvas{background:#4b9b4f}
-.panel,.classicCard,.eventFeedCard,.observerMetrics{background:#182233;border-color:#374151}
-.kpi{background:#111827;border-color:#374151}
-@media(max-width:800px){.mainGrid{display:flex;flex-direction:column}.worldCard{margin:9px}.sideCard{border-left:0;border-top:1px solid #374151}.worldWrap canvas{max-height:none}}
-</style>
 </head>
 <body>
 <div class="app">
@@ -387,7 +371,7 @@ html,body{background:#111827}
       <details class="layerMenu"><summary title="שכבות תצוגה">◉ שכבות</summary><div class="layerMenuPop"><label><input type="checkbox" id="layerResources" checked> משאבים</label><label><input type="checkbox" id="layerTrails"> מסלולים</label><label><input type="checkbox" id="layerInteractions" checked> קשרים פיזיים</label><label><input type="checkbox" id="raysCheck"> חיישני הנבחר</label></div></details>
     </div>
     <div class="worldWrap">
-      <canvas id="world" width="1200" height="720"></canvas>
+      <canvas id="world" width="1000" height="650"></canvas>
     </div>
   </div>
 
@@ -1294,34 +1278,41 @@ function updateSelectedSide(){const a=selectedAgent();if(!a){$('selectedSide').t
 let trailRun='',trails=new Map();
 function visualColor(id){const n=Math.abs(Number(id)||0);return ['#61c9ff','#ffd34d','#ff8a65','#bd8cff','#6ee7b7','#f78fb3'][n%6];}
 function drawTerrain(ctx,W,H,sx,sy){
-  // Presentation follows the user-supplied index(2) map. Physics/topology are untouched.
-  ctx.fillStyle='#4b9b4f';ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='rgba(0,0,0,.025)';
+  // v0.5 presentation grammar on top of the current scientific world geometry.
+  // Observer-only: no values from this renderer are read by the simulation.
+  ctx.fillStyle="#4b9b4f";
+  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="rgba(0,0,0,.025)";
   const cell=50*Math.min(sx,sy);
-  if(cell>4){for(let y=0,iy=0;y<H;y+=cell,iy++)for(let x=0,ix=0;x<W;x+=cell,ix++)if((ix+iy)%2===0)ctx.fillRect(x,y,cell,cell);}
+  for(let y=0;y<H;y+=cell){for(let x=0;x<W;x+=cell){if(((Math.round(x/cell)+Math.round(y/cell))&1)===0)ctx.fillRect(x,y,cell,cell);}}
   const hz=E.Protocol.hazard;
-  ctx.fillStyle='rgba(127,29,29,.56)';ctx.fillRect(hz.x*sx,hz.y*sy,hz.w*sx,hz.h*sy);
-  ctx.fillStyle='rgba(239,68,68,.10)';for(let x=hz.x*sx;x<(hz.x+hz.w)*sx;x+=25*sx)ctx.fillRect(x,0,12*sx,H);
-  ctx.strokeStyle='rgba(0,0,0,.10)';ctx.lineWidth=1;
-  const grid=25*Math.min(sx,sy);if(grid>3){for(let x=0;x<=W;x+=grid){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}for(let y=0;y<=H;y+=grid){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}}
-  // Trees remain visible because they are physical geometry in the current engine.
-  for(const t of E.Protocol.trees.positions){const x=t.x*sx,y=t.y*sy,r=Math.max(3,t.radius*Math.min(sx,sy));ctx.fillStyle='#76512f';ctx.fillRect(x-r*.14,y,r*.28,r*.95);ctx.fillStyle='#216e3b';ctx.beginPath();ctx.arc(x,y-r*.18,r*.78,0,Math.PI*2);ctx.fill();}
+  ctx.fillStyle="rgba(127,29,29,.56)";
+  ctx.fillRect(hz.x*sx,hz.y*sy,hz.w*sx,hz.h*sy);
+  ctx.fillStyle="rgba(239,68,68,.10)";
+  for(let x=hz.x*sx;x<(hz.x+hz.w)*sx;x+=25*sx)ctx.fillRect(x,0,12*sx,H);
+  ctx.strokeStyle="rgba(0,0,0,.10)";ctx.lineWidth=1;
+  const grid=25;
+  for(let x=0;x<=E.Protocol.world.width;x+=grid){ctx.beginPath();ctx.moveTo(x*sx,0);ctx.lineTo(x*sx,H);ctx.stroke();}
+  for(let y=0;y<=E.Protocol.world.height;y+=grid){ctx.beginPath();ctx.moveTo(0,y*sy);ctx.lineTo(W,y*sy);ctx.stroke();}
+  // New-logic physical geometry that did not exist in v0.5 must remain observable.
+  // It is deliberately rendered plainly and is never exposed as a semantic sensor.
+  for(const t of E.Protocol.trees.positions){const x=t.x*sx,y=t.y*sy,r=Math.max(3,t.radius*Math.min(sx,sy));ctx.fillStyle="#76512f";ctx.fillRect(x-r*.14,y,r*.28,r*.95);ctx.fillStyle="#2f7d32";ctx.beginPath();ctx.arc(x,y-r*.18,r*.78,0,Math.PI*2);ctx.fill();}
 }
 function drawSomik(ctx,a,sx,sy,selected){
-  const x=a.x*sx,y=a.y*sy,bodyRadius=Number(a.radius??a.pheno?.radius??6),r=Math.max(5.5,bodyRadius*Math.min(sx,sy)*1.35);
-  ctx.save();ctx.translate(x,y);
-  ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fillStyle='#1598df';ctx.fill();ctx.strokeStyle=selected?'#fff':'#111827';ctx.lineWidth=selected?4:2;ctx.stroke();
-  const dir=a.dir||0,fx=Math.cos(dir)*r*.55,fy=Math.sin(dir)*r*.55,px=-Math.sin(dir)*r*.25,py=Math.cos(dir)*r*.25;
-  ctx.fillStyle='#fff';for(const sign of [-1,1]){ctx.beginPath();ctx.arc(fx+px*sign,fy+py*sign,Math.max(1.3,r*.21),0,Math.PI*2);ctx.fill();}
-  if(a.holding){const hx=Math.cos(dir)*r*1.55,hy=Math.sin(dir)*r*1.55;if(a.holding.kind==='object'){ctx.fillStyle='#fbbf24';ctx.fillRect(hx-r*.5,hy-r*.5,r,r);ctx.strokeStyle='#78350f';ctx.lineWidth=1.4;ctx.strokeRect(hx-r*.5,hy-r*.5,r,r);}else{ctx.fillStyle='#ef4444';ctx.beginPath();ctx.arc(hx,hy,Math.max(2.5,r*.42),0,Math.PI*2);ctx.fill();ctx.strokeStyle='#7f1d1d';ctx.lineWidth=1.2;ctx.stroke();}}
+  const x=a.x*sx,y=a.y*sy,r=Math.max(4.5,Number(a.radius??a.pheno?.radius??6)*Math.min(sx,sy));
+  ctx.save();
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle="#38bdf8";ctx.fill();
+  ctx.strokeStyle=selected?"#fff":"#111827";ctx.lineWidth=selected?4:2;ctx.stroke();
+  const fx=Math.cos(a.dir||0)*Math.min(5,r*.72),fy=Math.sin(a.dir||0)*Math.min(5,r*.72),px=-Math.sin(a.dir||0)*Math.min(2.3,r*.33),py=Math.cos(a.dir||0)*Math.min(2.3,r*.33);
+  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(x+fx+px,y+fy+py,Math.max(1.4,r*.3),0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(x+fx-px,y+fy-py,Math.max(1.4,r*.3),0,Math.PI*2);ctx.fill();
   ctx.restore();
 }
-function drawWorld(){if(!world||!renderEnabled)return;const rw=renderState||world;const c=$('world'),ctx=c.getContext('2d'),W=c.width,H=c.height,sx=W/E.Protocol.world.width,sy=H/E.Protocol.world.height;ctx.clearRect(0,0,W,H);drawTerrain(ctx,W,H,sx,sy);ctx.save();ctx.strokeStyle='rgba(226,232,240,.92)';ctx.lineWidth=Math.max(3,4*Math.min(sx,sy));ctx.strokeRect(1.5,1.5,W-3,H-3);ctx.restore();
-  if($('layerResources').checked)for(const r of rw.resources){const x=r.x*sx,y=r.y*sy,rr=Math.max(2.4,E.Protocol.resources.resourceRadius*sx);ctx.fillStyle=COLORS[r.material]||'#ef4444';ctx.beginPath();ctx.arc(x,y,rr,0,Math.PI*2);ctx.fill();}
-  for(const o of rw.objects){const x=o.x*sx,y=o.y*sy,r=o.radius*sx;ctx.fillStyle=WORLD_VISUALS.object;ctx.fillRect(x-r,y-r,r*2,r*2);ctx.strokeStyle='#59616c';ctx.lineWidth=1;ctx.strokeRect(x-r,y-r,r*2,r*2);}
-  if($('layerResources').checked)for(const co of rw.corpses){ctx.fillStyle=WORLD_VISUALS.corpse;ctx.beginPath();ctx.arc(co.x*sx,co.y*sy,co.radius*sx,0,Math.PI*2);ctx.fill();}
+function drawWorld(){if(!world||!renderEnabled)return;const rw=renderState||world;const c=$('world'),ctx=c.getContext('2d'),W=c.width,H=c.height,sx=W/E.Protocol.world.width,sy=H/E.Protocol.world.height;ctx.clearRect(0,0,W,H);drawTerrain(ctx,W,H,sx,sy);
+  if($('layerResources').checked)for(const r of rw.resources){const x=r.x*sx,y=r.y*sy,rr=Math.max(3,E.Protocol.resources.resourceRadius*Math.min(sx,sy));ctx.beginPath();ctx.arc(x,y,rr,0,Math.PI*2);ctx.fillStyle=r.material==='primary'?"#ef4444":(COLORS[r.material]||'#ef4444');ctx.fill();ctx.strokeStyle=r.material==='primary'?"#7f1d1d":"rgba(15,23,42,.55)";ctx.lineWidth=1.4;ctx.stroke();}
+  for(const o of rw.objects){const x=o.x*sx,y=o.y*sy,half=Math.max(4,o.radius*Math.min(sx,sy));const inDanger=x>=E.Protocol.hazard.x*sx&&x<=(E.Protocol.hazard.x+E.Protocol.hazard.w)*sx&&y>=E.Protocol.hazard.y*sy&&y<=(E.Protocol.hazard.y+E.Protocol.hazard.h)*sy;if(inDanger){ctx.beginPath();ctx.arc(x,y,48*Math.min(sx,sy),0,Math.PI*2);ctx.fillStyle="rgba(250,204,21,.08)";ctx.fill();}ctx.fillStyle=inDanger?"#d8c48f":"#a8b3c2";ctx.fillRect(x-half,y-half,half*2,half*2);ctx.strokeStyle=inDanger?"#854d0e":"#475569";ctx.lineWidth=2;ctx.strokeRect(x-half,y-half,half*2,half*2);}
+  if($('layerResources').checked)for(const co of rw.corpses){ctx.fillStyle=WORLD_VISUALS.corpse;ctx.beginPath();ctx.arc(co.x*sx,co.y*sy,co.radius*Math.min(sx,sy),0,Math.PI*2);ctx.fill();}
   if(trailRun!==runMeta.runId){trails.clear();trailRun=runMeta.runId;}const alive=new Set(rw.agents.map(a=>a.id));for(const id of trails.keys())if(!alive.has(id))trails.delete(id);
-  if($('layerTrails').checked){ctx.strokeStyle='rgba(255,255,255,.32)';ctx.lineWidth=1;for(const a of rw.agents){const points=trails.get(a.id)||[];if(points.at(-1)?.tick!==rw.tick)points.push({x:a.x,y:a.y,tick:rw.tick});if(points.length>60)points.shift();trails.set(a.id,points);ctx.beginPath();points.forEach((p,i)=>{const prev=points[i-1];if(!prev||Math.abs(prev.x-p.x)>E.Protocol.world.width/2||Math.abs(prev.y-p.y)>E.Protocol.world.height/2)ctx.moveTo(p.x*sx,p.y*sy);else ctx.lineTo(p.x*sx,p.y*sy);});ctx.stroke();}}
+  if($('layerTrails').checked){ctx.strokeStyle='rgba(255,255,255,.32)';ctx.lineWidth=1;for(const a of rw.agents){const points=trails.get(a.id)||[];if(points.at(-1)?.tick!==rw.tick)points.push({x:a.x,y:a.y,tick:rw.tick});if(points.length>60)points.shift();trails.set(a.id,points);ctx.beginPath();points.forEach((p,i)=>{const prev=points[i-1];if(!prev)ctx.moveTo(p.x*sx,p.y*sy);else ctx.lineTo(p.x*sx,p.y*sy);});ctx.stroke();}}
   for(const a of rw.agents)drawSomik(ctx,a,sx,sy,a.id===selectedId);
   const sel=selectedAgent();if(sel&&$('raysCheck').checked){ctx.save();ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=1;for(const ss of sel.genome.sensors){const ang=sel.dir+ss.angle;ctx.beginPath();ctx.moveTo(sel.x*sx,sel.y*sy);ctx.lineTo((sel.x+Math.cos(ang)*ss.range)*sx,(sel.y+Math.sin(ang)*ss.range)*sy);ctx.stroke();}ctx.restore();}
 }
@@ -1577,4 +1568,15 @@ init().catch(err=>{console.error(err);$('saveStatus').className='saveWarn';$('sa
 #tab-individuals .tableWrap{max-height:520px}#tab-individuals .panel{min-width:0}
 #individualStatus,#brainSampleNote,#connectionTableNote,#observerSnapshot{padding:7px 0;line-height:1.5}
 @media(max-width:720px){#tab-brain .labControls{display:flex;flex-direction:column;align-items:stretch}#tab-brain .labControls select{max-width:100%;width:100%}.observerMetrics .row{font-size:11px}.individualPick{min-height:40px}}
+
+/* v0.5 VISUAL CONTRACT — presentation only */
+:root{--bg:#111827;--panel:#1f2937;--line:#374151;--text:#f9fafb;--muted:#cbd5e1;--grass:#4b9b4f}
+html,body{background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+.app{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"top side" "world side" "tabs side";direction:ltr;align-items:start}
+.top,.worldCard,.tabsWrap{direction:rtl}.top{grid-area:top;position:relative;background:transparent;border:0;padding:14px 14px 10px}.titleRow h1{margin:0;font-size:clamp(28px,3.5vw,48px)}
+.controls{gap:8px;margin-top:10px}.controls button,.controls select,.controls input{padding:9px 13px;border:0;border-radius:9px;font-weight:700}.controls button,.controls select{background:#e5e7eb;color:#111827}.controls label{color:var(--muted)}
+.mainGrid{display:contents}.worldCard{grid-area:world;margin:0 14px 14px;background:#0b1220;border:2px solid var(--line);border-radius:12px;overflow:hidden}.worldHead{background:#111827;border-bottom:1px solid var(--line)}.worldWrap{background:var(--grass);box-shadow:none}.worldWrap canvas{width:100%;height:auto;display:block;background:var(--grass);touch-action:manipulation}
+.sideCard{grid-area:side;direction:rtl;position:sticky;top:0;height:100vh;max-height:100vh;overflow:auto;background:var(--panel);padding:16px;border:0;border-left:1px solid var(--line);border-radius:0}.tabsWrap{grid-area:tabs;padding:0 14px 20px;min-width:0}
+.sideCard,.panel,.worldCard{border-color:var(--line)}.kpi,.panel,.card{background:#182233;border-color:var(--line)}.rows .row{border-bottom-color:var(--line)}
+@media(max-width:800px) and (orientation:portrait){.app{display:flex;flex-direction:column}.top{padding:9px}.titleRow{justify-content:center}.titleRow h1{text-align:center;font-size:28px}.productSubtitle{text-align:center}.controls{justify-content:center}.worldCard{margin:0 9px 9px}.sideCard{position:relative;height:auto;max-height:none;width:100%;border-left:0;border-top:1px solid var(--line);padding:12px}.tabsWrap{padding:0 9px 16px}.worldCard{border-radius:8px}}
 </style>
