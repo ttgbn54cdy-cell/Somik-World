@@ -1985,7 +1985,7 @@ function saveGame(){
 
 function restoreState(state){
   if(!state||typeof state!=="object")return false;
-  if(state.version!==1&&state.version!==2&&state.version!==3&&state.version!==4&&state.version!==5&&state.version!==6&&state.version!==7&&state.version!==8&&state.version!==9&&state.version!==10&&state.version!==11&&state.version!==12&&state.version!==13&&state.version!==14)return false;
+  if(!Number.isInteger(state.version)||state.version<1||state.version>SAVE_VERSION)return false;
 
   ticks=state.ticks ?? 0;
   births=state.births ?? 0;
