@@ -1,4 +1,8 @@
-<!-- Candidate 11 + Diagnostic Flight Recorder FIX4 DEEP + NO WATER.
+<!-- Candidate 11 + Diagnostic Flight Recorder FIX5 STARTUP + NO WATER.
+FIX5: removes diagnostic Temporal Dead Zone startup crash; logger initializes only after app state declarations exist.
+Water remains fully absent; neutral founder placement retained.
+
+Candidate 11 + Diagnostic Flight Recorder FIX4 DEEP + NO WATER.
 FIX4: founders use neutral world placement; no empty-basin access; water energy and water speed branches are inert; no replacement resource added.
 
 Candidate 11 + Diagnostic Flight Recorder FIX3 + NO WATER.
@@ -978,9 +982,10 @@ let diagDb=null,diagSeq=0,diagSegment=null,diagSegmentNo=0,diagApproxBytes=0;
 let diagHi=[],diagLow=[],diagLastHi=0,diagLastLow=0,diagLastHeartbeat=0;
 let diagLastWorkerMessage=Date.now(),diagLastTick=null,diagLastTickChange=Date.now();
 let diagStallState='ok',diagPauseReason='startup',diagLastProgressStage='idle';
-let diagObservedRunning=!!running,diagExpectedRunTransition=null;
+let diagObservedRunning=null,diagExpectedRunTransition=null;
 function diagObserveRunningTransition(){
   const nowRunning=!!running;
+  if(diagObservedRunning===null){diagObservedRunning=nowRunning;return;}
   if(nowRunning===diagObservedRunning)return;
   const expected=diagExpectedRunTransition;
   if(expected && expected.value===nowRunning && Date.now()-expected.ts<3000){
@@ -1068,7 +1073,6 @@ function diagLoggerReadyOnce(){
   diagLoggerReadyEmitted=true;
   diagEvent('logger_ready',{schema:DIAG_CFG.schema});
 }
-diagLoggerReadyOnce();
 document.addEventListener('visibilitychange',()=>diagEvent(document.visibilityState==='hidden'?'visibility_hidden':'visibility_visible',diagTelemetry()));
 window.addEventListener('error',e=>diagFlushIncident('exception',{message:e.message,source:e.filename,line:e.lineno,col:e.colno}));
 window.addEventListener('unhandledrejection',e=>diagFlushIncident('unhandled_rejection',{reason:String(e.reason?.stack||e.reason||'unknown')}));
@@ -1479,6 +1483,7 @@ function bind(){
 }
 
 async function init(){
+  diagLoggerReadyOnce();
   bind();try{db=await openDb();}catch(err){db=null;$('saveStatus').className='saveWarn';$('saveStatus').textContent='אחסון מקומי אינו זמין — השתמש בייצוא קובץ לגיבוי.';}
   const rec=db?await latestSnapshot():null;
   if(rec){
