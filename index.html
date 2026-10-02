@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Somik World v5.3 — Tree Ecology</title>
+<title>Somik World v5.3.1 — Tree Ecology</title>
 <meta name="theme-color" content="#111827">
 <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
 <style>
@@ -104,7 +104,7 @@ button{
 <body>
 <div class="app">
   <main>
-    <h1>Somik World v5.3</h1>
+    <h1>Somik World v5.3.1</h1>
     <div class="subtitle">עולם חיים מלאכותי פתוח: מזון מתחדש סביב מקורות פיזיים קבועים ונרקב באיטיות — בלי שה-Somik יודע מהו עץ או מהו אוכל.</div>
 
     <div class="toolbar">
@@ -148,7 +148,6 @@ button{
     <div class="row"><span>אוכל שנישא עכשיו</span><b id="carriedFoodCount">0</b></div>
     <div class="row"><span>סה"כ אוכל בעולם</span><b id="totalFoodCount">0</b></div>
     <div class="row"><span>עצים</span><b id="treeCount">0</b></div>
-    <div class="row"><span>מזון שנרקב</span><b id="rottenFoodCount">0</b></div>
     <div class="row"><span>אוכל שהורם</span><b id="foodPickCount">0</b></div>
     <div class="row"><span>אוכל שהונח מחדש</span><b id="foodDropCount">0</b></div>
     <div class="row"><span>בלוקים על הקרקע</span><b id="blockCount">0</b></div>
@@ -344,7 +343,6 @@ const INITIAL_BLOCKS=120;
 const TREE_COUNT=8;
 const TREE_RADIUS=17;
 const TREE_FOOD_RADIUS=95;
-const FOOD_LIFETIME_TICKS=30000; // slow decay: storage remains potentially useful
 
 const HAZARD={
   x:430,
@@ -363,7 +361,6 @@ let somiks=[];
 let foods=[];
 let blocks=[];
 let trees=[];
-let rottenFoodCount=0;
 
 let running=true;
 let speed=1;
@@ -408,7 +405,7 @@ let nextId=1;
 let nextBlockId=1;
 let selectedId=null;
 
-const SAVE_KEY="somik-world-v5-3-tree-ecology-autosave";
+const SAVE_KEY="somik-world-v5-3-1-tree-ecology-autosave";
 const PRE_MEMORY_SAVE_KEY="somik-world-v05-pre-memory-backup";
 const PRE_METRICS_SAVE_KEY="somik-world-v05-pre-memory-metrics-backup";
 const LEGACY_SAVE_KEY="somik-world-v04-autosave";
@@ -420,7 +417,7 @@ const PRE_SEX_MARKER_SAVE_KEY="somik-world-v05-pre-sex-marker-backup";
 const PRE_SIMPLE_SEX_COLOR_SAVE_KEY="somik-world-v05-pre-simple-sex-color-backup";
 const PRE_EAT_SAVE_KEY="somik-world-v05-pre-eat-output-backup";
 const PRE_EMERGENCE_V14_SAVE_KEY="somik-world-v05-pre-emergence-v14-backup";
-const SAVE_VERSION=16;
+const SAVE_VERSION=17;
 
 const MEMORY_GATE_OPEN=0.65;
 const MEMORY_WRITE_DELTA=0.03;
@@ -1529,8 +1526,7 @@ class Somik{
     foods.push({
       x,y,r:carried.r??5,
       everMoved:true,
-      movedDistance:totalMoved,
-      bornTick:carried.bornTick??ticks
+      movedDistance:totalMoved
     });
     this.carryingFood=null;
     this.energy-=0.10;
@@ -1564,6 +1560,9 @@ class Somik{
     for(const b of blocks){
       if(sq(b.x-x)+sq(b.y-y)<sq(BLOCK_SIZE*0.9))return false;
     }
+
+    // Trees are solid physical objects. A failed drop leaves the block in the Somik's grip.
+    if(pointInsideTree(x,y,BLOCK_SIZE*Math.SQRT1_2))return false;
 
     for(const s of somiks){
       if(s===this)continue;
@@ -1977,7 +1976,6 @@ function stateObject(){
     selectedId,
     speed,
     trees,
-    rottenFoodCount,
     foods,
     blocks:blocks.map(serializeBlock),
     somiks:somiks.map(serializeSomik)
@@ -2043,7 +2041,6 @@ function restoreState(state){
   foodTransportDistanceTotal=state.foodTransportDistanceTotal??0;
   outcomeArchive=normalizeOutcomeArchive(state.outcomeArchive);
   trees=Array.isArray(state.trees)&&state.trees.length?state.trees:makeTrees();
-  rottenFoodCount=state.rottenFoodCount??0;
 
   foods=Array.isArray(state.foods)?state.foods:[];
   blocks=Array.isArray(state.blocks)?state.blocks.map(deserializeBlock):[];
@@ -2233,7 +2230,7 @@ function spawnFoodAroundTree(){
     const y=t.y+Math.sin(a)*d;
     if(x<8||x>W-8||y<8||y>H-8)continue;
     if(pointInsideTree(x,y,7)||pointInsideBlock(x,y,5))continue;
-    foods.push({x,y,r:5,bornTick:ticks});
+    foods.push({x,y,r:5});
     return true;
   }
   return false;
@@ -2241,19 +2238,6 @@ function spawnFoodAroundTree(){
 
 function addFood(n){
   for(let i=0;i<n;i++)spawnFoodAroundTree();
-}
-
-function decayFood(){
-  for(let i=foods.length-1;i>=0;i--){
-    const born=foods[i].bornTick??ticks;
-    if(ticks-born>=FOOD_LIFETIME_TICKS){foods.splice(i,1);rottenFoodCount++;}
-  }
-  for(const s of somiks){
-    if(s.carryingFood&&ticks-(s.carryingFood.bornTick??ticks)>=FOOD_LIFETIME_TICKS){
-      s.carryingFood=null;
-      rottenFoodCount++;
-    }
-  }
 }
 
 function addBlocks(n){
@@ -2337,7 +2321,6 @@ function resetWorld(){
   meaningfulFoodTransfers=0;
   foodTransportDistanceTotal=0;
   outcomeArchive=makeOutcomeArchive();
-  rottenFoodCount=0;
 
   nextId=1;
   nextBlockId=1;
@@ -2445,8 +2428,7 @@ function updateWorld(){
         foods.push({
           x:clamp(s.x,8,W-8),y:clamp(s.y,8,H-8),r:s.carryingFood.r??5,
           everMoved:!!s.carryingFood.everMoved,
-          movedDistance:s.carryingFood.movedDistance??0,
-          bornTick:s.carryingFood.bornTick??ticks
+          movedDistance:s.carryingFood.movedDistance??0
         });
         s.carryingFood=null;
       }
@@ -2458,8 +2440,6 @@ function updateWorld(){
   somiks=alive;
 
   // Food has a long but finite physical lifetime, whether on the ground or carried.
-  decayFood();
-
   // Resources regenerate only around fixed tree sources; population does not increase the flux.
   if(totalFoodUnits()<FOOD_TARGET&&Math.random()<FOOD_REGEN_CHANCE){
     addFood(1);
@@ -2735,7 +2715,6 @@ function drawWorld(){
   document.getElementById("carriedFoodCount").textContent=carriedFoodCount();
   document.getElementById("totalFoodCount").textContent=totalFoodUnits();
   document.getElementById("treeCount").textContent=trees.length;
-  document.getElementById("rottenFoodCount").textContent=rottenFoodCount.toLocaleString("he-IL");
   document.getElementById("foodPickCount").textContent=foodPickCount.toLocaleString("he-IL");
   document.getElementById("foodDropCount").textContent=foodDropCount.toLocaleString("he-IL");
   document.getElementById("blockCount").textContent=blocks.length;
