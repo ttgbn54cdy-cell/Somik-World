@@ -1,0 +1,2919 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Somik World v5</title>
+<meta name="theme-color" content="#111827">
+<script src="https://telegram.org/js/telegram-web-app.js?63"></script>
+<style>
+:root{
+  --bg:#111827;
+  --panel:#1f2937;
+  --line:#374151;
+  --text:#f9fafb;
+  --muted:#cbd5e1;
+  --grass:#4b9b4f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+.app{
+  min-height:100vh;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 340px;
+  direction:ltr;
+}
+main,aside{direction:rtl}
+main{padding:calc(14px + env(safe-area-inset-top,0px)) calc(14px + env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) calc(14px + env(safe-area-inset-left,0px));min-width:0}
+aside{background:var(--panel);padding:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px));border-left:1px solid var(--line);overflow:auto}
+h1{margin:0 0 8px;font-size:clamp(28px,3.5vw,48px)}
+.subtitle{color:var(--muted);font-size:13px;margin-bottom:10px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+button{
+  padding:9px 13px;
+  border:0;
+  border-radius:9px;
+  font-weight:700;
+  cursor:pointer;
+}
+.canvasWrap{
+  width:100%;
+  background:#0b1220;
+  border:2px solid var(--line);
+  border-radius:12px;
+  overflow:hidden;
+}
+#world{
+  width:100%;
+  height:auto;
+  display:block;
+  background:var(--grass);
+  touch-action:manipulation;
+}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.row span{color:var(--muted)}
+.card{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:11px;background:#182233}
+.card h3{margin:0 0 8px}
+.small{font-size:13px;line-height:1.45;color:var(--muted)}
+#brainCanvas{width:100%;height:auto;background:#101827;border:1px solid var(--line);border-radius:8px;display:block}
+.sensor{margin:7px 0}
+.sensorLine{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.bar{height:6px;background:#334155;border-radius:999px;overflow:hidden;margin-top:3px}
+.bar>i{display:block;height:100%;background:#e5e7eb;width:0%}
+.badge{display:inline-block;padding:2px 6px;border:1px solid #475569;border-radius:999px;font-size:11px;color:#dbeafe}
+.leaderBtn{
+  width:100%;
+  text-align:right;
+  margin:4px 0;
+  padding:8px 10px;
+  border:1px solid #374151;
+  border-radius:9px;
+  background:#111827;
+  color:#f8fafc;
+  font-weight:400;
+}
+.leaderBtn b{font-weight:700}
+.eventItem{
+  margin:7px 0;
+  padding:9px 10px;
+  border:1px solid #374151;
+  border-radius:9px;
+  background:#111827;
+}
+.eventItem strong{display:block;margin-bottom:3px}
+.eventTime{font-size:11px;color:#94a3b8}
+.eventItem.emerging{border-color:#a16207}
+.eventItem.unexpected{border-color:#be123c}
+.eventItem.positive{border-color:#047857}
+
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:var(--muted)}
+.swatch{display:inline-block;width:12px;height:12px;margin-left:5px;vertical-align:-1px}
+.alert{margin-top:10px;padding:9px;border-radius:9px;border:1px solid #7c2d12;background:#431407;color:#fed7aa;font-size:12px;display:none}
+@media(max-width:800px) and (orientation:portrait){
+  .app{display:flex;flex-direction:column}
+  main{padding:9px}
+  aside{border-left:0;border-top:1px solid var(--line);padding:12px}
+  h1{text-align:center;font-size:28px}
+  .subtitle{text-align:center}
+  .toolbar{justify-content:center}
+  .canvasWrap{border-radius:8px}
+}
+</style>
+<!-- Somik World v5 -->
+</head>
+<body>
+<div class="app">
+  <main>
+    <h1>Somik World v5</h1>
+    <div class="subtitle">עולם חיים מלאכותי פתוח שבו יצורים לומדים, משתנים ומתפתחים לאורך דורות — ללא ידע סמנטי מוקדם על מה שסביבם.</div>
+
+    <div class="toolbar">
+      <button id="pauseBtn">⏸ עצור</button>
+      <button id="resetBtn">↻ עולם חדש</button>
+      <button id="speedBtn">⚡ x1</button>
+      <button id="saveBtn">💾 שמור עכשיו</button>
+      <button id="exportBtn">⬇️ ייצא שמירה</button>
+      <button id="importBtn">⬆️ ייבא שמירה</button>
+      <input id="importFile" type="file" accept=".json,application/json" style="display:none">
+    </div>
+    <div id="saveStatus" class="subtitle">שמירה אוטומטית פעילה</div>
+
+    <div class="canvasWrap">
+      <canvas id="world" width="1000" height="650"></canvas>
+    </div>
+  </main>
+
+  <aside>
+    <h2>מצב העולם</h2>
+    <div class="row"><span>Somik-ים חיים</span><b id="pop">0</b></div>
+    <div class="row"><span>זכרים</span><b id="maleCount">0</b></div>
+    <div class="row"><span>נקבות</span><b id="femaleCount">0</b></div>
+    <div class="small" style="margin:6px 0 10px">
+      צבע על המפה: זכר כחול · נקבה ורודה.
+    </div>
+    <div class="row"><span>Somik-ים שרוצים להתרבות עכשיו</span><b id="willingCount">0</b></div>
+    <div class="row"><span>מתוכם זכרים</span><b id="readyMales">0</b></div>
+    <div class="row"><span>מתוכן נקבות</span><b id="readyFemales">0</b></div>
+    <div class="row"><span>זוגות עם רצון הדדי ובמגע</span><b id="availablePairs">0</b></div>
+    <div class="row"><span>מפגשי רבייה הדדיים</span><b id="matingAttempts">0</b></div>
+    <div class="row"><span>לידות מוצלחות</span><b id="successfulMatings">0</b></div>
+    <div class="row"><span>שיעור רבייה מוצלחת</span><b id="matingSuccessRate">—</b></div>
+    <div class="row"><span>השקעה ממוצעת של הורה בלידה</span><b id="avgParentInvestment">—</b></div>
+    <div class="row"><span>אנרגיית צאצא ממוצעת בלידה</span><b id="avgChildBirthEnergy">—</b></div>
+    <div class="row"><span>טווח אנרגיית לידה</span><b id="birthEnergyRange">—</b></div>
+    <div class="row"><span>לידות זכר–נקבה</span><b id="mixedBirths">0</b></div>
+    <div class="row"><span>לידות זכר–זכר</span><b id="maleMaleBirths">0</b></div>
+    <div class="row"><span>לידות נקבה–נקבה</span><b id="femaleFemaleBirths">0</b></div>
+    <div class="row"><span>אוכל על הקרקע</span><b id="foodCount">0</b></div>
+    <div class="row"><span>אוכל שנישא עכשיו</span><b id="carriedFoodCount">0</b></div>
+    <div class="row"><span>סה"כ אוכל בעולם</span><b id="totalFoodCount">0</b></div>
+    <div class="row"><span>אוכל שהורם</span><b id="foodPickCount">0</b></div>
+    <div class="row"><span>אוכל שהונח מחדש</span><b id="foodDropCount">0</b></div>
+    <div class="row"><span>בלוקים על הקרקע</span><b id="blockCount">0</b></div>
+    <div class="row"><span>בלוקים באזור המסוכן</span><b id="hazardBlocks">0</b></div>
+    <div class="row"><span>בלוקים שלא זזו הרבה זמן</span><b id="stableBlocks">0</b></div>
+    <div class="row"><span>בלוקים שנושאים עכשיו</span><b id="carriedCount">0</b></div>
+    <div class="row"><span>בלוקים שהורמו</span><b id="pickups">0</b></div>
+    <div class="row"><span>בלוקים שהונחו</span><b id="drops">0</b></div>
+    <div class="row"><span>הועברו לתוך הסכנה</span><b id="importEvents">0</b></div>
+    <div class="row"><span>הועברו החוצה מהסכנה</span><b id="exportEvents">0</b></div>
+    <div class="row"><span>נמצאים בסכנה והובאו לשם</span><b id="importedNow">0</b></div>
+    <div class="row"><span>קבוצת הבלוקים הגדולה ביותר</span><b id="largestCluster">0</b></div>
+    <div class="row"><span>קבוצה מבלוקים שהוזזו</span><b id="movedCluster">0</b></div>
+    <div class="row"><span>Somik-ים שתרמו לקבוצה</span><b id="clusterContributors">0</b></div>
+    <div class="row"><span>זמן מוגן מצטבר</span><b id="protectedTicks">0</b></div>
+    <div class="row"><span>הגנה מבלוקים שהובאו לסכנה</span><b id="usefulProtection">0</b></div>
+    <div class="row"><span>נזק כולל מהאזור המסוכן</span><b id="hazardDamage">0</b></div>
+    <div class="row"><span>לידות</span><b id="births">0</b></div>
+    <div class="row"><span>מתים</span><b id="deaths">0</b></div>
+    <div class="row"><span>הדור הכי מתקדם</span><b id="maxGen">0</b></div>
+    <div class="row"><span>ה-Somik המבוגר ביותר</span><b id="oldestAge">0</b></div>
+    <div class="row"><span>מוצאי מייסדים פעילים</span><b id="livingLineages">0</b></div>
+    <div class="row"><span>פעמים שכל האוכלוסייה נעלמה</span><b id="extinctions">0</b></div>
+    <div class="row"><span>מצב העולם</span><b id="worldLifeState">חי</b></div>
+    <div class="row"><span>זמן עולם</span><b id="ticks">0</b></div>
+
+    <div class="alert" id="structureAlert"></div>
+
+    <div class="card">
+      <h3>אוכלוסייה לאורך זמן</h3>
+      <canvas id="populationCanvas" width="320" height="150" style="width:100%;height:auto;background:#101827;border:1px solid #374151;border-radius:8px;display:block"></canvas>
+      <div class="small" id="populationChartNote">הגרף נשמר יחד עם העולם.</div>
+    </div>
+
+    <div class="card" style="display:none">
+      <h3>מה קורה עם הזיכרון?</h3>
+      <div class="row"><span>M1 — כמה משתמש בו</span><b id="memM1Use">—</b></div>
+      <div class="row"><span>M1 — תגובה לסכנה</span><b id="memM1Hazard">—</b></div>
+      <div class="row"><span>M1 — תגובה לאוכל</span><b id="memM1Food">—</b></div>
+      <div class="row"><span>M1 — כמה זמן הוא זוכר</span><b id="memM1Hold">—</b></div>
+
+      <div class="row"><span>M2 — כמה משתמש בו</span><b id="memM2Use">—</b></div>
+      <div class="row"><span>M2 — תגובה לסכנה</span><b id="memM2Hazard">—</b></div>
+      <div class="row"><span>M2 — תגובה לאוכל</span><b id="memM2Food">—</b></div>
+      <div class="row"><span>M2 — כמה זמן הוא זוכר</span><b id="memM2Hold">—</b></div>
+
+      <div class="alert" id="memoryVerdict" style="display:block;margin-top:12px"></div>
+      <div class="small" id="memorySamples" style="margin-top:8px"></div>
+
+      <details style="margin-top:10px">
+        <summary class="small" style="cursor:pointer">נתונים מתקדמים</summary>
+        <div class="small" style="margin-top:8px">
+          כתיבה נחשבת כשערך הזיכרון משתנה לפחות ב־0.03.
+          תגובה לאירוע נבדקת במשך 120 צעדי זמן.
+          “זוכר” נמדד עד שהערך משתנה ב־0.08.
+        </div>
+      </details>
+    </div>
+
+
+    <div class="card">
+      <h3>האם ההתנהגות באמת מועילה?</h3>
+      <div class="row"><span>העברות אוכל משמעותיות</span><b id="meaningfulFoodTransfers">0</b></div>
+      <div class="row"><span>מרחק העברת אוכל מצטבר</span><b id="foodTransportDistance">0</b></div>
+      <div class="row"><span>מזון מועבר שנמצא כרגע על הקרקע</span><b id="movedFoodNow">0</b></div>
+      <div class="row"><span>אשכול מזון מועבר הגדול ביותר</span><b id="movedFoodCluster">0</b></div>
+      <div class="row"><span>חלק מההגנה שנובע מבלוקים שהובאו</span><b id="usefulProtectionShare">—</b></div>
+      <div class="small" style="margin-top:10px"><b>תוצאות של פרטים שמתו — מתאם בלבד, לא הוכחת סיבתיות:</b></div>
+      <div class="small" style="margin-top:5px">
+        מדדי התועלת מתחילים להצטבר מרגע השדרוג הזה; אי אפשר לשחזר בדיעבד התנהגות של Somik-ים שכבר מתו.
+      </div>
+      <div class="row"><span>מעבירי אוכל / אחרים</span><b id="foodTransportOutcome">—</b></div>
+      <div class="row"><span>מזיזי בלוקים / אחרים</span><b id="blockMoveOutcome">—</b></div>
+      <div class="row"><span>משתמשי זיכרון / אחרים</span><b id="memoryOutcome">—</b></div>
+    </div>
+
+    <div class="card">
+      <h3>Somik-ים מובילים</h3>
+      <div id="leadersList" class="small">הנתונים יופיעו כשהעולם יתחיל לרוץ.</div>
+      <div class="small" style="margin-top:8px">
+        לחיצה על Somik תבחר אותו ותציג את כל הפרטים שלו.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>אירועים בעולם</h3>
+      <div id="worldAlerts" class="small">עדיין אין אירוע מיוחד.</div>
+      <div class="small" style="margin-top:8px">
+        ההתראות הן תצפית בלבד — הן לא משנות את חוקי העולם ולא את התנהגות ה-Somik-ים.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Somik נבחר <span class="badge" id="selectedBadge">לחץ על Somik</span></h3>
+      <div id="selectedInfo" class="small">לחץ על Somik כדי לראות את חייו, השושלת שלו, החושים וההחלטות שלו.</div>
+    </div>
+
+    <div class="card">
+      <h3>קלטים גולמיים למוח</h3>
+      <div id="sensors"></div>
+      <div class="small" style="margin-top:8px">אין חיישן מזון, בלוק, סכנה או שותף. קרני החישה מודדות רק מרחק גאומטרי למשטח הקרוב.</div>
+    </div>
+
+    <div class="card">
+      <h3>מפת המוח — מבנה חי</h3>
+      <canvas id="brainCanvas" width="760" height="520"></canvas>
+      <div id="brainStats" class="small" style="margin-top:8px">בחר Somik.</div>
+      <div class="small" style="margin-top:7px">קלטים גולמיים + קרניים משתנות → נוירונים פנימיים חוזרים → 5 יציאות: מנוע שמאל, מנוע ימין, לסת, אחיזה ופליטה כימית. עובי/צבע הקשרים מציגים את המשקל הנוכחי, כולל שינוי שנלמד במהלך החיים.</div>
+    </div>
+
+    <div class="card small" style="display:none">
+      <b>זיכרון פנימי:</b> M1 ו-M2 מתחילים ב-0 בכל לידה.
+      המוח מחליט בכל רגע איזה ערך לכתוב וכמה לעדכן.
+      אנחנו לא מגדירים מה משמעות הזיכרון, והזיכרון עצמו לא עובר לצאצא —
+      רק המוח שיודע להשתמש בו עובר בתורשה.
+      <br><br>
+      <b>מוצא דו-הורי:</b> מלידות בגרסה זו והלאה כל צאצא מקבל 50% ממפת המוצא של כל הורה.
+      בעולם ישן נקודת ההתחלה היא השושלות שהיו ידועות בזמן השדרוג.
+    </div>
+
+    <div class="card">
+      <h3>מקרא</h3>
+      <div class="legend">
+        <div><span class="swatch" style="background:#ef4444;border-radius:50%"></span>אוכל</div>
+        <div><span class="swatch" style="background:#a8b3c2"></span>בלוק</div>
+        <div><span class="swatch" style="background:#fbbf24"></span>בלוק בנשיאה</div>
+        <div><span class="swatch" style="background:#7f1d1d"></span>אזור סכנה</div>
+      </div>
+    </div>
+
+    <div class="card small"><b>עקרון המוח:</b> ה-Somik אינו מקבל תוויות כמו אוכל, בלוק, סכנה או שותף. המוח מקבל מצב גוף, מגע וקרני מרחק גאומטריות בלבד. המבנה, המשקלים והחיישנים יכולים להשתנות בתורשה; שינויי למידה במהלך החיים אינם עוברים לצאצא.</div>
+  </aside>
+</div>
+
+<script>
+// Telegram Mini App shell — presentation/lifecycle only; simulation rules are untouched.
+(function initTelegramShell(){
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if(!tg) return;
+  try {
+    tg.ready();
+    tg.expand();
+    if (typeof tg.requestFullscreen === 'function') {
+      try { tg.requestFullscreen(); } catch (_) {}
+    }
+    const applyTheme = () => {
+      const p = tg.themeParams || {};
+      if (p.bg_color) document.documentElement.style.setProperty('--bg', p.bg_color);
+      if (p.secondary_bg_color) document.documentElement.style.setProperty('--panel', p.secondary_bg_color);
+      if (p.text_color) document.documentElement.style.setProperty('--text', p.text_color);
+      if (p.hint_color) document.documentElement.style.setProperty('--muted', p.hint_color);
+      if (p.section_separator_color) document.documentElement.style.setProperty('--line', p.section_separator_color);
+      try { tg.setHeaderColor(p.bg_color || '#111827'); } catch (_) {}
+      try { tg.setBackgroundColor(p.bg_color || '#111827'); } catch (_) {}
+    };
+    applyTheme();
+    if (typeof tg.onEvent === 'function') tg.onEvent('themeChanged', applyTheme);
+    document.documentElement.classList.add('telegram-mini-app');
+  } catch (e) {
+    console.warn('Telegram shell init failed; continuing as normal web app.', e);
+  }
+})();
+"use strict";
+
+const worldCanvas=document.getElementById("world");
+const ctx=worldCanvas.getContext("2d");
+const brainCanvas=document.getElementById("brainCanvas");
+const bctx=brainCanvas.getContext("2d");
+const populationCanvas=document.getElementById("populationCanvas");
+const pctx=populationCanvas.getContext("2d");
+
+const W=worldCanvas.width;
+const H=worldCanvas.height;
+
+const VISION=180;
+const BLOCK_VISION=140;
+const BLOCK_SIZE=22;
+const BLOCK_GRID=25;
+const EMERGENCY_MAX_POP=1000; // לא חוק ביולוגי — רק הגנת דפדפן
+const MATE_VISION=180;
+const MATE_CONTACT_RADIUS=24;
+const ACTION_THRESHOLD=0.68;
+// v4-style reproduction is body-state/contact driven, not a neural output.
+const REPRO_MATURITY_TICKS=300;
+const REPRO_COOLDOWN_TICKS=260;
+const REPRO_ENERGY_THRESHOLD=104.4; // 58% of the v0.5 energy cap (180)
+const REPRO_INVESTMENT_FRACTION=0.24;
+const REPRO_MIN_CONTRIBUTION=18;
+const FOOD_TARGET=120;
+const FOOD_REGEN_CHANCE=0.18;
+const INITIAL_BLOCKS=120;
+
+const HAZARD={
+  x:430,
+  y:0,
+  w:170,
+  h:H
+};
+
+const HAZARD_DAMAGE=0.11;
+const BLOCK_PROTECT_RADIUS=48;
+const STABLE_TICKS=1200;
+
+const COLORS=["#60a5fa","#f59e0b","#a78bfa","#34d399","#f472b6","#facc15","#22d3ee"];
+
+let somiks=[];
+let foods=[];
+let blocks=[];
+
+let running=true;
+let speed=1;
+let ticks=0;
+let births=0;
+let deaths=0;
+let extinctions=0;
+let worldExtinct=false;
+let pickups=0;
+let drops=0;
+let protectedTicks=0;
+let usefulProtectionTicks=0;
+let hazardDamageTotal=0;
+let populationHistory=[];
+let lastHistoryTick=0;
+let memoryMetrics=makeMemoryStats(0);
+
+let worldEventLog=[];
+let alertFlags={};
+
+let matingAttempts=0;
+let successfulMatings=0;
+let totalParentInvestment=0;
+let totalChildBirthEnergy=0;
+let minChildBirthEnergy=null;
+let maxChildBirthEnergy=0;
+let mixedBirths=0;
+let maleMaleBirths=0;
+let femaleFemaleBirths=0;
+let foodPickCount=0;
+let foodDropCount=0;
+let meaningfulFoodTransfers=0;
+let foodTransportDistanceTotal=0;
+let outcomeArchive=makeOutcomeArchive();
+let alertMilestones={
+  generation:0,
+  oldest:0,
+  populationHigh:0
+};
+
+let nextId=1;
+let nextBlockId=1;
+let selectedId=null;
+
+const SAVE_KEY="somik-world-v5-v05world-v4brain-autosave";
+const PRE_MEMORY_SAVE_KEY="somik-world-v05-pre-memory-backup";
+const PRE_METRICS_SAVE_KEY="somik-world-v05-pre-memory-metrics-backup";
+const LEGACY_SAVE_KEY="somik-world-v04-autosave";
+const PRE_SEX_SAVE_KEY="somik-world-v05-pre-sex-backup";
+const PRE_FREE_REPRO_SAVE_KEY="somik-world-v05-pre-free-reproduction-backup";
+const PRE_FOOD_TRANSPORT_SAVE_KEY="somik-world-v05-pre-food-transport-backup";
+const PRE_ANY_PAIR_SAVE_KEY="somik-world-v05-pre-any-pair-reproduction-backup";
+const PRE_SEX_MARKER_SAVE_KEY="somik-world-v05-pre-sex-marker-backup";
+const PRE_SIMPLE_SEX_COLOR_SAVE_KEY="somik-world-v05-pre-simple-sex-color-backup";
+const PRE_EAT_SAVE_KEY="somik-world-v05-pre-eat-output-backup";
+const PRE_EMERGENCE_V14_SAVE_KEY="somik-world-v05-pre-emergence-v14-backup";
+const SAVE_VERSION=15;
+
+const MEMORY_GATE_OPEN=0.65;
+const MEMORY_WRITE_DELTA=0.03;
+const MEMORY_EVENT_WINDOW=120;
+const MEMORY_STABLE_EPS=0.08;
+const MEMORY_STABLE_MAX=300;
+let lastAutosaveAt=0;
+
+const rnd=(a,b)=>Math.random()*(b-a)+a;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const sigmoid=x=>1/(1+Math.exp(-x));
+const sq=x=>x*x;
+
+function normalizeAncestryMap(src,fallbackId){
+  const out={};
+  if(src&&typeof src==="object"){
+    for(const [k,v] of Object.entries(src)){
+      const n=Number(v);
+      if(Number.isFinite(n)&&n>0)out[String(k)]=n;
+    }
+  }
+  if(Object.keys(out).length===0&&fallbackId!==null&&fallbackId!==undefined){
+    out[String(fallbackId)]=1;
+  }
+  const total=Object.values(out).reduce((a,b)=>a+b,0)||1;
+  for(const k of Object.keys(out))out[k]/=total;
+  return out;
+}
+
+function combineAncestry(a,b){
+  const aa=normalizeAncestryMap(a.ancestry,a.lineageId??a.id);
+  const bb=normalizeAncestryMap(b.ancestry,b.lineageId??b.id);
+  const out={};
+  for(const [k,v] of Object.entries(aa))out[k]=(out[k]||0)+v*0.5;
+  for(const [k,v] of Object.entries(bb))out[k]=(out[k]||0)+v*0.5;
+  return normalizeAncestryMap(out,null);
+}
+
+function dominantFounderInfo(map){
+  let id=null,share=0;
+  for(const [k,v] of Object.entries(map||{})){
+    if(v>share){id=k;share=v;}
+  }
+  return{id,share};
+}
+
+function formatAncestry(map){
+  const entries=Object.entries(map||{}).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  if(!entries.length)return "—";
+  return entries.map(([id,share])=>`#${id} ${Math.round(share*100)}%`).join(" · ");
+}
+
+function makeOutcomeBucket(){return{n:0,life:0,children:0};}
+function makeOutcomeArchive(){
+  return{
+    foodYes:makeOutcomeBucket(),foodNo:makeOutcomeBucket(),
+    blockYes:makeOutcomeBucket(),blockNo:makeOutcomeBucket(),
+    memoryYes:makeOutcomeBucket(),memoryNo:makeOutcomeBucket()
+  };
+}
+function normalizeOutcomeArchive(data){
+  const out=makeOutcomeArchive();
+  if(!data||typeof data!=="object")return out;
+  for(const k of Object.keys(out)){
+    const src=data[k];
+    if(src){
+      out[k].n=src.n??0;out[k].life=src.life??0;out[k].children=src.children??0;
+    }
+  }
+  return out;
+}
+function memoryUsageFraction(s){
+  const st=s.memoryTracker?.stats;
+  if(!st||!st.totalTicks)return 0;
+  return ((st.writes?.[0]||0)+(st.writes?.[1]||0))/(2*st.totalTicks);
+}
+function addOutcome(bucket,s){
+  bucket.n++;bucket.life+=s.age||0;bucket.children+=s.childrenCount||0;
+}
+function recordLifeOutcome(s){
+  addOutcome((s.meaningfulFoodTransfers||0)>0?outcomeArchive.foodYes:outcomeArchive.foodNo,s);
+  addOutcome((s.blocksDropped||0)>0?outcomeArchive.blockYes:outcomeArchive.blockNo,s);
+  addOutcome(memoryUsageFraction(s)>=0.10?outcomeArchive.memoryYes:outcomeArchive.memoryNo,s);
+}
+function formatOutcomePair(a,b){
+  if((a.n||0)<3||(b.n||0)<3)return "עוד אין מספיק נתונים";
+  const lifeA=Math.round(a.life/a.n),lifeB=Math.round(b.life/b.n);
+  const kidsA=a.children/a.n,kidsB=b.children/b.n;
+  return `חיים ${lifeA.toLocaleString("he-IL")} / ${lifeB.toLocaleString("he-IL")} · צאצאים ${kidsA.toFixed(1)} / ${kidsB.toFixed(1)}`;
+}
+function reproductionEligible(s){
+  return s.energy>=REPRO_ENERGY_THRESHOLD && s.age>=REPRO_MATURITY_TICKS && (ticks-(s.lastBirthTick??-1e12))>=REPRO_COOLDOWN_TICKS;
+}
+function desiredReproInvestment(s){
+  return Math.min(s.energy*REPRO_INVESTMENT_FRACTION,180*0.34);
+}
+function livingFounderStats(){
+  const totals=new Map();
+  for(const s of somiks){
+    const a=normalizeAncestryMap(s.ancestry,s.lineageId??s.id);
+    for(const [id,share] of Object.entries(a))totals.set(id,(totals.get(id)||0)+share);
+  }
+  let bestId=null,bestScore=0;
+  for(const [id,score] of totals){if(score>bestScore){bestId=id;bestScore=score;}}
+  const pop=somiks.length||1;
+  const active=[...totals.values()].filter(v=>v/pop>=0.005).length;
+  return{id:bestId,count:bestScore,share:bestScore/pop,active};
+}
+function foodScience(){
+  const moved=foods.filter(f=>!!f.everMoved);
+  const n=moved.length;
+  if(!n)return{movedNow:0,largestCluster:0};
+  const seen=new Array(n).fill(false);
+  let largest=0;
+  const r2=50*50;
+  for(let i=0;i<n;i++){
+    if(seen[i])continue;
+    let size=0;
+    const stack=[i];seen[i]=true;
+    while(stack.length){
+      const a=stack.pop();size++;
+      for(let j=0;j<n;j++){
+        if(seen[j])continue;
+        const dx=moved[a].x-moved[j].x,dy=moved[a].y-moved[j].y;
+        if(dx*dx+dy*dy<=r2){seen[j]=true;stack.push(j);}
+      }
+    }
+    if(size>largest)largest=size;
+  }
+  return{movedNow:n,largestCluster:largest};
+}
+
+
+function makeMemoryStats(startedAt=ticks){
+  return{
+    startedAtTick:startedAt,
+    totalTicks:0,
+    writes:[0,0],
+    gateOpen:[0,0],
+    contexts:{
+      hazard:{ticks:0,gateOpen:[0,0]},
+      food:{ticks:0,gateOpen:[0,0]},
+      baseline:{ticks:0,gateOpen:[0,0]}
+    },
+    stability:{
+      hazard:[{sum:0,count:0},{sum:0,count:0}],
+      food:[{sum:0,count:0},{sum:0,count:0}]
+    },
+    events:{hazard:0,food:0}
+  };
+}
+
+function normalizePair(v,def=[0,0]){
+  return Array.isArray(v)&&v.length>=2
+    ? [Number(v[0])||0,Number(v[1])||0]
+    : def.slice();
+}
+
+function normalizeMemoryStats(data,startedAt=ticks){
+  const m=makeMemoryStats(startedAt);
+  if(!data||typeof data!=="object")return m;
+
+  m.startedAtTick=data.startedAtTick??startedAt;
+  m.totalTicks=data.totalTicks??0;
+  m.writes=normalizePair(data.writes);
+  m.gateOpen=normalizePair(data.gateOpen);
+
+  for(const name of ["hazard","food","baseline"]){
+    const src=data.contexts?.[name];
+    if(src){
+      m.contexts[name].ticks=src.ticks??0;
+      m.contexts[name].gateOpen=normalizePair(src.gateOpen);
+    }
+  }
+
+  for(const name of ["hazard","food"]){
+    for(let i=0;i<2;i++){
+      const src=data.stability?.[name]?.[i];
+      if(src){
+        m.stability[name][i].sum=src.sum??0;
+        m.stability[name][i].count=src.count??0;
+      }
+    }
+  }
+
+  m.events.hazard=data.events?.hazard??0;
+  m.events.food=data.events?.food??0;
+  return m;
+}
+
+function makeMemoryTracker(x,y,startedAt=ticks){
+  return{
+    stats:makeMemoryStats(startedAt),
+    prevInHazard:insideHazard(x,y),
+    hazardWindow:0,
+    foodWindow:0,
+    tests:{hazard:null,food:null}
+  };
+}
+
+function normalizeMemoryTracker(data,x,y){
+  const t=makeMemoryTracker(x,y,ticks);
+  if(!data||typeof data!=="object")return t;
+
+  t.stats=normalizeMemoryStats(data.stats,ticks);
+  t.prevInHazard=insideHazard(x,y);
+
+  // חלונות אירוע פעילים לא נשמרים בכוונה.
+  // אחרי טעינה מתחילה מדידה נקייה מהמצב הנוכחי.
+  t.hazardWindow=0;
+  t.foodWindow=0;
+  t.tests={hazard:null,food:null};
+  return t;
+}
+
+function memoryTargets(s){
+  return[memoryMetrics,s.memoryTracker.stats];
+}
+
+function addStabilitySample(s,type,index,duration){
+  for(const target of memoryTargets(s)){
+    const bucket=target.stability[type][index];
+    bucket.sum+=duration;
+    bucket.count++;
+  }
+}
+
+function startMemoryEvent(s,type){
+  const tracker=s.memoryTracker;
+  tracker[type+"Window"]=MEMORY_EVENT_WINDOW;
+  tracker.tests[type]={
+    age:0,
+    start:s.memory.slice(),
+    active:[true,true]
+  };
+
+  for(const target of memoryTargets(s)){
+    target.events[type]++;
+  }
+}
+
+function recordMemoryTick(s,previousMemory,decision){
+  const tracker=s.memoryTracker;
+  const gates=[decision.memory1Gate,decision.memory2Gate];
+
+  for(const target of memoryTargets(s)){
+    target.totalTicks++;
+
+    for(let i=0;i<2;i++){
+      if(Math.abs(s.memory[i]-previousMemory[i])>=MEMORY_WRITE_DELTA){
+        target.writes[i]++;
+      }
+      if(gates[i]>=MEMORY_GATE_OPEN){
+        target.gateOpen[i]++;
+      }
+    }
+  }
+
+  const hazardActive=tracker.hazardWindow>0;
+  const foodActive=tracker.foodWindow>0;
+
+  for(const target of memoryTargets(s)){
+    if(hazardActive){
+      target.contexts.hazard.ticks++;
+      for(let i=0;i<2;i++){
+        if(gates[i]>=MEMORY_GATE_OPEN)target.contexts.hazard.gateOpen[i]++;
+      }
+    }
+
+    if(foodActive){
+      target.contexts.food.ticks++;
+      for(let i=0;i<2;i++){
+        if(gates[i]>=MEMORY_GATE_OPEN)target.contexts.food.gateOpen[i]++;
+      }
+    }
+
+    if(!hazardActive&&!foodActive){
+      target.contexts.baseline.ticks++;
+      for(let i=0;i<2;i++){
+        if(gates[i]>=MEMORY_GATE_OPEN)target.contexts.baseline.gateOpen[i]++;
+      }
+    }
+  }
+
+  for(const type of ["hazard","food"]){
+    const test=tracker.tests[type];
+    if(!test)continue;
+
+    test.age++;
+
+    for(let i=0;i<2;i++){
+      if(!test.active[i])continue;
+
+      if(Math.abs(s.memory[i]-test.start[i])>=MEMORY_STABLE_EPS){
+        addStabilitySample(s,type,i,test.age);
+        test.active[i]=false;
+      }else if(test.age>=MEMORY_STABLE_MAX){
+        addStabilitySample(s,type,i,MEMORY_STABLE_MAX);
+        test.active[i]=false;
+      }
+    }
+
+    if(!test.active[0]&&!test.active[1]){
+      tracker.tests[type]=null;
+    }
+  }
+
+  if(tracker.hazardWindow>0)tracker.hazardWindow--;
+  if(tracker.foodWindow>0)tracker.foodWindow--;
+}
+
+function pct(n,d){
+  return d>0?(100*n/d):0;
+}
+
+function avgStable(bucket){
+  return bucket.count>0?bucket.sum/bucket.count:null;
+}
+
+function useLabel(rate){
+  if(rate<5)return "כמעט לא משתמש";
+  if(rate<20)return "שימוש נמוך";
+  if(rate<50)return "שימוש בינוני";
+  return "שימוש גבוה";
+}
+
+function holdLabel(v){
+  if(v===null)return "אין מספיק נתונים";
+  if(v<5)return "קצר מאוד";
+  if(v<20)return "קצר";
+  if(v<80)return "בינוני";
+  if(v<200)return "ארוך";
+  return "ארוך מאוד";
+}
+
+function reactionRatio(type,index){
+  const special=memoryMetrics.contexts[type];
+  const base=memoryMetrics.contexts.baseline;
+  if(!special||!base||special.ticks===0||base.ticks===0)return null;
+
+  const specialRate=pct(special.gateOpen[index],special.ticks);
+  const baseRate=pct(base.gateOpen[index],base.ticks);
+
+  if(baseRate<=0)return specialRate>0?2:null;
+  return specialRate/baseRate;
+}
+
+function reactionLabel(ratio){
+  if(ratio===null)return "אין מספיק נתונים";
+  if(ratio<1.10)return "אין תגובה ברורה";
+  if(ratio<1.25)return "תגובה חלשה";
+  if(ratio<1.50)return "תגובה בינונית";
+  return "תגובה חזקה";
+}
+
+function memoryOverallVerdict(){
+  const h1=avgStable(memoryMetrics.stability.hazard[0]);
+  const h2=avgStable(memoryMetrics.stability.hazard[1]);
+  const f1=avgStable(memoryMetrics.stability.food[0]);
+  const f2=avgStable(memoryMetrics.stability.food[1]);
+
+  const vals=[h1,h2,f1,f2].filter(v=>v!==null);
+  if(vals.length===0)return "עדיין אין מספיק נתונים כדי להבין אם הזיכרון שימושי.";
+
+  const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+  const strongest=Math.max(
+    reactionRatio("hazard",0)??0,
+    reactionRatio("hazard",1)??0,
+    reactionRatio("food",0)??0,
+    reactionRatio("food",1)??0
+  );
+
+  if(avg<5 && strongest>=1.25){
+    return "הזיכרון פעיל ומגיב לאירועים, אבל כרגע נשמר לזמן קצר מאוד.";
+  }
+  if(avg<5){
+    return "הזיכרון משתנה הרבה, אבל כרגע הוא נראה בעיקר תגובתי ולא זיכרון מתמשך.";
+  }
+  if(avg<20 && strongest>=1.25){
+    return "מתחיל להופיע דפוס זיכרון: תגובה לאירועים ושמירה קצרה של מידע.";
+  }
+  if(avg>=20 && strongest>=1.25){
+    return "יש סימן מעניין לזיכרון מתמשך: המידע נשמר וגם קשור לאירועים בעולם.";
+  }
+  return "יש שמירה של מידע, אבל עדיין לא ברור אם היא קשורה לאירועים שימושיים.";
+}
+
+function formatStablePair(type){
+  const a=memoryMetrics.stability[type];
+  const m1=avgStable(a[0]);
+  const m2=avgStable(a[1]);
+
+  const one=(v,b)=>{
+    if(v===null)return "—";
+    const shown=v>=MEMORY_STABLE_MAX-0.5
+      ? MEMORY_STABLE_MAX+"+"
+      : Math.round(v).toLocaleString("he-IL");
+    return shown+" (n="+b.count.toLocaleString("he-IL")+")";
+  };
+
+  return "M1 "+one(m1,a[0])+" · M2 "+one(m2,a[1]);
+}
+
+function formatGateComparison(type){
+  const special=memoryMetrics.contexts[type];
+  const base=memoryMetrics.contexts.baseline;
+
+  const one=i=>{
+    if(special.ticks===0||base.ticks===0)return "—";
+    const s=pct(special.gateOpen[i],special.ticks);
+    const b=pct(base.gateOpen[i],base.ticks);
+    const ratio=b>0?s/b:null;
+    return Math.round(s)+"%/"+Math.round(b)+"%"+
+      (ratio===null?"":" ×"+ratio.toFixed(2));
+  };
+
+  return "M1 "+one(0)+" · M2 "+one(1);
+}
+
+function personalWriteRates(s){
+  const st=s.memoryTracker?.stats;
+  if(!st||st.totalTicks===0)return "—";
+  return "M1 "+pct(st.writes[0],st.totalTicks).toFixed(1)+"% · M2 "+
+    pct(st.writes[1],st.totalTicks).toFixed(1)+"%";
+}
+
+
+function pushWorldEvent(key,title,textMsg,type="emerging",cooldown=50000){
+  const last=alertFlags[key]??-Infinity;
+  if(ticks-last<cooldown)return;
+
+  alertFlags[key]=ticks;
+  worldEventLog.unshift({
+    tick:ticks,
+    title,
+    text:textMsg,
+    type
+  });
+
+  if(worldEventLog.length>30)worldEventLog.length=30;
+}
+
+function median(values){
+  if(!values.length)return 0;
+  const a=values.slice().sort((x,y)=>x-y);
+  const mid=Math.floor(a.length/2);
+  return a.length%2?a[mid]:(a[mid-1]+a[mid])/2;
+}
+
+function avg(values){
+  if(!values.length)return 0;
+  return values.reduce((a,b)=>a+b,0)/values.length;
+}
+
+function getLeaders(){
+  if(!somiks.length)return[];
+
+  const pick=(label,scoreFn,valueFn)=>{
+    let best=somiks[0];
+    let bestScore=scoreFn(best);
+
+    for(let i=1;i<somiks.length;i++){
+      const score=scoreFn(somiks[i]);
+      if(score>bestScore){
+        best=somiks[i];
+        bestScore=score;
+      }
+    }
+
+    return{
+      label,
+      somik:best,
+      value:valueFn(best)
+    };
+  };
+
+  return[
+    pick("הכי מבוגר",s=>s.age,s=>s.age.toLocaleString("he-IL")+" זמן חיים"),
+    pick("הכי הרבה צאצאים",s=>s.childrenCount,s=>s.childrenCount.toLocaleString("he-IL")+" צאצאים"),
+    pick("אכל הכי הרבה",s=>s.foodEaten,s=>s.foodEaten.toLocaleString("he-IL")+" יחידות אוכל"),
+    pick(
+      "הזיז הכי הרבה בלוקים",
+      s=>(s.blocksPicked||0)+(s.blocksDropped||0),
+      s=>((s.blocksPicked||0)+(s.blocksDropped||0)).toLocaleString("he-IL")+" פעולות בלוק"
+    ),
+    pick(
+      "הכי הרבה זמן מוגן",
+      s=>s.protectedLifeTicks||0,
+      s=>(s.protectedLifeTicks||0).toLocaleString("he-IL")+" זמן מוגן"
+    ),
+    pick("הדור הכי מתקדם",s=>s.generation,s=>"דור "+s.generation)
+  ];
+}
+
+function renderLeaders(){
+  const el=document.getElementById("leadersList");
+  if(!el)return;
+
+  const leaders=getLeaders();
+  if(!leaders.length){
+    el.textContent="אין כרגע Somik-ים חיים.";
+    return;
+  }
+
+  el.innerHTML=leaders.map(item=>`
+    <button class="leaderBtn" data-somik-id="${item.somik.id}">
+      <b>${item.label}:</b> #${item.somik.id} · ${item.value}
+    </button>
+  `).join("");
+
+  el.querySelectorAll(".leaderBtn").forEach(btn=>{
+    btn.onclick=()=>{
+      selectedId=Number(btn.dataset.somikId);
+      const s=somiks.find(x=>x.id===selectedId);
+      if(s){
+        const rect=worldCanvas.getBoundingClientRect();
+        window.scrollTo({top:0,behavior:"smooth"});
+      }
+    };
+  });
+}
+
+
+function matingStats(){
+  let males=0;
+  let females=0;
+  const willing=[];
+
+  for(const s of somiks){
+    if(s.sex==="male")males++;
+    else females++;
+
+    if(reproductionEligible(s)) willing.push(s);
+  }
+
+  let nearbyPairs=0;
+  let mixedPairs=0;
+  let maleMalePairs=0;
+  let femaleFemalePairs=0;
+  const contactD2=MATE_CONTACT_RADIUS*MATE_CONTACT_RADIUS;
+
+  for(let i=0;i<willing.length;i++){
+    for(let j=i+1;j<willing.length;j++){
+      const a=willing[i];
+      const b=willing[j];
+      const dx=a.x-b.x;
+      const dy=a.y-b.y;
+
+      if(dx*dx+dy*dy<=contactD2){
+        nearbyPairs++;
+
+        if(a.sex!==b.sex)mixedPairs++;
+        else if(a.sex==="male")maleMalePairs++;
+        else femaleFemalePairs++;
+      }
+    }
+  }
+
+  return{
+    males,
+    females,
+    willingCount:willing.length,
+    readyMales:willing.filter(s=>s.sex==="male").length,
+    readyFemales:willing.filter(s=>s.sex==="female").length,
+    nearbyPairs,
+    mixedPairs,
+    maleMalePairs,
+    femaleFemalePairs
+  };
+}
+function livingLineageShares(){
+  return livingFounderStats();
+}
+
+function currentMemorySignal(){
+  const holds=[
+    avgStable(memoryMetrics.stability.hazard[0]),
+    avgStable(memoryMetrics.stability.hazard[1]),
+    avgStable(memoryMetrics.stability.food[0]),
+    avgStable(memoryMetrics.stability.food[1])
+  ].filter(v=>v!==null);
+
+  const hold=holds.length?avg(holds):0;
+  const reactions=[
+    reactionRatio("hazard",0),
+    reactionRatio("hazard",1),
+    reactionRatio("food",0),
+    reactionRatio("food",1)
+  ].filter(v=>v!==null);
+
+  const strongest=reactions.length?Math.max(...reactions):0;
+  return{hold,strongest};
+}
+
+function evaluateWorldAlerts(){
+  if(ticks%250!==0)return;
+  if(!somiks.length)return;
+
+  const pop=somiks.length;
+  const recent=populationHistory.slice(-20).map(d=>d.p);
+  const baseline=recent.length>=5?median(recent):pop;
+  const food=totalFoodUnits();
+  const foodGround=foods.length;
+  const foodCarried=carriedFoodCount();
+
+  // Food crisis / surplus
+  if(food<=Math.max(3,Math.floor(pop*0.03))){
+    pushWorldEvent(
+      "food-crisis",
+      "מחסור חריף באוכל",
+      `נשארו ${food} יחידות אוכל בסך הכול (${foodGround} על הקרקע, ${foodCarried} בנשיאה) עבור ${pop} Somik-ים.`,
+      "unexpected",
+      30000
+    );
+  }else if(food>=FOOD_TARGET*0.9 && pop<baseline*0.7){
+    pushWorldEvent(
+      "food-surplus",
+      "האוכל מצטבר",
+      `האוכל כמעט מלא (${food}), בזמן שהאוכלוסייה נמוכה יחסית.`,
+      "emerging",
+      50000
+    );
+  }
+
+  // Population deviations from recent baseline.
+  if(recent.length>=8 && pop>baseline*1.35){
+    pushWorldEvent(
+      "population-boom",
+      "זינוק באוכלוסייה",
+      `האוכלוסייה עלתה ל-${pop}, הרבה מעל הרמה הרגילה האחרונה (${Math.round(baseline)}).`,
+      "unexpected",
+      50000
+    );
+  }
+  if(recent.length>=8 && pop<baseline*0.65){
+    pushWorldEvent(
+      "population-crash",
+      "קריסה באוכלוסייה",
+      `האוכלוסייה ירדה ל-${pop}, הרבה מתחת לרמה הרגילה האחרונה (${Math.round(baseline)}).`,
+      "unexpected",
+      50000
+    );
+  }
+
+  // Reproduction availability — sex does not restrict pairing.
+  const mating=matingStats();
+
+  if(mating.willingCount>=8 && mating.nearbyPairs===0){
+    pushWorldEvent(
+      "no-mutual-contact",
+      "יש רצון לרבייה, אבל אין מפגש הדדי",
+      `${mating.willingCount} Somik-ים רוצים להתרבות עכשיו, אבל אף שניים מהם אינם במגע קרוב.`,
+      "unexpected",
+      30000
+    );
+  }else if(mating.willingCount>=12 && mating.nearbyPairs<=2){
+    pushWorldEvent(
+      "few-mutual-pairs",
+      "מעט זוגות עם רצון הדדי",
+      `${mating.willingCount} Somik-ים רוצים להתרבות, אבל יש רק ${mating.nearbyPairs} זוגות במגע.`,
+      "emerging",
+      50000
+    );
+  }
+
+  // Sex ratio is now only an interesting demographic observation;
+  // it does NOT prevent reproduction.
+  const sexTotal=mating.males+mating.females;
+  if(sexTotal>=30){
+    const minority=Math.min(mating.males,mating.females);
+    const minorityShare=minority/sexTotal;
+
+    if(minorityShare<=0.12){
+      const rare=mating.males<mating.females?"זכרים":"נקבות";
+      pushWorldEvent(
+        "sex-ratio-anomaly",
+        "הרכב מינים חריג",
+        `${rare} הם רק ${Math.round(minorityShare*100)}% מהאוכלוסייה. הדבר לא מגביל רבייה, אבל זו תופעה דמוגרפית מעניינת.`,
+        "emerging",
+        100000
+      );
+    }
+  }
+
+  // Lineage dominance.
+  const lineage=livingLineageShares();
+  if(lineage.share>=0.70 && lineage.count>=20){
+    pushWorldEvent(
+      "lineage-dominance",
+      "מוצא מייסד דומיננטי",
+      `מייסד #${lineage.id} מהווה בערך ${Math.round(lineage.share*100)}% מהמוצא הגנטי של האוכלוסייה החיה.`,
+      "emerging",
+      100000
+    );
+  }
+
+  // Exceptionally old living Somik relative to current population.
+  const ages=somiks.map(s=>s.age);
+  const medAge=median(ages);
+  const oldest=somiks.reduce((a,b)=>a.age>b.age?a:b);
+  if(medAge>0 && oldest.age>=medAge*8 && oldest.age>=10000){
+    pushWorldEvent(
+      "exceptional-old",
+      "Somik חריג באורך החיים",
+      `#${oldest.id} חי ${oldest.age.toLocaleString("he-IL")} צעדים — יותר מפי 8 מהגיל החציוני.`,
+      "positive",
+      100000
+    );
+  }
+
+  // Prolific parent.
+  const prolific=somiks.reduce((a,b)=>(a.childrenCount||0)>(b.childrenCount||0)?a:b);
+  if((prolific.childrenCount||0)>=12){
+    pushWorldEvent(
+      "prolific-parent",
+      "Somik עם הרבה צאצאים",
+      `#${prolific.id} כבר השאיר ${prolific.childrenCount} צאצאים.`,
+      "positive",
+      100000
+    );
+  }
+
+  // Useful moved-block structure.
+  const science=blockScience();
+  const movedClusterData=clusterData(b=>!!b.everMoved);
+  if(
+    movedClusterData.largest>=10 &&
+    science.importedNow>=8 &&
+    usefulProtectionTicks>5000
+  ){
+    pushWorldEvent(
+      "structure-growing",
+      "מבנה שימושי מתחזק",
+      `קבוצה של ${movedClusterData.largest} בלוקים שהוזזו קשורה להגנה באזור המסוכן.`,
+      "positive",
+      100000
+    );
+  }
+
+  // Possible food storage pattern — observation only, not intent.
+  const fscience=foodScience();
+  if(fscience.largestCluster>=8&&meaningfulFoodTransfers>=20){
+    pushWorldEvent(
+      "moved-food-cluster",
+      "נוצר אשכול של מזון שהועבר",
+      `${fscience.largestCluster} יחידות מזון שהוזזו נמצאות עכשיו באותו אשכול. זה דפוס מעניין, לא הוכחה לאגירה מכוונת.`,
+      "positive",
+      100000
+    );
+  }
+
+  // Memory emergence.
+  const mem=currentMemorySignal();
+  if(mem.hold>=20 && mem.strongest>=1.25){
+    pushWorldEvent(
+      "memory-emergence",
+      "סימן לזיכרון מתמשך",
+      `הזיכרון נשמר בממוצע כ-${Math.round(mem.hold)} צעדים ומגיב לאירועים בעולם.`,
+      "positive",
+      150000
+    );
+  }
+
+  // Milestones.
+  const maxGen=somiks.reduce((m,s)=>Math.max(m,s.generation),0);
+  const genMilestone=Math.floor(maxGen/100)*100;
+  if(genMilestone>=100 && genMilestone>alertMilestones.generation){
+    alertMilestones.generation=genMilestone;
+    pushWorldEvent(
+      "generation-"+genMilestone,
+      "אבן דרך אבולוציונית",
+      `העולם הגיע לדור ${genMilestone}.`,
+      "positive",
+      0
+    );
+  }
+
+  const oldMilestone=Math.floor(oldest.age/25000)*25000;
+  if(oldMilestone>=25000 && oldMilestone>alertMilestones.oldest){
+    alertMilestones.oldest=oldMilestone;
+    pushWorldEvent(
+      "oldest-"+oldMilestone,
+      "שיא אורך חיים",
+      `Somik חי עבר ${oldMilestone.toLocaleString("he-IL")} צעדי חיים.`,
+      "positive",
+      0
+    );
+  }
+
+  if(pop>alertMilestones.populationHigh+25){
+    alertMilestones.populationHigh=pop;
+    pushWorldEvent(
+      "population-record-"+pop,
+      "שיא אוכלוסייה חדש",
+      `האוכלוסייה הגיעה ל-${pop} Somik-ים חיים.`,
+      "positive",
+      0
+    );
+  }
+}
+
+function renderWorldAlerts(){
+  const el=document.getElementById("worldAlerts");
+  if(!el)return;
+
+  if(!worldEventLog.length){
+    el.textContent="עדיין אין אירוע מיוחד.";
+    return;
+  }
+
+  el.innerHTML=worldEventLog.slice(0,8).map(ev=>`
+    <div class="eventItem ${ev.type||"emerging"}">
+      <strong>${ev.title}</strong>
+      <div>${ev.text}</div>
+      <div class="eventTime">זמן עולם ${Number(ev.tick).toLocaleString("he-IL")}</div>
+    </div>
+  `).join("");
+}
+
+function angleDiff(a,b){
+  let d=a-b;
+  while(d>Math.PI)d-=Math.PI*2;
+  while(d<-Math.PI)d+=Math.PI*2;
+  return d;
+}
+
+function mutateValue(v,chance=0.13,amount=0.34){
+  if(Math.random()>=chance)return v;
+  const approxGaussian=(Math.random()+Math.random()+Math.random()-1.5);
+  return v+approxGaussian*amount;
+}
+
+function insideHazard(x,y){
+  return x>=HAZARD.x && x<=HAZARD.x+HAZARD.w && y>=HAZARD.y && y<=HAZARD.y+HAZARD.h;
+}
+
+function distanceToHazard(x,y){
+  if(insideHazard(x,y))return 0;
+  let dx=0;
+  if(x<HAZARD.x)dx=HAZARD.x-x;
+  else if(x>HAZARD.x+HAZARD.w)dx=x-(HAZARD.x+HAZARD.w);
+
+  let dy=0;
+  if(y<HAZARD.y)dy=HAZARD.y-y;
+  else if(y>HAZARD.y+HAZARD.h)dy=y-(HAZARD.y+HAZARD.h);
+
+  return Math.sqrt(dx*dx+dy*dy);
+}
+
+function hazardProtectionInfoAt(x,y){
+  let best=0;
+  let bestBlock=null;
+
+  for(const b of blocks){
+    if(!insideHazard(b.x,b.y))continue;
+    const dx=x-b.x,dy=y-b.y;
+    const d=Math.sqrt(dx*dx+dy*dy);
+
+    if(d<BLOCK_PROTECT_RADIUS){
+      const p=1-d/BLOCK_PROTECT_RADIUS;
+      if(p>best){
+        best=p;
+        bestBlock=b;
+      }
+    }
+  }
+
+  return{level:best,block:bestBlock};
+}
+
+function hazardProtectionAt(x,y){
+  return hazardProtectionInfoAt(x,y).level;
+}
+
+class Brain{
+  constructor(parent=null,parent2=null){
+    this.fixedSensors=['energy','health','touch','chemical'];
+    this.actuators=['left_motor','right_motor','jaw','grip','chemical_emit'];
+    this.maxRaySensors=12; this.minRaySensors=2; this.maxHidden=32; this.minHidden=4;
+    if(parent){
+      const a=parent.genome, b=parent2?parent2.genome:a;
+      this.genome=this.crossover(a,b);
+      this.mutateGenome();
+    }else this.genome=this.founderGenome();
+    this.hiddenState={};
+    this.learnedWeights={};
+    this.lastInputs={}; this.lastHidden={};
+    this.lastOutputs={left_motor:0,right_motor:0,jaw:0,grip:0,chemical_emit:0};
+    this.lastRawOutputs={...this.lastOutputs};
+    this.lastTrace=null; this.lastBodyEnergy=null;
+    this.learningUpdates=0; this.learningAbsDelta=0;
+  }
+  founderGenome(){
+    const sensors=Array.from({length:6},(_,i)=>({id:'r'+i,angle:i/6*Math.PI*2,range:82,gain:1}));
+    const hidden=Array.from({length:8},(_,i)=>({id:'h'+i,bias:rnd(-0.08,0.08)}));
+    const sources=[...this.fixedSensors,...sensors.map(s=>'ray:'+s.id)], acts=this.actuators.map(a=>'act:'+a), connections=[]; let ci=0;
+    for(const f of sources)for(const h of hidden)if(Math.random()<0.55)connections.push({id:'c'+ci++,from:f,to:h.id,weight:rnd(-0.45,0.45),enabled:true});
+    for(const h1 of hidden)for(const h2 of hidden)if(h1!==h2&&Math.random()<0.18)connections.push({id:'c'+ci++,from:h1.id,to:h2.id,weight:rnd(-0.32,0.32),enabled:true});
+    for(const h of hidden)for(const a of acts)if(Math.random()<0.70)connections.push({id:'c'+ci++,from:h.id,to:a,weight:rnd(-0.48,0.48),enabled:true});
+    return {sensors,hidden,connections,plasticityRate:0.006,mutationRate:0.018,structuralRate:0.006};
+  }
+  crossover(a,b){
+    const choose=(x,y)=>JSON.parse(JSON.stringify(Math.random()<0.5?x:y));
+    const merge=(aa,bb)=>{const A=new Map(aa.map(x=>[x.id,x])),B=new Map(bb.map(x=>[x.id,x])); const out=[]; for(const id of new Set([...A.keys(),...B.keys()])){const x=A.get(id),y=B.get(id); if(x&&y)out.push(choose(x,y)); else if(Math.random()<0.52)out.push(JSON.parse(JSON.stringify(x||y)));} return out;};
+    return {sensors:merge(a.sensors,b.sensors),hidden:merge(a.hidden,b.hidden),connections:merge(a.connections,b.connections),plasticityRate:(a.plasticityRate+b.plasticityRate)/2,mutationRate:(a.mutationRate+b.mutationRate)/2,structuralRate:(a.structuralRate+b.structuralRate)/2};
+  }
+  mutateGenome(){
+    const g=this.genome,p=g.mutationRate||0.018,sp=g.structuralRate||0.006;
+    for(const s of g.sensors){if(Math.random()<p)s.angle=(s.angle+rnd(-0.18,0.18)+Math.PI*2)%(Math.PI*2); if(Math.random()<p)s.range=clamp(s.range+rnd(-9,9),35,150); if(Math.random()<p)s.gain=clamp(s.gain+rnd(-0.1,0.1),0.25,2.5);}
+    for(const h of g.hidden)if(Math.random()<p)h.bias+=rnd(-0.12,0.12);
+    for(const c of g.connections)if(Math.random()<p)c.weight+=rnd(-0.16,0.16);
+    if(Math.random()<sp&&g.sensors.length<this.maxRaySensors){const q=JSON.parse(JSON.stringify(g.sensors[Math.floor(Math.random()*g.sensors.length)]));q.id='s'+Math.random().toString(36).slice(2,9);q.angle=(q.angle+rnd(-0.18,0.18)+Math.PI*2)%(Math.PI*2);g.sensors.push(q);}
+    if(Math.random()<sp&&g.sensors.length>this.minRaySensors){const q=g.sensors.splice(Math.floor(Math.random()*g.sensors.length),1)[0];g.connections=g.connections.filter(c=>c.from!=='ray:'+q.id);}
+    if(Math.random()<sp&&g.hidden.length<this.maxHidden)g.hidden.push({id:'h'+Math.random().toString(36).slice(2,9),bias:rnd(-0.05,0.05)});
+    if(Math.random()<sp&&g.hidden.length>this.minHidden){const q=g.hidden.splice(Math.floor(Math.random()*g.hidden.length),1)[0];g.connections=g.connections.filter(c=>c.from!==q.id&&c.to!==q.id);}
+    if(Math.random()<sp*2){const sources=[...this.fixedSensors,...g.sensors.map(s=>'ray:'+s.id),...g.hidden.map(h=>h.id)],targets=[...g.hidden.map(h=>h.id),...this.actuators.map(a=>'act:'+a)];for(let k=0;k<8;k++){const from=sources[Math.floor(Math.random()*sources.length)],to=targets[Math.floor(Math.random()*targets.length)];if(from!==to&&!g.connections.some(c=>c.from===from&&c.to===to)){g.connections.push({id:'c'+Math.random().toString(36).slice(2,10),from,to,weight:rnd(-0.35,0.35),enabled:true});break;}}}
+    if(Math.random()<sp&&g.connections.length>8)g.connections.splice(Math.floor(Math.random()*g.connections.length),1);
+    g.sensors=g.sensors.slice(0,this.maxRaySensors);g.hidden=g.hidden.slice(0,this.maxHidden);
+  }
+  learnFromBody(energy){
+    if(this.lastBodyEnergy===null){this.lastBodyEnergy=energy;return;}
+    const reward=Math.tanh((energy-this.lastBodyEnergy)/25); this.lastBodyEnergy=energy;
+    if(!this.lastTrace||Math.abs(reward)<1e-7)return;
+    const lr=this.genome.plasticityRate||0.006, tr=this.lastTrace;
+    for(const c of this.genome.connections){if(!c.enabled)continue;let pre=0,post=0;if(c.from.startsWith('ray:')||this.fixedSensors.includes(c.from))pre=tr.inputs[c.from]||0;else pre=tr.prev[c.from]||0;if(c.to.startsWith('act:'))post=tr.rawOutputs[c.to.slice(4)]||0;else post=tr.hidden[c.to]||0;const old=this.learnedWeights[c.id]||0,nv=clamp(old*(1-0.00005)+lr*reward*pre*post,-1.5,1.5);this.learnedWeights[c.id]=nv;const d=Math.abs(nv-old);if(d){this.learningUpdates++;this.learningAbsDelta+=d;}}
+  }
+  think(inputs){
+    const g=this.genome,prev=this.hiddenState||{},next={},incoming=new Map();
+    for(const c of g.connections){if(!c.enabled)continue;if(!incoming.has(c.to))incoming.set(c.to,[]);incoming.get(c.to).push(c);}
+    const ew=c=>c.weight+(this.learnedWeights[c.id]||0);
+    for(const h of g.hidden){let sum=h.bias;for(const c of incoming.get(h.id)||[]){let v=0;if(c.from.startsWith('ray:')||this.fixedSensors.includes(c.from))v=inputs[c.from]||0;else v=prev[c.from]||0;sum+=v*ew(c);}next[h.id]=Math.tanh(sum);}
+    const raw={};for(const k of this.actuators){let sum=0;for(const c of incoming.get('act:'+k)||[]){const v=next[c.from]??prev[c.from]??inputs[c.from]??0;sum+=v*ew(c);}raw[k]=Math.tanh(sum);}
+    this.hiddenState=next;this.lastInputs={...inputs};this.lastHidden={...next};this.lastRawOutputs={...raw};
+    this.lastOutputs={left_motor:raw.left_motor,right_motor:raw.right_motor,jaw:(raw.jaw+1)/2,grip:(raw.grip+1)/2,chemical_emit:(raw.chemical_emit+1)/2};
+    this.lastTrace={inputs:{...inputs},prev:{...prev},hidden:{...next},rawOutputs:{...raw}};
+    const drive=clamp((raw.left_motor+raw.right_motor+2)/4,0,1), turn=clamp((raw.right_motor-raw.left_motor)/2,-1,1), grip=this.lastOutputs.grip, jaw=this.lastOutputs.jaw;
+    return {turn,thrust:drive,left_motor:raw.left_motor,right_motor:raw.right_motor,jaw,grip,chemical_emit:this.lastOutputs.chemical_emit};
+  }
+  dump(){return {genome:this.genome,hiddenState:this.hiddenState,learnedWeights:this.learnedWeights,lastInputs:this.lastInputs,lastHidden:this.lastHidden,lastOutputs:this.lastOutputs,lastRawOutputs:this.lastRawOutputs,learningUpdates:this.learningUpdates,learningAbsDelta:this.learningAbsDelta,lastBodyEnergy:this.lastBodyEnergy};}
+  static load(d){const b=Object.create(Brain.prototype);b.fixedSensors=['energy','health','touch','chemical'];b.actuators=['left_motor','right_motor','jaw','grip','chemical_emit'];b.maxRaySensors=12;b.minRaySensors=2;b.maxHidden=32;b.minHidden=4;Object.assign(b,d);b.genome=JSON.parse(JSON.stringify(d.genome));b.hiddenState=d.hiddenState||{};b.learnedWeights=d.learnedWeights||{};b.lastInputs=d.lastInputs||{};b.lastHidden=d.lastHidden||{};b.lastOutputs=d.lastOutputs||{left_motor:0,right_motor:0,jaw:0,grip:0,chemical_emit:0};b.lastRawOutputs=d.lastRawOutputs||{};return b;}
+}
+
+class Block{
+  constructor(x,y){
+    this.id=nextBlockId++;
+    this.x=x;
+    this.y=y;
+    this.size=BLOCK_SIZE;
+    this.startX=x;
+    this.startY=y;
+    this.startInHazard=insideHazard(x,y);
+    this.everMoved=false;
+    this.timesPicked=0;
+    this.timesDropped=0;
+    this.importedCount=0;
+    this.exportedCount=0;
+    this.lastPickupInHazard=this.startInHazard;
+    this.lastPickedBy=null;
+    this.lastMovedTick=0;
+    this.lastDroppedBy=null;
+  }
+
+  draw(){
+    const half=this.size/2;
+    const inDanger=insideHazard(this.x,this.y);
+
+    if(inDanger){
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,BLOCK_PROTECT_RADIUS,0,Math.PI*2);
+      ctx.fillStyle="rgba(250,204,21,.08)";
+      ctx.fill();
+    }
+
+    ctx.fillStyle=inDanger?"#d8c48f":"#a8b3c2";
+    ctx.fillRect(this.x-half,this.y-half,this.size,this.size);
+    ctx.strokeStyle=inDanger?"#854d0e":"#475569";
+    ctx.lineWidth=2;
+    ctx.strokeRect(this.x-half,this.y-half,this.size,this.size);
+
+    ctx.strokeStyle="rgba(255,255,255,.16)";
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(this.x-half+3,this.y-half+4);
+    ctx.lineTo(this.x+half-3,this.y-half+4);
+    ctx.stroke();
+  }
+}
+
+class Somik{
+  constructor(x=rnd(30,W-30),y=rnd(30,H-30),generation=0,parent=null,parent2=null){
+    this.id=nextId++;
+    this.x=x;
+    this.y=y;
+    this.r=9;
+    this.dir=rnd(0,Math.PI*2);
+    this.energy=parent?78:100;
+    this.age=0;
+    this.generation=generation;
+    this.sex=Math.random()<0.5?"male":"female";
+    this.color=parent
+      ? (parent2&&Math.random()<0.5?parent2.color:parent.color)
+      : COLORS[Math.floor(Math.random()*COLORS.length)];
+    this.brain=new Brain(parent?parent.brain:null,parent2?parent2.brain:null);
+
+    this.parentId=parent?parent.id:null;
+    this.secondParentId=parent2?parent2.id:null;
+    this.ancestry=parent&&parent2?combineAncestry(parent,parent2):{[String(this.id)]:1};
+    this.lineageId=dominantFounderInfo(this.ancestry).id??this.id; // תאימות לאחור בלבד
+    this.birthTick=ticks;
+    this.childrenCount=0;
+    this.foodEaten=0;
+    this.foodPicked=0;
+    this.foodDropped=0;
+    this.foodTransportDistance=0;
+    this.meaningfulFoodTransfers=0;
+    this.foodCarryTicks=0;
+    this.blocksPicked=0;
+    this.blocksDropped=0;
+    this.protectedLifeTicks=0;
+    this.usefulProtectedLifeTicks=0;
+    this.hazardDamageTaken=0;
+    this.totalReproInvestment=0;
+    this.birthsAsParent=0;
+    this.prevReproduceSignal=0;
+    this.prevInvestmentSignal=0;
+
+    // v5.1: recurrent hiddenState inside the v4 brain is the only neural memory.
+    this.lastSensors={};
+    this.lastDecision={turn:0,thrust:0,left_motor:0,right_motor:0,jaw:0,grip:0,chemical_emit:0};
+    this.lastBirthTick=-1e12;
+
+    this.nearestFood=null;
+    this.nearestBlock=null;
+    this.lastHazardDamage=0;
+  }
+
+  sense(){
+    const brain=this.brain,g=brain.genome;
+    let touching=(this.x<=this.r||this.x>=W-this.r||this.y<=this.r||this.y>=H-this.r);
+    const entities=[];
+    for(const b of blocks)entities.push({x:b.x,y:b.y,r:b.size/2});
+    for(const f of foods)entities.push({x:f.x,y:f.y,r:f.r||5});
+    for(const s of somiks)if(s!==this)entities.push({x:s.x,y:s.y,r:s.r});
+    for(const q of entities){const d=Math.hypot(q.x-this.x,q.y-this.y)-q.r-this.r;if(d<=0){touching=true;break;}}
+    const inputs={energy:clamp(this.energy/180,0,1)*2-1,health:0,touch:touching?1:-1,chemical:0};
+    const rayCircle=(ox,oy,dx,dy,cx,cy,rr,maxD)=>{const lx=cx-ox,ly=cy-oy,t=lx*dx+ly*dy;if(t<0||t>maxD)return maxD;const p2=lx*lx+ly*ly-t*t,r2=rr*rr;if(p2>r2)return maxD;return Math.max(0,t-Math.sqrt(Math.max(0,r2-p2)));};
+    for(const rs of g.sensors){const ang=this.dir+rs.angle,dx=Math.cos(ang),dy=Math.sin(ang);let best=rs.range;
+      if(dx>1e-9)best=Math.min(best,(W-this.r-this.x)/dx); else if(dx<-1e-9)best=Math.min(best,(this.r-this.x)/(-dx));
+      if(dy>1e-9)best=Math.min(best,(H-this.r-this.y)/dy); else if(dy<-1e-9)best=Math.min(best,(this.r-this.y)/(-dy));
+      for(const q of entities)best=Math.min(best,rayCircle(this.x,this.y,dx,dy,q.x,q.y,q.r+this.r,rs.range));
+      inputs['ray:'+rs.id]=clamp((1-best/rs.range)*rs.gain,0,1)*2-1;
+    }
+    this.lastSensors=inputs;return inputs;
+  }
+
+  tryPick(){
+    if(this.carrying||this.carryingFood||this.actionCooldown>0)return false;
+
+    let bestIndex=-1;
+    let bestD2=Infinity;
+    const maxD=28;
+
+    for(let i=0;i<blocks.length;i++){
+      const b=blocks[i];
+      const dx=b.x-this.x,dy=b.y-this.y;
+      const d2=dx*dx+dy*dy;
+
+      if(d2<bestD2&&d2<maxD*maxD){
+        bestD2=d2;
+        bestIndex=i;
+      }
+    }
+
+    if(bestIndex>=0){
+      this.carrying=blocks.splice(bestIndex,1)[0];
+      this.carrying.everMoved=true;
+      this.carrying.timesPicked=(this.carrying.timesPicked||0)+1;
+      this.carrying.lastPickedBy=this.id;
+      this.carrying.lastPickupInHazard=insideHazard(this.carrying.x,this.carrying.y);
+      this.carrying.lastMovedTick=ticks;
+
+      this.blocksPicked++;
+      this.energy-=0.55;
+      this.actionCooldown=20;
+      pickups++;
+      return true;
+    }
+
+    return false;
+  }
+
+  tryDropFood(){
+    if(!this.carryingFood||this.actionCooldown>0)return false;
+
+    const distance=20;
+    const x=clamp(this.x+Math.cos(this.dir)*distance,8,W-8);
+    const y=clamp(this.y+Math.sin(this.dir)*distance,8,H-8);
+
+    if(pointInsideBlock(x,y,3))return false;
+
+    const carried=this.carryingFood;
+    const leg=Math.hypot(x-(carried.pickupX??x),y-(carried.pickupY??y));
+    const totalMoved=(carried.movedDistance??0)+leg;
+
+    foods.push({
+      x,y,r:carried.r??5,
+      everMoved:true,
+      movedDistance:totalMoved
+    });
+    this.carryingFood=null;
+    this.energy-=0.10;
+    this.actionCooldown=12;
+    this.foodDropped++;
+    this.foodTransportDistance+=leg;
+    foodTransportDistanceTotal+=leg;
+    if(leg>=40){
+      this.meaningfulFoodTransfers++;
+      meaningfulFoodTransfers++;
+    }
+    foodDropCount++;
+    return true;
+  }
+
+  tryDrop(){
+    if(!this.carrying||this.actionCooldown>0)return false;
+
+    const distance=28;
+    const rawX=this.x+Math.cos(this.dir)*distance;
+    const rawY=this.y+Math.sin(this.dir)*distance;
+
+    const x=Math.round(rawX/BLOCK_GRID)*BLOCK_GRID;
+    const y=Math.round(rawY/BLOCK_GRID)*BLOCK_GRID;
+
+    if(
+      x<BLOCK_SIZE||x>W-BLOCK_SIZE||
+      y<BLOCK_SIZE||y>H-BLOCK_SIZE
+    )return false;
+
+    for(const b of blocks){
+      if(sq(b.x-x)+sq(b.y-y)<sq(BLOCK_SIZE*0.9))return false;
+    }
+
+    for(const s of somiks){
+      if(s===this)continue;
+      if(sq(s.x-x)+sq(s.y-y)<sq(BLOCK_SIZE))return false;
+    }
+
+    const dropInHazard=insideHazard(x,y);
+    const pickupInHazard=!!this.carrying.lastPickupInHazard;
+
+    if(!pickupInHazard&&dropInHazard){
+      this.carrying.importedCount=(this.carrying.importedCount||0)+1;
+    }else if(pickupInHazard&&!dropInHazard){
+      this.carrying.exportedCount=(this.carrying.exportedCount||0)+1;
+    }
+
+    this.carrying.x=x;
+    this.carrying.y=y;
+    this.carrying.everMoved=true;
+    this.carrying.timesDropped=(this.carrying.timesDropped||0)+1;
+    this.carrying.lastMovedTick=ticks;
+    this.carrying.lastDroppedBy=this.id;
+
+    blocks.push(this.carrying);
+    this.carrying=null;
+
+    this.blocksDropped++;
+    this.energy-=0.35;
+    this.actionCooldown=18;
+    drops++;
+
+    return true;
+  }
+
+  collidesAt(nx,ny){
+    for(const b of blocks){
+      const half=b.size/2;
+      const nearestX=clamp(nx,b.x-half,b.x+half);
+      const nearestY=clamp(ny,b.y-half,b.y+half);
+      const dx=nx-nearestX,dy=ny-nearestY;
+
+      if(dx*dx+dy*dy<this.r*this.r)return true;
+    }
+    return false;
+  }
+
+  applyHazard(){
+    this.lastHazardDamage=0;
+
+    if(!insideHazard(this.x,this.y))return;
+
+    const info=hazardProtectionInfoAt(this.x,this.y);
+    const protection=info.level;
+    const damage=HAZARD_DAMAGE*(1-protection*0.92);
+
+    this.energy-=damage;
+    this.lastHazardDamage=damage;
+    this.hazardDamageTaken+=damage;
+    hazardDamageTotal+=damage;
+
+    if(protection>0.15){
+      protectedTicks++;
+      this.protectedLifeTicks++;
+
+      if(info.block&&(info.block.importedCount||0)>0){
+        usefulProtectionTicks++;
+        this.usefulProtectedLifeTicks++;
+      }
+    }
+  }
+
+  update(){
+    this.age++;
+    if(this.actionCooldown>0)this.actionCooldown--;
+
+    this.brain.learnFromBody(this.energy);
+    const inputs=this.sense();
+    const decision=this.brain.think(inputs);
+    this.lastDecision=decision;
+
+    this.dir+=decision.turn*0.17;
+
+    const moveSpeed=0.25+decision.thrust*1.75;
+    const nx=this.x+Math.cos(this.dir)*moveSpeed;
+    const ny=this.y+Math.sin(this.dir)*moveSpeed;
+
+    if(!this.collidesAt(nx,ny)){
+      this.x=nx;
+      this.y=ny;
+    }else{
+      this.dir+=Math.PI*(0.55+rnd(-0.12,0.12));
+      this.energy-=0.015;
+    }
+
+    if(this.x<this.r){this.x=this.r;this.dir=Math.PI-this.dir;}
+    if(this.x>W-this.r){this.x=W-this.r;this.dir=Math.PI-this.dir;}
+    if(this.y<this.r){this.y=this.r;this.dir=-this.dir;}
+    if(this.y>H-this.r){this.y=H-this.r;this.dir=-this.dir;}
+
+    const metabolism=0.018;
+    const movementCost=0.035*decision.thrust;
+    const carryingCost=(this.carrying||this.carryingFood)?0.012:0;
+    if(this.carryingFood)this.foodCarryTicks++;
+
+    this.energy-=metabolism+movementCost+carryingCost;
+
+    this.applyHazard();
+
+    let ateFoodThisTick=false;
+
+    // v4 jaw: generic contact action. Material physics decides whether contact is edible.
+    if(this.carryingFood && decision.jaw>ACTION_THRESHOLD){
+      this.energy=Math.min(180,this.energy+42);
+      this.foodEaten++;
+      this.carryingFood=null;
+      ateFoodThisTick=true;
+    }
+    if(!ateFoodThisTick){
+      for(let i=foods.length-1;i>=0;i--){
+        const f=foods[i],dx=this.x-f.x,dy=this.y-f.y;
+        if(dx*dx+dy*dy<sq(this.r+f.r) && decision.jaw>ACTION_THRESHOLD){
+          this.energy=Math.min(180,this.energy+42);
+          this.foodEaten++; foods.splice(i,1); ateFoodThisTick=true; break;
+        }
+      }
+    }
+
+    // v4 grip hysteresis: >0.70 attempts a grip; <0.32 releases.
+    if((this.carrying||this.carryingFood) && decision.grip<0.32){
+      if(!this.tryDropFood())this.tryDrop();
+    }else if(!this.carrying&&!this.carryingFood && decision.grip>0.70){
+      // Food and blocks are both generic grippable contacts; no semantic sensor tells the brain which is which.
+      let bestFood=-1,bestD2=Infinity;
+      for(let i=0;i<foods.length;i++){const f=foods[i],dx=f.x-this.x,dy=f.y-this.y,d2=dx*dx+dy*dy;if(d2<bestD2&&d2<28*28){bestD2=d2;bestFood=i;}}
+      if(bestFood>=0 && this.actionCooldown<=0){
+        const f=foods.splice(bestFood,1)[0];
+        this.carryingFood={r:f.r??5,pickedAtTick:ticks,pickupX:f.x,pickupY:f.y,everMoved:!!f.everMoved,movedDistance:f.movedDistance??0};
+        this.energy-=0.12; this.actionCooldown=12; this.foodPicked++; foodPickCount++;
+      }else this.tryPick();
+    }
+
+  }
+
+  draw(){
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    ctx.fillStyle=this.sex==="male"?"#38bdf8":"#f472b6";
+    ctx.fill();
+
+
+ctx.strokeStyle=this.id===selectedId?"#fff":"#111827";
+    ctx.lineWidth=this.id===selectedId?4:2;
+    ctx.stroke();
+
+    const fx=Math.cos(this.dir)*5;
+    const fy=Math.sin(this.dir)*5;
+    const px=-Math.sin(this.dir)*2.3;
+    const py=Math.cos(this.dir)*2.3;
+
+    ctx.fillStyle="#fff";
+    ctx.beginPath();ctx.arc(this.x+fx+px,this.y+fy+py,2.1,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(this.x+fx-px,this.y+fy-py,2.1,0,Math.PI*2);ctx.fill();
+
+    if(this.carrying){
+      const bx=this.x+Math.cos(this.dir)*15;
+      const by=this.y+Math.sin(this.dir)*15;
+
+      ctx.fillStyle="#fbbf24";
+      ctx.fillRect(bx-6,by-6,12,12);
+
+      ctx.strokeStyle="#78350f";
+      ctx.lineWidth=1.5;
+      ctx.strokeRect(bx-6,by-6,12,12);
+    }
+
+    if(this.carryingFood){
+      const fx2=this.x+Math.cos(this.dir)*14;
+      const fy2=this.y+Math.sin(this.dir)*14;
+      ctx.beginPath();
+      ctx.arc(fx2,fy2,5,0,Math.PI*2);
+      ctx.fillStyle="#ef4444";
+      ctx.fill();
+      ctx.strokeStyle="#7f1d1d";
+      ctx.lineWidth=1.4;
+      ctx.stroke();
+    }
+
+    if(this.lastHazardDamage>0){
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,this.r+5,0,Math.PI*2);
+      ctx.strokeStyle="rgba(248,113,113,.7)";
+      ctx.lineWidth=2;
+      ctx.stroke();
+    }
+
+    if(this.id===selectedId){
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,VISION,0,Math.PI*2);
+      ctx.strokeStyle="rgba(255,255,255,.20)";
+      ctx.lineWidth=2;
+      ctx.stroke();
+
+      if(this.nearestFood){
+        ctx.beginPath();
+        ctx.moveTo(this.x,this.y);
+        ctx.lineTo(this.nearestFood.x,this.nearestFood.y);
+        ctx.strokeStyle="rgba(239,68,68,.6)";
+        ctx.lineWidth=1.2;
+        ctx.stroke();
+      }
+
+      if(this.nearestBlock){
+        ctx.beginPath();
+        ctx.moveTo(this.x,this.y);
+        ctx.lineTo(this.nearestBlock.x,this.nearestBlock.y);
+        ctx.strokeStyle="rgba(203,213,225,.65)";
+        ctx.lineWidth=1.2;
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+
+function serializeBrain(brain){ return brain.dump();
+}
+
+function deserializeBrain(data){ return Brain.load(data);
+}
+function serializeBlock(block){
+  return{
+    id:block.id,
+    x:block.x,
+    y:block.y,
+    size:block.size,
+    startX:block.startX,
+    startY:block.startY,
+    startInHazard:block.startInHazard,
+    everMoved:block.everMoved,
+    timesPicked:block.timesPicked,
+    timesDropped:block.timesDropped,
+    importedCount:block.importedCount,
+    exportedCount:block.exportedCount,
+    lastPickupInHazard:block.lastPickupInHazard,
+    lastPickedBy:block.lastPickedBy,
+    lastMovedTick:block.lastMovedTick,
+    lastDroppedBy:block.lastDroppedBy
+  };
+}
+
+function deserializeBlock(data){
+  const block=Object.create(Block.prototype);
+  block.id=data.id;
+  block.x=data.x;
+  block.y=data.y;
+  block.size=data.size ?? BLOCK_SIZE;
+  block.startX=data.startX ?? data.x;
+  block.startY=data.startY ?? data.y;
+  block.startInHazard=data.startInHazard ?? insideHazard(block.startX,block.startY);
+  block.everMoved=data.everMoved ?? ((data.lastMovedTick??0)>0);
+  block.timesPicked=data.timesPicked ?? 0;
+  block.timesDropped=data.timesDropped ?? 0;
+  block.importedCount=data.importedCount ?? 0;
+  block.exportedCount=data.exportedCount ?? 0;
+  block.lastPickupInHazard=data.lastPickupInHazard ?? insideHazard(data.x,data.y);
+  block.lastPickedBy=data.lastPickedBy ?? null;
+  block.lastMovedTick=data.lastMovedTick ?? 0;
+  block.lastDroppedBy=data.lastDroppedBy ?? null;
+  return block;
+}
+
+function serializeSomik(s){
+  return{
+    id:s.id,
+    x:s.x,
+    y:s.y,
+    r:s.r,
+    dir:s.dir,
+    energy:s.energy,
+    age:s.age,
+    generation:s.generation,
+    sex:s.sex,
+    color:s.color,
+    brain:serializeBrain(s.brain),
+    parentId:s.parentId,
+    secondParentId:s.secondParentId,
+    ancestry:s.ancestry,
+    lineageId:s.lineageId,
+    birthTick:s.birthTick,
+    childrenCount:s.childrenCount,
+    foodEaten:s.foodEaten,
+    foodPicked:s.foodPicked,
+    foodDropped:s.foodDropped,
+    foodTransportDistance:s.foodTransportDistance,
+    meaningfulFoodTransfers:s.meaningfulFoodTransfers,
+    foodCarryTicks:s.foodCarryTicks,
+    blocksPicked:s.blocksPicked,
+    blocksDropped:s.blocksDropped,
+    protectedLifeTicks:s.protectedLifeTicks,
+    usefulProtectedLifeTicks:s.usefulProtectedLifeTicks,
+    hazardDamageTaken:s.hazardDamageTaken,
+    totalReproInvestment:s.totalReproInvestment,
+    birthsAsParent:s.birthsAsParent,
+    lastBirthTick:s.lastBirthTick,
+    carrying:s.carrying?serializeBlock(s.carrying):null,
+    carryingFood:s.carryingFood?{...s.carryingFood}:null,
+    actionCooldown:s.actionCooldown,
+    lastSensors:s.lastSensors,
+    lastDecision:s.lastDecision,
+    lastHazardDamage:s.lastHazardDamage
+  };
+}
+
+function deserializeSomik(data){
+  const s=Object.create(Somik.prototype);
+  s.id=data.id;
+  s.x=data.x;
+  s.y=data.y;
+  s.r=data.r ?? 9;
+  s.dir=data.dir;
+  s.energy=data.energy;
+  s.age=data.age;
+  s.generation=data.generation;
+  // שמירות ישנות מקבלות חלוקה יציבה ומאוזנת לפי ID.
+  s.sex=data.sex==="male"||data.sex==="female"
+    ? data.sex
+    : (data.id%2===0?"male":"female");
+  s.color=data.color;
+  s.brain=deserializeBrain(data.brain);
+
+  s.parentId=data.parentId ?? null;
+  s.secondParentId=data.secondParentId ?? null;
+  s.ancestry=normalizeAncestryMap(data.ancestry,data.lineageId??data.id);
+  s.lineageId=dominantFounderInfo(s.ancestry).id??data.id;
+  s.birthTick=data.birthTick ?? Math.max(0,ticks-(data.age??0));
+  s.childrenCount=data.childrenCount ?? 0;
+  s.foodEaten=data.foodEaten ?? 0;
+  s.foodPicked=data.foodPicked ?? 0;
+  s.foodDropped=data.foodDropped ?? 0;
+  s.foodTransportDistance=data.foodTransportDistance ?? 0;
+  s.meaningfulFoodTransfers=data.meaningfulFoodTransfers ?? 0;
+  s.foodCarryTicks=data.foodCarryTicks ?? 0;
+  s.blocksPicked=data.blocksPicked ?? 0;
+  s.blocksDropped=data.blocksDropped ?? 0;
+  s.protectedLifeTicks=data.protectedLifeTicks ?? 0;
+  s.usefulProtectedLifeTicks=data.usefulProtectedLifeTicks ?? 0;
+  s.hazardDamageTaken=data.hazardDamageTaken ?? 0;
+  s.totalReproInvestment=data.totalReproInvestment ?? 0;
+  s.birthsAsParent=data.birthsAsParent ?? 0;
+  s.lastBirthTick=data.lastBirthTick ?? -1e12;
+
+  s.carrying=data.carrying?deserializeBlock(data.carrying):null;
+  s.carryingFood=data.carryingFood?{...data.carryingFood}:null;
+  s.actionCooldown=data.actionCooldown ?? 0;
+  s.lastSensors=data.lastSensors ?? {};
+  s.lastDecision={
+    turn:data.lastDecision?.turn ?? 0, thrust:data.lastDecision?.thrust ?? 0,
+    left_motor:data.lastDecision?.left_motor ?? 0, right_motor:data.lastDecision?.right_motor ?? 0,
+    jaw:data.lastDecision?.jaw ?? 0, grip:data.lastDecision?.grip ?? 0, chemical_emit:data.lastDecision?.chemical_emit ?? 0
+  };
+  s.lastHazardDamage=data.lastHazardDamage ?? 0;
+  s.nearestFood=null;
+  s.nearestBlock=null;
+  return s;
+}
+
+function setSaveStatus(text){
+  const el=document.getElementById("saveStatus");
+  if(el)el.textContent=text;
+}
+
+function stateObject(){
+  return{
+    version:SAVE_VERSION,
+    savedAt:Date.now(),
+    ticks,
+    births,
+    deaths,
+    extinctions,
+    worldExtinct,
+    pickups,
+    drops,
+    protectedTicks,
+    usefulProtectionTicks,
+    hazardDamageTotal,
+    populationHistory,
+    lastHistoryTick,
+    memoryMetrics,
+    worldEventLog,
+    alertFlags,
+    alertMilestones,
+    matingAttempts,
+    successfulMatings,
+    totalParentInvestment,
+    totalChildBirthEnergy,
+    minChildBirthEnergy,
+    maxChildBirthEnergy,
+    mixedBirths,
+    maleMaleBirths,
+    femaleFemaleBirths,
+    foodPickCount,
+    foodDropCount,
+    meaningfulFoodTransfers,
+    foodTransportDistanceTotal,
+    outcomeArchive,
+    nextId,
+    nextBlockId,
+    selectedId,
+    speed,
+    foods,
+    blocks:blocks.map(serializeBlock),
+    somiks:somiks.map(serializeSomik)
+  };
+}
+
+function saveGame(){
+  try{
+    localStorage.setItem(SAVE_KEY,JSON.stringify(stateObject()));
+
+    const t=new Date();
+    setSaveStatus(
+      "✅ נשמר "+t.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit",second:"2-digit"})
+    );
+    return true;
+  }catch(err){
+    console.error("Save failed",err);
+    setSaveStatus("⚠️ השמירה נכשלה");
+    return false;
+  }
+}
+
+function restoreState(state){
+  if(!state||typeof state!=="object")return false;
+  if(state.version!==1&&state.version!==2&&state.version!==3&&state.version!==4&&state.version!==5&&state.version!==6&&state.version!==7&&state.version!==8&&state.version!==9&&state.version!==10&&state.version!==11&&state.version!==12&&state.version!==13&&state.version!==14)return false;
+
+  ticks=state.ticks ?? 0;
+  births=state.births ?? 0;
+  deaths=state.deaths ?? 0;
+  extinctions=state.extinctions ?? 0;
+  worldExtinct=state.worldExtinct ?? false;
+  pickups=state.pickups ?? 0;
+  drops=state.drops ?? 0;
+  protectedTicks=state.protectedTicks ?? 0;
+  usefulProtectionTicks=state.usefulProtectionTicks ?? 0;
+  hazardDamageTotal=state.hazardDamageTotal ?? 0;
+
+  populationHistory=Array.isArray(state.populationHistory)?state.populationHistory:[];
+  lastHistoryTick=state.lastHistoryTick ?? ticks;
+  memoryMetrics=normalizeMemoryStats(state.memoryMetrics,ticks);
+  worldEventLog=Array.isArray(state.worldEventLog)?state.worldEventLog:[];
+  alertFlags=state.alertFlags&&typeof state.alertFlags==="object"?state.alertFlags:{};
+  alertMilestones=state.alertMilestones&&typeof state.alertMilestones==="object"
+    ? {
+        generation:state.alertMilestones.generation??0,
+        oldest:state.alertMilestones.oldest??0,
+        populationHigh:state.alertMilestones.populationHigh??0
+      }
+    : {generation:0,oldest:0,populationHigh:0};
+
+  matingAttempts=state.matingAttempts??0;
+  successfulMatings=state.successfulMatings??0;
+  totalParentInvestment=state.totalParentInvestment??(successfulMatings*70);
+  totalChildBirthEnergy=state.totalChildBirthEnergy??(successfulMatings*70);
+  minChildBirthEnergy=state.minChildBirthEnergy??(successfulMatings>0?70:null);
+  maxChildBirthEnergy=state.maxChildBirthEnergy??(successfulMatings>0?70:0);
+  mixedBirths=state.mixedBirths??0;
+  maleMaleBirths=state.maleMaleBirths??0;
+  femaleFemaleBirths=state.femaleFemaleBirths??0;
+  foodPickCount=state.foodPickCount??0;
+  foodDropCount=state.foodDropCount??0;
+  meaningfulFoodTransfers=state.meaningfulFoodTransfers??0;
+  foodTransportDistanceTotal=state.foodTransportDistanceTotal??0;
+  outcomeArchive=normalizeOutcomeArchive(state.outcomeArchive);
+
+  foods=Array.isArray(state.foods)?state.foods:[];
+  blocks=Array.isArray(state.blocks)?state.blocks.map(deserializeBlock):[];
+  somiks=Array.isArray(state.somiks)?state.somiks.map(deserializeSomik):[];
+
+  nextId=state.nextId ?? (somiks.reduce((m,s)=>Math.max(m,s.id),0)+1);
+
+  const allBlockIds=[
+    ...blocks.map(b=>b.id),
+    ...somiks.filter(s=>s.carrying).map(s=>s.carrying.id)
+  ];
+  nextBlockId=state.nextBlockId ?? ((allBlockIds.length?Math.max(...allBlockIds):0)+1);
+
+  selectedId=state.selectedId ?? null;
+  if(!somiks.some(s=>s.id===selectedId))selectedId=null;
+
+  speed=[1,5,20,100].includes(state.speed)?state.speed:1;
+  document.getElementById("speedBtn").textContent="⚡ x"+speed;
+
+  if(populationHistory.length===0){
+    populationHistory.push({
+      t:ticks,
+      p:somiks.length,
+      f:totalFoodUnits(),
+      g:somiks.reduce((m,s)=>Math.max(m,s.generation),0)
+    });
+  }
+
+  if(somiks.length===0)worldExtinct=true;
+  return true;
+}
+
+function loadGame(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(raw){
+      const state=JSON.parse(raw);
+
+      if((state.version??0)<3&&!localStorage.getItem(PRE_MEMORY_SAVE_KEY)){
+        localStorage.setItem(PRE_MEMORY_SAVE_KEY,raw);
+      }
+      if((state.version??0)<4&&!localStorage.getItem(PRE_METRICS_SAVE_KEY)){
+        localStorage.setItem(PRE_METRICS_SAVE_KEY,raw);
+      }
+      if((state.version??0)<6&&!localStorage.getItem(PRE_SEX_SAVE_KEY)){
+        localStorage.setItem(PRE_SEX_SAVE_KEY,raw);
+      }
+      if((state.version??0)<8&&!localStorage.getItem(PRE_FREE_REPRO_SAVE_KEY)){
+        localStorage.setItem(PRE_FREE_REPRO_SAVE_KEY,raw);
+      }
+      if((state.version??0)<9&&!localStorage.getItem(PRE_FOOD_TRANSPORT_SAVE_KEY)){
+        localStorage.setItem(PRE_FOOD_TRANSPORT_SAVE_KEY,raw);
+      }
+      if((state.version??0)<10&&!localStorage.getItem(PRE_ANY_PAIR_SAVE_KEY)){
+        localStorage.setItem(PRE_ANY_PAIR_SAVE_KEY,raw);
+      }
+      if((state.version??0)<11&&!localStorage.getItem(PRE_SEX_MARKER_SAVE_KEY)){
+        localStorage.setItem(PRE_SEX_MARKER_SAVE_KEY,raw);
+      }
+      if((state.version??0)<13&&!localStorage.getItem(PRE_EAT_SAVE_KEY)){
+        localStorage.setItem(PRE_EAT_SAVE_KEY,raw);
+      }
+      if((state.version??0)<14&&!localStorage.getItem(PRE_EMERGENCE_V14_SAVE_KEY)){
+        localStorage.setItem(PRE_EMERGENCE_V14_SAVE_KEY,raw);
+      }
+
+      if(restoreState(state)){
+        if(worldExtinct){
+          running=false;
+          const pauseBtn=document.getElementById("pauseBtn");
+          if(pauseBtn)pauseBtn.textContent="☠ העולם נכחד";
+        }
+        setSaveStatus("🧠 המשך מהשמירה של v0.5");
+        return true;
+      }
+    }
+
+    const legacyRaw=localStorage.getItem(LEGACY_SAVE_KEY);
+    if(legacyRaw){
+      const legacy=JSON.parse(legacyRaw);
+      if(restoreState(legacy)){
+        saveGame();
+        setSaveStatus("🧬 Run A הועתק ל-v0.5; השמירה הישנה נשמרה כגיבוי");
+        return true;
+      }
+    }
+
+    return false;
+  }catch(err){
+    console.error("Load failed",err);
+    setSaveStatus("⚠️ לא ניתן לטעון שמירה קודמת");
+    return false;
+  }
+}
+
+function clearSavedGame(){
+  try{
+    localStorage.removeItem(SAVE_KEY);
+  }catch(err){
+    console.error(err);
+  }
+}
+
+function exportSave(){
+  saveGame();
+  try{
+    const data=JSON.stringify(stateObject(),null,2);
+    const blob=new Blob([data],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download="somik-world-v05-emergence-v14-"+ticks+"-world-time.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    setSaveStatus("⬇️ קובץ השמירה נוצר");
+  }catch(err){
+    console.error(err);
+    setSaveStatus("⚠️ ייצוא השמירה נכשל");
+  }
+}
+
+function importSaveFile(file){
+  const reader=new FileReader();
+
+  reader.onload=()=>{
+    try{
+      const state=JSON.parse(reader.result);
+      if(!restoreState(state))throw new Error("Invalid save");
+      saveGame();
+      setSaveStatus("⬆️ השמירה נטענה בהצלחה");
+    }catch(err){
+      console.error(err);
+      alert("לא ניתן לקרוא את קובץ השמירה.");
+    }
+  };
+
+  reader.readAsText(file);
+}
+
+function pointInsideBlock(x,y,pad=0){
+  for(const b of blocks){
+    if(
+      Math.abs(x-b.x)<b.size/2+pad&&
+      Math.abs(y-b.y)<b.size/2+pad
+    )return true;
+  }
+  return false;
+}
+
+function carriedFoodCount(){
+  return somiks.reduce((n,s)=>n+(s.carryingFood?1:0),0);
+}
+
+function totalFoodUnits(){
+  return foods.length+carriedFoodCount();
+}
+
+function addFood(n){
+  for(let i=0;i<n;i++){
+    let tries=0;
+
+    while(tries++<40){
+      let x,y;
+
+      // 52% מהמזון מופיע באזור הסכנה: יש תמריץ אמיתי להיכנס.
+      if(Math.random()<0.52){
+        x=rnd(HAZARD.x+12,HAZARD.x+HAZARD.w-12);
+        y=rnd(12,H-12);
+      }else{
+        x=rnd(12,W-12);
+        y=rnd(12,H-12);
+      }
+
+      if(!pointInsideBlock(x,y,5)){
+        foods.push({x,y,r:5});
+        break;
+      }
+    }
+  }
+}
+
+function addBlocks(n){
+  let placed=0,tries=0;
+
+  while(placed<n&&tries<n*100){
+    tries++;
+
+    // רוב הבלוקים מתחילים מחוץ לאזור הסכנה.
+    let x;
+    if(Math.random()<0.78){
+      const left=Math.random()<0.5;
+      x=left
+        ? Math.round(rnd(2,(HAZARD.x-35)/BLOCK_GRID))*BLOCK_GRID
+        : Math.round(rnd((HAZARD.x+HAZARD.w+35)/BLOCK_GRID,W/BLOCK_GRID-2))*BLOCK_GRID;
+    }else{
+      x=Math.round(rnd(2,W/BLOCK_GRID-2))*BLOCK_GRID;
+    }
+
+    const y=Math.round(rnd(2,H/BLOCK_GRID-2))*BLOCK_GRID;
+
+    let ok=true;
+
+    for(const b of blocks){
+      if(sq(b.x-x)+sq(b.y-y)<sq(BLOCK_GRID*1.1)){
+        ok=false;
+        break;
+      }
+    }
+
+    if(ok){
+      blocks.push(new Block(x,y));
+      placed++;
+    }
+  }
+}
+
+function createPopulation(n=120){
+  for(let i=0;i<n;i++){
+    let created=false;
+
+    for(let tries=0;tries<60&&!created;tries++){
+      let x;
+
+      // אוכלוסייה ראשונית מתחילה בעיקר משני צדי הסכנה.
+      if(Math.random()<0.5){
+        x=rnd(30,HAZARD.x-35);
+      }else{
+        x=rnd(HAZARD.x+HAZARD.w+35,W-30);
+      }
+
+      const y=rnd(30,H-30);
+
+      if(!pointInsideBlock(x,y,20)){
+        somiks.push(new Somik(x,y));
+        created=true;
+      }
+    }
+  }
+}
+
+function resetWorld(){
+  somiks=[];
+  foods=[];
+  blocks=[];
+
+  ticks=0;
+  births=0;
+  deaths=0;
+  extinctions=0;
+  worldExtinct=false;
+  pickups=0;
+  drops=0;
+  protectedTicks=0;
+  usefulProtectionTicks=0;
+  hazardDamageTotal=0;
+  populationHistory=[];
+  lastHistoryTick=0;
+  memoryMetrics=makeMemoryStats(0);
+  worldEventLog=[];
+  alertFlags={};
+  alertMilestones={generation:0,oldest:0,populationHigh:0};
+  matingAttempts=0;
+  successfulMatings=0;
+  totalParentInvestment=0;
+  totalChildBirthEnergy=0;
+  minChildBirthEnergy=null;
+  maxChildBirthEnergy=0;
+  mixedBirths=0;
+  maleMaleBirths=0;
+  femaleFemaleBirths=0;
+  foodPickCount=0;
+  foodDropCount=0;
+  meaningfulFoodTransfers=0;
+  foodTransportDistanceTotal=0;
+  outcomeArchive=makeOutcomeArchive();
+
+  nextId=1;
+  nextBlockId=1;
+  selectedId=null;
+
+  addBlocks(INITIAL_BLOCKS);
+  createPopulation(120);
+  addFood(120);
+  populationHistory.push({t:0,p:somiks.length,f:totalFoodUnits(),g:0});
+}
+
+function processFreeReproduction(){
+  if(somiks.length>=EMERGENCY_MAX_POP)return;
+
+  const willing=somiks.filter(reproductionEligible);
+  if(willing.length<2)return;
+
+  const used=new Set();
+  const contactD2=MATE_CONTACT_RADIUS*MATE_CONTACT_RADIUS;
+
+  for(const a of willing){
+    if(used.has(a.id))continue;
+    let partner=null,bestD2=Infinity;
+
+    for(const b of willing){
+      if(b===a||used.has(b.id))continue;
+      const dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy;
+      if(d2<=contactD2&&d2<bestD2){partner=b;bestD2=d2;}
+    }
+    if(!partner)continue;
+
+    matingAttempts++;
+    used.add(a.id);used.add(partner.id);
+
+    const investA=desiredReproInvestment(a);
+    const investB=desiredReproInvestment(partner);
+
+    // כל הורה בוחר את ההשקעה שלו. אם אין לו את האנרגיה שבחר — הניסיון נכשל.
+    if(investA<REPRO_MIN_CONTRIBUTION||investB<REPRO_MIN_CONTRIBUTION||a.energy<=investA||partner.energy<=investB||somiks.length>=EMERGENCY_MAX_POP)continue;
+
+    a.energy-=investA;
+    partner.energy-=investB;
+    a.lastBirthTick=ticks; partner.lastBirthTick=ticks;
+    a.childrenCount++;partner.childrenCount++;
+    a.birthsAsParent++;partner.birthsAsParent++;
+    a.totalReproInvestment+=investA;
+    partner.totalReproInvestment+=investB;
+
+    const child=new Somik(
+      clamp((a.x+partner.x)/2+rnd(-8,8),15,W-15),
+      clamp((a.y+partner.y)/2+rnd(-8,8),15,H-15),
+      Math.max(a.generation,partner.generation)+1,
+      a,partner
+    );
+
+    const childEnergy=investA+investB;
+    child.energy=childEnergy;
+    somiks.push(child);
+    births++;successfulMatings++;
+    totalParentInvestment+=investA+investB;
+    totalChildBirthEnergy+=childEnergy;
+    minChildBirthEnergy=minChildBirthEnergy===null?childEnergy:Math.min(minChildBirthEnergy,childEnergy);
+    maxChildBirthEnergy=Math.max(maxChildBirthEnergy,childEnergy);
+
+    if(a.sex!==partner.sex)mixedBirths++;
+    else if(a.sex==="male")maleMaleBirths++;
+    else femaleFemaleBirths++;
+  }
+}
+
+function updateWorld(){
+  ticks++;
+
+  for(const s of [...somiks])s.update();
+
+  processFreeReproduction();
+
+  const alive=[];
+
+  for(const s of somiks){
+    if(s.energy>0){
+      alive.push(s);
+    }else{
+      deaths++;
+      recordLifeOutcome(s);
+
+      if(s.carrying){
+        const x=Math.round(s.x/BLOCK_GRID)*BLOCK_GRID;
+        const y=Math.round(s.y/BLOCK_GRID)*BLOCK_GRID;
+
+        s.carrying.x=clamp(x,BLOCK_SIZE,W-BLOCK_SIZE);
+        s.carrying.y=clamp(y,BLOCK_SIZE,H-BLOCK_SIZE);
+        s.carrying.lastMovedTick=ticks;
+
+        blocks.push(s.carrying);
+        s.carrying=null;
+      }
+
+      if(s.carryingFood){
+        foods.push({
+          x:clamp(s.x,8,W-8),y:clamp(s.y,8,H-8),r:s.carryingFood.r??5,
+          everMoved:!!s.carryingFood.everMoved,
+          movedDistance:s.carryingFood.movedDistance??0
+        });
+        s.carryingFood=null;
+      }
+
+      if(s.id===selectedId)selectedId=null;
+    }
+  }
+
+  somiks=alive;
+
+  // משאבים אינם גדלים עם האוכלוסייה: יותר Somik-ים = יותר תחרות על אותו קצב התחדשות.
+  if(totalFoodUnits()<FOOD_TARGET&&Math.random()<FOOD_REGEN_CHANCE){
+    addFood(1);
+  }
+
+  evaluateWorldAlerts();
+
+  if(ticks-lastHistoryTick>=2500){
+    populationHistory.push({
+      t:ticks,
+      p:somiks.length,
+      f:totalFoodUnits(),
+      g:somiks.reduce((m,s)=>Math.max(m,s.generation),0)
+    });
+    if(populationHistory.length>400)populationHistory.shift();
+    lastHistoryTick=ticks;
+  }
+
+  if(somiks.length===0 && !worldExtinct){
+    extinctions++;
+    worldExtinct=true;
+    pushWorldEvent(
+      "true-extinction-"+extinctions,
+      "הכחדה מלאה",
+      "ה-Somik האחרון מת. העולם נשאר ריק עד התחלה ידנית של עולם חדש.",
+      "unexpected",
+      0
+    );
+    running=false;
+    const pauseBtn=document.getElementById("pauseBtn");
+    if(pauseBtn)pauseBtn.textContent="☠ העולם נכחד";
+  }
+
+  if(somiks.length>0)worldExtinct=false;
+}
+
+function drawBackground(){
+  ctx.fillStyle="#4b9b4f";
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle="rgba(0,0,0,.025)";
+  for(let y=0;y<H;y+=50){
+    for(let x=0;x<W;x+=50){
+      if(((x+y)/50)%2===0)ctx.fillRect(x,y,50,50);
+    }
+  }
+
+  // אזור סכנה.
+  ctx.fillStyle="rgba(127,29,29,.56)";
+  ctx.fillRect(HAZARD.x,HAZARD.y,HAZARD.w,HAZARD.h);
+
+  ctx.fillStyle="rgba(239,68,68,.10)";
+  for(let x=HAZARD.x;x<HAZARD.x+HAZARD.w;x+=25){
+    ctx.fillRect(x,0,12,H);
+  }
+
+  ctx.strokeStyle="rgba(0,0,0,.10)";
+  ctx.lineWidth=1;
+
+  for(let x=0;x<=W;x+=BLOCK_GRID){
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
+  }
+
+  for(let y=0;y<=H;y+=BLOCK_GRID){
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+  }
+}
+
+function clusterData(filterFn=()=>true){
+  const eligible=[];
+  for(let i=0;i<blocks.length;i++){
+    if(filterFn(blocks[i]))eligible.push(i);
+  }
+
+  if(eligible.length===0)return{largest:0,contributors:0,indices:[]};
+
+  const eligibleSet=new Set(eligible);
+  const visited=new Set();
+  let bestIndices=[];
+  const linkDist=BLOCK_GRID*1.45;
+  const linkD2=linkDist*linkDist;
+
+  for(const i of eligible){
+    if(visited.has(i))continue;
+
+    const stack=[i];
+    const current=[];
+    visited.add(i);
+
+    while(stack.length){
+      const a=stack.pop();
+      current.push(a);
+
+      for(const j of eligible){
+        if(!eligibleSet.has(j)||visited.has(j))continue;
+
+        const dx=blocks[a].x-blocks[j].x;
+        const dy=blocks[a].y-blocks[j].y;
+
+        if(dx*dx+dy*dy<=linkD2){
+          visited.add(j);
+          stack.push(j);
+        }
+      }
+    }
+
+    if(current.length>bestIndices.length){
+      bestIndices=current;
+    }
+  }
+
+  const contributors=new Set();
+
+  for(const idx of bestIndices){
+    const id=blocks[idx].lastDroppedBy;
+    if(id!==null)contributors.add(id);
+  }
+
+  return{
+    largest:bestIndices.length,
+    contributors:contributors.size,
+    indices:bestIndices
+  };
+}
+
+function stableBlockCount(){
+  let count=0;
+
+  for(const b of blocks){
+    if(ticks-b.lastMovedTick>=STABLE_TICKS)count++;
+  }
+
+  return count;
+}
+
+function hazardBlockCount(){
+  let count=0;
+
+  for(const b of blocks){
+    if(insideHazard(b.x,b.y))count++;
+  }
+
+  return count;
+}
+
+
+function blockScience(){
+  let importEvents=0;
+  let exportEvents=0;
+  let importedNow=0;
+
+  for(const b of blocks){
+    importEvents+=b.importedCount||0;
+    exportEvents+=b.exportedCount||0;
+    if(insideHazard(b.x,b.y)&&(b.importedCount||0)>0)importedNow++;
+  }
+
+  for(const s of somiks){
+    if(!s.carrying)continue;
+    importEvents+=s.carrying.importedCount||0;
+    exportEvents+=s.carrying.exportedCount||0;
+  }
+
+  return{importEvents,exportEvents,importedNow};
+}
+
+function drawPopulationChart(){
+  const w=populationCanvas.width;
+  const h=populationCanvas.height;
+
+  pctx.clearRect(0,0,w,h);
+  pctx.fillStyle="#101827";
+  pctx.fillRect(0,0,w,h);
+
+  const data=populationHistory.slice();
+  data.push({
+    t:ticks,
+    p:somiks.length,
+    f:totalFoodUnits(),
+    g:somiks.reduce((m,s)=>Math.max(m,s.generation),0)
+  });
+
+  if(data.length<2){
+    pctx.fillStyle="#94a3b8";
+    pctx.font="12px Arial";
+    pctx.textAlign="center";
+    pctx.fillText("הגרף יתחיל להצטבר עם הזמן",w/2,h/2);
+    return;
+  }
+
+  const maxP=Math.max(10,...data.map(d=>d.p));
+  const minT=data[0].t;
+  const maxT=Math.max(minT+1,data[data.length-1].t);
+
+  pctx.strokeStyle="rgba(148,163,184,.22)";
+  pctx.lineWidth=1;
+  for(let i=1;i<4;i++){
+    const y=h*i/4;
+    pctx.beginPath();
+    pctx.moveTo(0,y);
+    pctx.lineTo(w,y);
+    pctx.stroke();
+  }
+
+  pctx.beginPath();
+  data.forEach((d,i)=>{
+    const x=(d.t-minT)/(maxT-minT)*(w-10)+5;
+    const y=h-8-(d.p/maxP)*(h-20);
+    if(i===0)pctx.moveTo(x,y);
+    else pctx.lineTo(x,y);
+  });
+  pctx.strokeStyle="#e5e7eb";
+  pctx.lineWidth=2;
+  pctx.stroke();
+
+  pctx.fillStyle="#cbd5e1";
+  pctx.font="10px Arial";
+  pctx.textAlign="left";
+  pctx.fillText("שיא "+maxP,6,12);
+  pctx.textAlign="right";
+  pctx.fillText("עכשיו "+somiks.length,w-6,h-5);
+}
+
+function drawWorld(){
+  drawBackground();
+
+  for(const b of blocks)b.draw();
+
+  for(const f of foods){
+    ctx.beginPath();
+    ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
+    ctx.fillStyle="#ef4444";
+    ctx.fill();
+    ctx.strokeStyle="#7f1d1d";
+    ctx.lineWidth=1.4;
+    ctx.stroke();
+  }
+
+  for(const s of somiks)s.draw();
+
+  document.getElementById("pop").textContent=somiks.length;
+
+  const mating=matingStats();
+  document.getElementById("maleCount").textContent=mating.males;
+  document.getElementById("femaleCount").textContent=mating.females;
+  document.getElementById("willingCount").textContent=mating.willingCount;
+  document.getElementById("readyMales").textContent=mating.readyMales;
+  document.getElementById("readyFemales").textContent=mating.readyFemales;
+  document.getElementById("availablePairs").textContent=mating.nearbyPairs;
+  document.getElementById("matingAttempts").textContent=matingAttempts.toLocaleString("he-IL");
+  document.getElementById("successfulMatings").textContent=successfulMatings.toLocaleString("he-IL");
+  document.getElementById("matingSuccessRate").textContent=
+    matingAttempts>0
+      ? ((successfulMatings/matingAttempts)*100).toFixed(1)+"%"
+      : "—";
+  document.getElementById("avgParentInvestment").textContent=
+    successfulMatings>0?(totalParentInvestment/(successfulMatings*2)).toFixed(1):"—";
+  document.getElementById("avgChildBirthEnergy").textContent=
+    successfulMatings>0?(totalChildBirthEnergy/successfulMatings).toFixed(1):"—";
+  document.getElementById("birthEnergyRange").textContent=
+    successfulMatings>0?`${minChildBirthEnergy?.toFixed(1)??"—"}–${maxChildBirthEnergy.toFixed(1)}`:"—";
+  document.getElementById("mixedBirths").textContent=mixedBirths.toLocaleString("he-IL");
+  document.getElementById("maleMaleBirths").textContent=maleMaleBirths.toLocaleString("he-IL");
+  document.getElementById("femaleFemaleBirths").textContent=femaleFemaleBirths.toLocaleString("he-IL");
+
+  document.getElementById("foodCount").textContent=foods.length;
+  document.getElementById("carriedFoodCount").textContent=carriedFoodCount();
+  document.getElementById("totalFoodCount").textContent=totalFoodUnits();
+  document.getElementById("foodPickCount").textContent=foodPickCount.toLocaleString("he-IL");
+  document.getElementById("foodDropCount").textContent=foodDropCount.toLocaleString("he-IL");
+  document.getElementById("blockCount").textContent=blocks.length;
+  document.getElementById("carriedCount").textContent=somiks.filter(s=>s.carrying).length;
+  document.getElementById("pickups").textContent=pickups;
+  document.getElementById("drops").textContent=drops;
+  document.getElementById("births").textContent=births;
+  document.getElementById("deaths").textContent=deaths;
+  document.getElementById("ticks").textContent=ticks.toLocaleString("he-IL");
+  document.getElementById("extinctions").textContent=extinctions;
+  const lifeState=document.getElementById("worldLifeState");
+  if(lifeState)lifeState.textContent=worldExtinct?"נכחד":"חי";
+  document.getElementById("maxGen").textContent=somiks.reduce((m,s)=>Math.max(m,s.generation),0);
+  document.getElementById("hazardBlocks").textContent=hazardBlockCount();
+  document.getElementById("stableBlocks").textContent=stableBlockCount();
+  document.getElementById("protectedTicks").textContent=protectedTicks.toLocaleString("he-IL");
+  document.getElementById("hazardDamage").textContent=Math.round(hazardDamageTotal).toLocaleString("he-IL");
+  document.getElementById("usefulProtection").textContent=usefulProtectionTicks.toLocaleString("he-IL");
+
+  const science=blockScience();
+  document.getElementById("importEvents").textContent=science.importEvents.toLocaleString("he-IL");
+  document.getElementById("exportEvents").textContent=science.exportEvents.toLocaleString("he-IL");
+  document.getElementById("importedNow").textContent=science.importedNow.toLocaleString("he-IL");
+
+  const oldest=somiks.reduce((m,s)=>Math.max(m,s.age),0);
+  document.getElementById("oldestAge").textContent=oldest.toLocaleString("he-IL");
+  document.getElementById("livingLineages").textContent=livingFounderStats().active.toLocaleString("he-IL");
+
+  const fscience=foodScience();
+  document.getElementById("meaningfulFoodTransfers").textContent=meaningfulFoodTransfers.toLocaleString("he-IL");
+  document.getElementById("foodTransportDistance").textContent=Math.round(foodTransportDistanceTotal).toLocaleString("he-IL");
+  document.getElementById("movedFoodNow").textContent=fscience.movedNow.toLocaleString("he-IL");
+  document.getElementById("movedFoodCluster").textContent=fscience.largestCluster.toLocaleString("he-IL");
+  document.getElementById("usefulProtectionShare").textContent=protectedTicks>0?((usefulProtectionTicks/protectedTicks)*100).toFixed(1)+"%":"—";
+  document.getElementById("foodTransportOutcome").textContent=formatOutcomePair(outcomeArchive.foodYes,outcomeArchive.foodNo);
+  document.getElementById("blockMoveOutcome").textContent=formatOutcomePair(outcomeArchive.blockYes,outcomeArchive.blockNo);
+  document.getElementById("memoryOutcome").textContent=formatOutcomePair(outcomeArchive.memoryYes,outcomeArchive.memoryNo);
+
+  const m1UseRate=memoryMetrics.totalTicks>0
+    ? pct(memoryMetrics.writes[0],memoryMetrics.totalTicks)
+    : 0;
+  const m2UseRate=memoryMetrics.totalTicks>0
+    ? pct(memoryMetrics.writes[1],memoryMetrics.totalTicks)
+    : 0;
+
+  const m1HoldValues=[
+    avgStable(memoryMetrics.stability.hazard[0]),
+    avgStable(memoryMetrics.stability.food[0])
+  ].filter(v=>v!==null);
+  const m2HoldValues=[
+    avgStable(memoryMetrics.stability.hazard[1]),
+    avgStable(memoryMetrics.stability.food[1])
+  ].filter(v=>v!==null);
+
+  const m1Hold=m1HoldValues.length
+    ? m1HoldValues.reduce((a,b)=>a+b,0)/m1HoldValues.length
+    : null;
+  const m2Hold=m2HoldValues.length
+    ? m2HoldValues.reduce((a,b)=>a+b,0)/m2HoldValues.length
+    : null;
+
+  document.getElementById("memM1Use").textContent=
+    useLabel(m1UseRate)+" ("+m1UseRate.toFixed(0)+"%)";
+  document.getElementById("memM2Use").textContent=
+    useLabel(m2UseRate)+" ("+m2UseRate.toFixed(0)+"%)";
+
+  document.getElementById("memM1Hazard").textContent=
+    reactionLabel(reactionRatio("hazard",0));
+  document.getElementById("memM2Hazard").textContent=
+    reactionLabel(reactionRatio("hazard",1));
+
+  document.getElementById("memM1Food").textContent=
+    reactionLabel(reactionRatio("food",0));
+  document.getElementById("memM2Food").textContent=
+    reactionLabel(reactionRatio("food",1));
+
+  document.getElementById("memM1Hold").textContent=
+    holdLabel(m1Hold)+(m1Hold===null?"":" (≈"+Math.round(m1Hold)+" צעדים)");
+  document.getElementById("memM2Hold").textContent=
+    holdLabel(m2Hold)+(m2Hold===null?"":" (≈"+Math.round(m2Hold)+" צעדים)");
+
+  document.getElementById("memoryVerdict").textContent=
+    "🧠 "+memoryOverallVerdict();
+
+  document.getElementById("memorySamples").textContent=
+    "נבדקו "+
+    memoryMetrics.events.hazard.toLocaleString("he-IL")+" כניסות לסכנה ו־"+
+    memoryMetrics.events.food.toLocaleString("he-IL")+" אירועי אכילה.";
+
+  const cluster=clusterData();
+  const movedClusterData=clusterData(b=>!!b.everMoved);
+  document.getElementById("largestCluster").textContent=cluster.largest;
+  document.getElementById("movedCluster").textContent=movedClusterData.largest;
+  document.getElementById("clusterContributors").textContent=cluster.contributors;
+  drawPopulationChart();
+  renderLeaders();
+  renderWorldAlerts();
+
+  const alert=document.getElementById("structureAlert");
+
+  const usefulCandidate=
+    movedClusterData.largest>=6&&
+    cluster.contributors>=2&&
+    science.importedNow>=4&&
+    usefulProtectionTicks>1500;
+
+  if(usefulCandidate){
+    alert.style.display="block";
+    alert.textContent=
+      "⚠ זוהה מועמד למבנה שימושי: בלוקים שה-Somik-ים הזיזו הגיעו לאזור הסכנה, כמה פרטים תרמו לקבוצה ונוצרה הגנה מדידה. זו עדות מעניינת — עדיין לא הוכחה לכוונה מודעת.";
+  }else{
+    alert.style.display="none";
+  }
+
+  drawInspector();
+}
+
+function selectedSomik(){
+  return somiks.find(s=>s.id===selectedId)||null;
+}
+
+function percentSigned(v){
+  return Math.round((v+1)*50);
+}
+
+function sensorHtml(label,value,signed=false){
+  const pct=signed?percentSigned(value):Math.round(clamp(value,0,1)*100);
+  const text=value.toFixed(2);
+
+  return`
+    <div class="sensor">
+      <div class="sensorLine"><span>${label}</span><b>${text}</b></div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+    </div>`;
+}
+
+function drawInspector(){
+  const s=selectedSomik(),badge=document.getElementById('selectedBadge'),info=document.getElementById('selectedInfo'),sensors=document.getElementById('sensors'),stats=document.getElementById('brainStats');
+  if(!s){badge.textContent='לחץ על Somik';info.innerHTML='לחץ על Somik כדי לראות את המוח והמצב שלו.';sensors.innerHTML='';if(stats)stats.textContent='בחר Somik.';bctx.clearRect(0,0,brainCanvas.width,brainCanvas.height);bctx.fillStyle='#94a3b8';bctx.font='18px Arial';bctx.textAlign='center';bctx.fillText('בחר Somik כדי לראות את המוח',brainCanvas.width/2,brainCanvas.height/2);return;}
+  badge.textContent='#'+s.id;const b=s.brain,g=b.genome,o=b.lastOutputs||{};
+  info.innerHTML=`מין: <b>${s.sex==='male'?'זכר ♂':'נקבה ♀'}</b><br>דור: <b>${s.generation}</b><br>זמן חיים: <b>${s.age.toLocaleString('he-IL')}</b><br>אנרגיה: <b>${s.energy.toFixed(1)}</b><br>צאצאים: <b>${s.childrenCount}</b><br>אוכל שאכל: <b>${s.foodEaten}</b><br>בלוקים שהרים/הניח: <b>${s.blocksPicked}/${s.blocksDropped}</b><br><br><b>יציאות מוח:</b><br>מנוע שמאל: <b>${(o.left_motor||0).toFixed(3)}</b> · מנוע ימין: <b>${(o.right_motor||0).toFixed(3)}</b><br>לסת: <b>${(o.jaw||0).toFixed(3)}</b> · אחיזה: <b>${(o.grip||0).toFixed(3)}</b> · פליטה כימית: <b>${(o.chemical_emit||0).toFixed(3)}</b>`;
+  let html='';for(const k of ['energy','health','touch','chemical'])html+=sensorHtml(k,b.lastInputs[k]??0,true);for(const rs of g.sensors)html+=sensorHtml('ray '+rs.id,b.lastInputs['ray:'+rs.id]??-1,true);sensors.innerHTML=html;
+  if(stats)stats.innerHTML=`קרניים: <b>${g.sensors.length}</b> · נוירונים פנימיים: <b>${g.hidden.length}</b> · קשרים פעילים: <b>${g.connections.filter(c=>c.enabled).length}</b><br>עדכוני למידה בחיים: <b>${b.learningUpdates.toLocaleString('he-IL')}</b> · |Δ| מצטבר: <b>${b.learningAbsDelta.toFixed(3)}</b> · plasticity: <b>${g.plasticityRate.toFixed(4)}</b>`;
+  drawBrain(b);
+}
+function weightStyle(w){const a=Math.min(.9,.10+Math.abs(w)*.35);return w>=0?`rgba(96,165,250,${a})`:`rgba(248,113,113,${a})`;}
+function drawBrain(brain){
+  const c=brainCanvas,ctx=bctx,Wc=c.width,Hc=c.height;ctx.clearRect(0,0,Wc,Hc);const g=brain.genome;
+  const inputIds=['energy','health','touch','chemical',...g.sensors.map(s=>'ray:'+s.id)],hiddenIds=g.hidden.map(h=>h.id),outputIds=brain.actuators.map(a=>'act:'+a);
+  const pos=new Map();const layer=(ids,x)=>ids.forEach((id,i)=>pos.set(id,{x,y:32+(Hc-64)*(i+.5)/ids.length}));layer(inputIds,75);layer(hiddenIds,Wc/2);layer(outputIds,Wc-80);
+  for(const cn of g.connections){if(!cn.enabled||!pos.has(cn.from)||!pos.has(cn.to))continue;const a=pos.get(cn.from),z=pos.get(cn.to),w=cn.weight+(brain.learnedWeights[cn.id]||0);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(z.x,z.y);ctx.strokeStyle=weightStyle(w);ctx.lineWidth=Math.min(3,.45+Math.abs(w)*1.1);ctx.stroke();}
+  const val=id=>id.startsWith('act:')?(brain.lastRawOutputs[id.slice(4)]||0):(brain.lastHidden[id]??brain.lastInputs[id]??0);
+  const label=id=>id.startsWith('ray:')?id.replace('ray:','R'):id.startsWith('act:')?({left_motor:'L motor',right_motor:'R motor',jaw:'jaw',grip:'grip',chemical_emit:'chem'})[id.slice(4)]:id;
+  for(const [id,p] of pos){const v=clamp(val(id),-1,1),lum=Math.round(115+Math.abs(v)*120);ctx.beginPath();ctx.arc(p.x,p.y,id.startsWith('h')?7:8,0,Math.PI*2);ctx.fillStyle=`rgb(${lum},${lum},${lum})`;ctx.fill();ctx.strokeStyle='#0f172a';ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#cbd5e1';ctx.font='11px Arial';ctx.textAlign=id.startsWith('act:')?'right':(id.startsWith('h')?'center':'left');ctx.fillText(label(id),p.x+(id.startsWith('act:')?-12:12),p.y+4);}
+  ctx.fillStyle='#93c5fd';ctx.font='12px Arial';ctx.textAlign='center';ctx.fillText('RAW INPUTS',75,15);ctx.fillText('RECURRENT HIDDEN',Wc/2,15);ctx.fillText('ACTUATORS',Wc-80,15);
+}
+
+worldCanvas.addEventListener("pointerdown",e=>{
+  const rect=worldCanvas.getBoundingClientRect();
+  const x=(e.clientX-rect.left)*W/rect.width;
+  const y=(e.clientY-rect.top)*H/rect.height;
+
+  let best=null,bestD2=Infinity;
+
+  for(const s of somiks){
+    const dx=s.x-x,dy=s.y-y,d2=dx*dx+dy*dy;
+
+    if(d2<bestD2){
+      bestD2=d2;
+      best=s;
+    }
+  }
+
+  if(best&&bestD2<35*35)selectedId=best.id;
+});
+
+document.getElementById("pauseBtn").onclick=()=>{
+  running=!running;
+  document.getElementById("pauseBtn").textContent=running?"⏸ עצור":"▶ המשך";
+};
+
+document.getElementById("resetBtn").onclick=()=>{
+  const ok=confirm("להתחיל עולם חדש? השמירה הנוכחית תוחלף.");
+  if(!ok)return;
+  clearSavedGame();
+  resetWorld();
+  saveGame();
+};
+
+document.getElementById("speedBtn").onclick=()=>{
+  speed=speed===1?5:speed===5?20:speed===20?100:1;
+  document.getElementById("speedBtn").textContent="⚡ x"+speed;
+};
+
+document.getElementById("saveBtn").onclick=saveGame;
+document.getElementById("exportBtn").onclick=exportSave;
+document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();
+document.getElementById("importFile").addEventListener("change",e=>{
+  const file=e.target.files&&e.target.files[0];
+  if(file)importSaveFile(file);
+  e.target.value="";
+});
+
+window.addEventListener("pagehide",saveGame);
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="hidden")saveGame();
+});
+
+function loop(){
+  if(running){
+    for(let i=0;i<speed;i++)updateWorld();
+  }
+
+  drawWorld();
+
+  const now=Date.now();
+  if(now-lastAutosaveAt>=5000){
+    saveGame();
+    lastAutosaveAt=now;
+  }
+
+  requestAnimationFrame(loop);
+}
+
+
+/* Somik World v5 startup */
+if(!loadGame()){
+  resetWorld();
+  saveGame();
+}
+loop();
+</script>
+</body>
+</html>
