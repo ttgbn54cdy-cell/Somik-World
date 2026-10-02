@@ -97,6 +97,7 @@ button{
   .canvasWrap{border-radius:8px}
 }
 </style>
+<!-- Somik World v5: v0.5 world + v4 dynamic recurrent brain; 120/120/120 -->
 </head>
 <body>
 <div class="app">
@@ -178,7 +179,7 @@ button{
       <div class="small" id="populationChartNote">הגרף נשמר יחד עם העולם.</div>
     </div>
 
-    <div class="card">
+    <div class="card" style="display:none">
       <h3>מה קורה עם הזיכרון?</h3>
       <div class="row"><span>M1 — כמה משתמש בו</span><b id="memM1Use">—</b></div>
       <div class="row"><span>M1 — תגובה לסכנה</span><b id="memM1Hazard">—</b></div>
@@ -242,20 +243,19 @@ button{
     </div>
 
     <div class="card">
-      <h3>חיישנים</h3>
+      <h3>קלטים גולמיים למוח</h3>
       <div id="sensors"></div>
+      <div class="small" style="margin-top:8px">אין חיישן מזון, בלוק, סכנה או שותף. קרני החישה מודדות רק מרחק גאומטרי למשטח הקרוב.</div>
     </div>
 
     <div class="card">
-      <h3>המוח</h3>
-      <canvas id="brainCanvas" width="320" height="330"></canvas>
-      <div class="small" style="margin-top:7px">
-        23 חושים/מצבים + 2 תאי זיכרון → 9 נוירונים פנימיים → 11 יציאות:
-        פנייה, תנועה, PICK, DROP, אכילה, 4 יציאות זיכרון, רצון להתרבות והשקעת אנרגיה בצאצא.
-      </div>
+      <h3>מוח v4 — מבנה חי</h3>
+      <canvas id="brainCanvas" width="760" height="520"></canvas>
+      <div id="brainStats" class="small" style="margin-top:8px">בחר Somik.</div>
+      <div class="small" style="margin-top:7px">קלטים קבועים + קרניים משתנות → נוירונים פנימיים recurrent → 5 יציאות: מנוע שמאל, מנוע ימין, לסת, אחיזה ופליטה כימית. עובי/צבע הקשרים מציגים את המשקל הנוכחי, כולל שינוי שנלמד במהלך החיים.</div>
     </div>
 
-    <div class="card small">
+    <div class="card small" style="display:none">
       <b>זיכרון פנימי:</b> M1 ו-M2 מתחילים ב-0 בכל לידה.
       המוח מחליט בכל רגע איזה ערך לכתוב וכמה לעדכן.
       אנחנו לא מגדירים מה משמעות הזיכרון, והזיכרון עצמו לא עובר לצאצא —
@@ -275,15 +275,7 @@ button{
       </div>
     </div>
 
-    <div class="card small">
-      <b>חוקי החיים:</b> אין מוות מזקנה, אין גיל רבייה קבוע ואין תקרת אוכלוסייה ביולוגית.
-      המוח של כל Somik מחליט בעצמו אם הוא רוצה להתרבות. לידה יכולה לקרות בין כל שני
-      Somik-ים, בלי קשר למין, כאשר הם במגע קרוב ושניהם בוחרים ברבייה באותו זמן.
-      אין הגרלת לידה ואין התאמה כפויה לפי מין. כל הורה גם מחליט כמה אנרגיה להשקיע בצאצא;
-      אם אין לו את הכמות שבחר, הלידה לא מתבצעת. אותו PICK/DROP משמש עכשיו גם לאוכל:
-      Somik יכול לבחור לאכול, להרים אוכל, לשאת אותו, להניח אותו — או להתעלם ממנו.
-      האוכל, התחרות, הסכנה וההתנהגות קובעים את האוכלוסייה.
-    </div>
+    <div class="card small"><b>עקרון המוח:</b> ה-Somik אינו מקבל תוויות כמו אוכל, בלוק, סכנה או שותף. המוח מקבל מצב גוף, מגע וקרני מרחק גאומטריות בלבד. המבנה, המשקלים והחיישנים יכולים להשתנות בתורשה; שינויי למידה במהלך החיים אינם עוברים לצאצא.</div>
   </aside>
 </div>
 
@@ -1267,87 +1259,70 @@ function hazardProtectionAt(x,y){
 
 class Brain{
   constructor(parent=null,parent2=null){
-    this.inputN=25;
-    this.hiddenN=9;
-    this.outputN=11;
-
-    if(parent&&parent2){
-      this.w1=parent.w1.map((row,i)=>row.map((v,j)=>
-        mutateValue(Math.random()<0.5?v:parent2.w1[i][j])
-      ));
-      this.b1=parent.b1.map((v,i)=>
-        mutateValue(Math.random()<0.5?v:parent2.b1[i])
-      );
-      this.w2=parent.w2.map((row,i)=>row.map((v,j)=>
-        mutateValue(Math.random()<0.5?v:parent2.w2[i][j])
-      ));
-      this.b2=parent.b2.map((v,i)=>
-        mutateValue(Math.random()<0.5?v:parent2.b2[i])
-      );
-    }else if(parent){
-      this.w1=parent.w1.map(row=>row.map(v=>mutateValue(v)));
-      this.b1=parent.b1.map(v=>mutateValue(v));
-      this.w2=parent.w2.map(row=>row.map(v=>mutateValue(v)));
-      this.b2=parent.b2.map(v=>mutateValue(v));
-    }else{
-      this.w1=Array.from({length:this.hiddenN},()=>Array.from({length:this.inputN},()=>rnd(-1,1)));
-      this.b1=Array.from({length:this.hiddenN},()=>rnd(-0.4,0.4));
-      this.w2=Array.from({length:this.outputN},()=>Array.from({length:this.hiddenN},()=>rnd(-1,1)));
-      this.b2=Array.from({length:this.outputN},()=>rnd(-0.4,0.4));
-    }
-
-    this.lastInputs=Array(this.inputN).fill(0);
-    this.lastHidden=Array(this.hiddenN).fill(0);
-    this.lastOutputs=Array(this.outputN).fill(0);
+    this.fixedSensors=['energy','health','touch','chemical'];
+    this.actuators=['left_motor','right_motor','jaw','grip','chemical_emit'];
+    this.maxRaySensors=12; this.minRaySensors=2; this.maxHidden=32; this.minHidden=4;
+    if(parent){
+      const a=parent.genome, b=parent2?parent2.genome:a;
+      this.genome=this.crossover(a,b);
+      this.mutateGenome();
+    }else this.genome=this.founderGenome();
+    this.hiddenState={};
+    this.learnedWeights={};
+    this.lastInputs={}; this.lastHidden={};
+    this.lastOutputs={left_motor:0,right_motor:0,jaw:0,grip:0,chemical_emit:0};
+    this.lastRawOutputs={...this.lastOutputs};
+    this.lastTrace=null; this.lastBodyEnergy=null;
+    this.learningUpdates=0; this.learningAbsDelta=0;
   }
-
+  founderGenome(){
+    const sensors=Array.from({length:6},(_,i)=>({id:'r'+i,angle:i/6*Math.PI*2,range:82,gain:1}));
+    const hidden=Array.from({length:8},(_,i)=>({id:'h'+i,bias:rnd(-0.08,0.08)}));
+    const sources=[...this.fixedSensors,...sensors.map(s=>'ray:'+s.id)], acts=this.actuators.map(a=>'act:'+a), connections=[]; let ci=0;
+    for(const f of sources)for(const h of hidden)if(Math.random()<0.55)connections.push({id:'c'+ci++,from:f,to:h.id,weight:rnd(-0.45,0.45),enabled:true});
+    for(const h1 of hidden)for(const h2 of hidden)if(h1!==h2&&Math.random()<0.18)connections.push({id:'c'+ci++,from:h1.id,to:h2.id,weight:rnd(-0.32,0.32),enabled:true});
+    for(const h of hidden)for(const a of acts)if(Math.random()<0.70)connections.push({id:'c'+ci++,from:h.id,to:a,weight:rnd(-0.48,0.48),enabled:true});
+    return {sensors,hidden,connections,plasticityRate:0.006,mutationRate:0.018,structuralRate:0.006};
+  }
+  crossover(a,b){
+    const choose=(x,y)=>JSON.parse(JSON.stringify(Math.random()<0.5?x:y));
+    const merge=(aa,bb)=>{const A=new Map(aa.map(x=>[x.id,x])),B=new Map(bb.map(x=>[x.id,x])); const out=[]; for(const id of new Set([...A.keys(),...B.keys()])){const x=A.get(id),y=B.get(id); if(x&&y)out.push(choose(x,y)); else if(Math.random()<0.52)out.push(JSON.parse(JSON.stringify(x||y)));} return out;};
+    return {sensors:merge(a.sensors,b.sensors),hidden:merge(a.hidden,b.hidden),connections:merge(a.connections,b.connections),plasticityRate:(a.plasticityRate+b.plasticityRate)/2,mutationRate:(a.mutationRate+b.mutationRate)/2,structuralRate:(a.structuralRate+b.structuralRate)/2};
+  }
+  mutateGenome(){
+    const g=this.genome,p=g.mutationRate||0.018,sp=g.structuralRate||0.006;
+    for(const s of g.sensors){if(Math.random()<p)s.angle=(s.angle+rnd(-0.18,0.18)+Math.PI*2)%(Math.PI*2); if(Math.random()<p)s.range=clamp(s.range+rnd(-9,9),35,150); if(Math.random()<p)s.gain=clamp(s.gain+rnd(-0.1,0.1),0.25,2.5);}
+    for(const h of g.hidden)if(Math.random()<p)h.bias+=rnd(-0.12,0.12);
+    for(const c of g.connections)if(Math.random()<p)c.weight+=rnd(-0.16,0.16);
+    if(Math.random()<sp&&g.sensors.length<this.maxRaySensors){const q=JSON.parse(JSON.stringify(g.sensors[Math.floor(Math.random()*g.sensors.length)]));q.id='s'+Math.random().toString(36).slice(2,9);q.angle=(q.angle+rnd(-0.18,0.18)+Math.PI*2)%(Math.PI*2);g.sensors.push(q);}
+    if(Math.random()<sp&&g.sensors.length>this.minRaySensors){const q=g.sensors.splice(Math.floor(Math.random()*g.sensors.length),1)[0];g.connections=g.connections.filter(c=>c.from!=='ray:'+q.id);}
+    if(Math.random()<sp&&g.hidden.length<this.maxHidden)g.hidden.push({id:'h'+Math.random().toString(36).slice(2,9),bias:rnd(-0.05,0.05)});
+    if(Math.random()<sp&&g.hidden.length>this.minHidden){const q=g.hidden.splice(Math.floor(Math.random()*g.hidden.length),1)[0];g.connections=g.connections.filter(c=>c.from!==q.id&&c.to!==q.id);}
+    if(Math.random()<sp*2){const sources=[...this.fixedSensors,...g.sensors.map(s=>'ray:'+s.id),...g.hidden.map(h=>h.id)],targets=[...g.hidden.map(h=>h.id),...this.actuators.map(a=>'act:'+a)];for(let k=0;k<8;k++){const from=sources[Math.floor(Math.random()*sources.length)],to=targets[Math.floor(Math.random()*targets.length)];if(from!==to&&!g.connections.some(c=>c.from===from&&c.to===to)){g.connections.push({id:'c'+Math.random().toString(36).slice(2,10),from,to,weight:rnd(-0.35,0.35),enabled:true});break;}}}
+    if(Math.random()<sp&&g.connections.length>8)g.connections.splice(Math.floor(Math.random()*g.connections.length),1);
+    g.sensors=g.sensors.slice(0,this.maxRaySensors);g.hidden=g.hidden.slice(0,this.maxHidden);
+  }
+  learnFromBody(energy){
+    if(this.lastBodyEnergy===null){this.lastBodyEnergy=energy;return;}
+    const reward=Math.tanh((energy-this.lastBodyEnergy)/25); this.lastBodyEnergy=energy;
+    if(!this.lastTrace||Math.abs(reward)<1e-7)return;
+    const lr=this.genome.plasticityRate||0.006, tr=this.lastTrace;
+    for(const c of this.genome.connections){if(!c.enabled)continue;let pre=0,post=0;if(c.from.startsWith('ray:')||this.fixedSensors.includes(c.from))pre=tr.inputs[c.from]||0;else pre=tr.prev[c.from]||0;if(c.to.startsWith('act:'))post=tr.rawOutputs[c.to.slice(4)]||0;else post=tr.hidden[c.to]||0;const old=this.learnedWeights[c.id]||0,nv=clamp(old*(1-0.00005)+lr*reward*pre*post,-1.5,1.5);this.learnedWeights[c.id]=nv;const d=Math.abs(nv-old);if(d){this.learningUpdates++;this.learningAbsDelta+=d;}}
+  }
   think(inputs){
-    this.lastInputs=inputs.slice();
-
-    const hidden=this.w1.map((row,i)=>{
-      let sum=this.b1[i];
-      for(let j=0;j<row.length;j++)sum+=row[j]*inputs[j];
-      return Math.tanh(sum);
-    });
-
-    const raw=[];
-    for(let o=0;o<this.outputN;o++){
-      let sum=this.b2[o];
-      for(let h=0;h<this.hiddenN;h++)sum+=this.w2[o][h]*hidden[h];
-      raw.push(sum);
-    }
-
-    const outputs=[
-      Math.tanh(raw[0]),
-      sigmoid(raw[1]),
-      sigmoid(raw[2]),
-      sigmoid(raw[3]),
-      Math.tanh(raw[4]),
-      sigmoid(raw[5]),
-      Math.tanh(raw[6]),
-      sigmoid(raw[7]),
-      sigmoid(raw[8]),
-      sigmoid(raw[9]),
-      sigmoid(raw[10])
-    ];
-
-    this.lastHidden=hidden.slice();
-    this.lastOutputs=outputs.slice();
-
-    return{
-      turn:outputs[0],
-      thrust:outputs[1],
-      pick:outputs[2],
-      drop:outputs[3],
-      memory1Value:outputs[4],
-      memory1Gate:outputs[5],
-      memory2Value:outputs[6],
-      memory2Gate:outputs[7],
-      reproduce:outputs[8],
-      eat:outputs[9],
-      investment:outputs[10]
-    };
+    const g=this.genome,prev=this.hiddenState||{},next={},incoming=new Map();
+    for(const c of g.connections){if(!c.enabled)continue;if(!incoming.has(c.to))incoming.set(c.to,[]);incoming.get(c.to).push(c);}
+    const ew=c=>c.weight+(this.learnedWeights[c.id]||0);
+    for(const h of g.hidden){let sum=h.bias;for(const c of incoming.get(h.id)||[]){let v=0;if(c.from.startsWith('ray:')||this.fixedSensors.includes(c.from))v=inputs[c.from]||0;else v=prev[c.from]||0;sum+=v*ew(c);}next[h.id]=Math.tanh(sum);}
+    const raw={};for(const k of this.actuators){let sum=0;for(const c of incoming.get('act:'+k)||[]){const v=next[c.from]??prev[c.from]??inputs[c.from]??0;sum+=v*ew(c);}raw[k]=Math.tanh(sum);}
+    this.hiddenState=next;this.lastInputs={...inputs};this.lastHidden={...next};this.lastRawOutputs={...raw};
+    this.lastOutputs={left_motor:raw.left_motor,right_motor:raw.right_motor,jaw:(raw.jaw+1)/2,grip:(raw.grip+1)/2,chemical_emit:(raw.chemical_emit+1)/2};
+    this.lastTrace={inputs:{...inputs},prev:{...prev},hidden:{...next},rawOutputs:{...raw}};
+    const drive=clamp((raw.left_motor+raw.right_motor+2)/4,0,1), turn=clamp((raw.right_motor-raw.left_motor)/2,-1,1), grip=this.lastOutputs.grip, jaw=this.lastOutputs.jaw;
+    return {turn,thrust:drive,pick:grip,drop:1-grip,memory1Value:0,memory1Gate:0,memory2Value:0,memory2Gate:0,reproduce:(inputs.energy>0.15?1:0),eat:jaw,investment:0.24,left_motor:raw.left_motor,right_motor:raw.right_motor,jaw,grip,chemical_emit:this.lastOutputs.chemical_emit};
   }
+  dump(){return {genome:this.genome,hiddenState:this.hiddenState,learnedWeights:this.learnedWeights,lastInputs:this.lastInputs,lastHidden:this.lastHidden,lastOutputs:this.lastOutputs,lastRawOutputs:this.lastRawOutputs,learningUpdates:this.learningUpdates,learningAbsDelta:this.learningAbsDelta,lastBodyEnergy:this.lastBodyEnergy};}
+  static load(d){const b=Object.create(Brain.prototype);b.fixedSensors=['energy','health','touch','chemical'];b.actuators=['left_motor','right_motor','jaw','grip','chemical_emit'];b.maxRaySensors=12;b.minRaySensors=2;b.maxHidden=32;b.minHidden=4;Object.assign(b,d);b.genome=JSON.parse(JSON.stringify(d.genome));b.hiddenState=d.hiddenState||{};b.learnedWeights=d.learnedWeights||{};b.lastInputs=d.lastInputs||{};b.lastHidden=d.lastHidden||{};b.lastOutputs=d.lastOutputs||{left_motor:0,right_motor:0,jaw:0,grip:0,chemical_emit:0};b.lastRawOutputs=d.lastRawOutputs||{};return b;}
 }
 
 class Block{
@@ -1482,162 +1457,22 @@ class Somik{
   }
 
   sense(){
-    let bestFood=null;
-    let bestFoodD2=Infinity;
-
-    for(const f of foods){
-      const dx=f.x-this.x,dy=f.y-this.y;
-      const d2=dx*dx+dy*dy;
-      if(d2<bestFoodD2){
-        bestFoodD2=d2;
-        bestFood=f;
-      }
+    const brain=this.brain,g=brain.genome;
+    let touching=(this.x<=this.r||this.x>=W-this.r||this.y<=this.r||this.y>=H-this.r);
+    const entities=[];
+    for(const b of blocks)entities.push({x:b.x,y:b.y,r:b.size/2});
+    for(const f of foods)entities.push({x:f.x,y:f.y,r:f.r||5});
+    for(const s of somiks)if(s!==this)entities.push({x:s.x,y:s.y,r:s.r});
+    for(const q of entities){const d=Math.hypot(q.x-this.x,q.y-this.y)-q.r-this.r;if(d<=0){touching=true;break;}}
+    const inputs={energy:clamp(this.energy/180,0,1)*2-1,health:1,touch:touching?1:-1,chemical:0};
+    const rayCircle=(ox,oy,dx,dy,cx,cy,rr,maxD)=>{const lx=cx-ox,ly=cy-oy,t=lx*dx+ly*dy;if(t<0||t>maxD)return maxD;const p2=lx*lx+ly*ly-t*t,r2=rr*rr;if(p2>r2)return maxD;return Math.max(0,t-Math.sqrt(Math.max(0,r2-p2)));};
+    for(const rs of g.sensors){const ang=this.dir+rs.angle,dx=Math.cos(ang),dy=Math.sin(ang);let best=rs.range;
+      if(dx>1e-9)best=Math.min(best,(W-this.r-this.x)/dx); else if(dx<-1e-9)best=Math.min(best,(this.r-this.x)/(-dx));
+      if(dy>1e-9)best=Math.min(best,(H-this.r-this.y)/dy); else if(dy<-1e-9)best=Math.min(best,(this.r-this.y)/(-dy));
+      for(const q of entities)best=Math.min(best,rayCircle(this.x,this.y,dx,dy,q.x,q.y,q.r+this.r,rs.range));
+      inputs['ray:'+rs.id]=clamp((1-best/rs.range)*rs.gain,0,1)*2-1;
     }
-
-    let foodNear=0,foodAhead=0,foodSide=0;
-    this.nearestFood=null;
-
-    if(bestFood){
-      const d=Math.sqrt(bestFoodD2);
-      if(d<=VISION){
-        const closeness=1-d/VISION;
-        const abs=Math.atan2(bestFood.y-this.y,bestFood.x-this.x);
-        const rel=angleDiff(abs,this.dir);
-
-        foodNear=closeness;
-        foodAhead=Math.cos(rel)*closeness;
-        foodSide=Math.sin(rel)*closeness;
-        this.nearestFood=bestFood;
-      }
-    }
-
-    let bestBlock=null;
-    let bestBlockD2=Infinity;
-
-    for(const b of blocks){
-      const dx=b.x-this.x,dy=b.y-this.y;
-      const d2=dx*dx+dy*dy;
-      if(d2<bestBlockD2){
-        bestBlockD2=d2;
-        bestBlock=b;
-      }
-    }
-
-    let blockNear=0,blockAhead=0,blockSide=0;
-    this.nearestBlock=null;
-
-    if(bestBlock){
-      const d=Math.sqrt(bestBlockD2);
-      if(d<=BLOCK_VISION){
-        const closeness=1-d/BLOCK_VISION;
-        const abs=Math.atan2(bestBlock.y-this.y,bestBlock.x-this.x);
-        const rel=angleDiff(abs,this.dir);
-
-        blockNear=closeness;
-        blockAhead=Math.cos(rel)*closeness;
-        blockSide=Math.sin(rel)*closeness;
-        this.nearestBlock=bestBlock;
-      }
-    }
-
-    let nearestNeighbor=Infinity;
-    let nearestMate=null;
-    let nearestMateD2=Infinity;
-
-    for(const other of somiks){
-      if(other===this)continue;
-      const dx=other.x-this.x,dy=other.y-this.y;
-      const d2=dx*dx+dy*dy;
-
-      if(d2<nearestNeighbor)nearestNeighbor=d2;
-
-      // כל Somik אחר הוא שותף רבייה אפשרי. המין אינו מגבלה פיזית.
-      if(d2<nearestMateD2){
-        nearestMate=other;
-        nearestMateD2=d2;
-      }
-    }
-
-    let neighborNear=0;
-    if(nearestNeighbor<Infinity){
-      const d=Math.sqrt(nearestNeighbor);
-      if(d<100)neighborNear=1-d/100;
-    }
-
-    let mateNear=0,mateAhead=0,mateSide=0,mateSexSignal=0,mateReproSignal=0,mateInvestSignal=0;
-    if(nearestMate){
-      const d=Math.sqrt(nearestMateD2);
-      if(d<=MATE_VISION){
-        const closeness=1-d/MATE_VISION;
-        const abs=Math.atan2(nearestMate.y-this.y,nearestMate.x-this.x);
-        const rel=angleDiff(abs,this.dir);
-        mateNear=closeness;
-        mateAhead=Math.cos(rel)*closeness;
-        mateSide=Math.sin(rel)*closeness;
-        mateSexSignal=nearestMate.sex==="male"?-1:1;
-        mateReproSignal=clamp(nearestMate.prevReproduceSignal??nearestMate.lastDecision?.reproduce??0,0,1);
-        mateInvestSignal=clamp(nearestMate.prevInvestmentSignal??nearestMate.lastDecision?.investment??0,0,1);
-      }
-    }
-
-    const energy=clamp(this.energy/180,0,1);
-    const carrying=(this.carrying||this.carryingFood)?1:0;
-    const carryBlock=this.carrying?1:0;
-    const carryFood=this.carryingFood?1:0;
-    const sexSignal=this.sex==="male"?-1:1;
-    const ageSignal=1-Math.exp(-this.age/2500);
-
-    const hazardHere=insideHazard(this.x,this.y)?1:0;
-
-    const lookX=this.x+Math.cos(this.dir)*55;
-    const lookY=this.y+Math.sin(this.dir)*55;
-    let hazardAhead=0;
-
-    if(insideHazard(lookX,lookY)){
-      hazardAhead=1;
-    }else{
-      const d=distanceToHazard(lookX,lookY);
-      hazardAhead=clamp(1-d/100,0,1);
-    }
-
-    const protection=hazardProtectionAt(this.x,this.y);
-    const noise=rnd(-1,1);
-
-    this.lastSensors={
-      energy,foodNear,foodAhead,foodSide,neighborNear,
-      blockNear,blockAhead,blockSide,carrying,
-      hazardHere,hazardAhead,protection,noise,
-      sexSignal,ageSignal,mateNear,mateAhead,mateSide,
-      carryBlock,carryFood,mateSexSignal,mateReproSignal,mateInvestSignal
-    };
-
-    return[
-      energy,
-      foodNear,
-      foodAhead,
-      foodSide,
-      neighborNear,
-      blockNear,
-      blockAhead,
-      blockSide,
-      carrying,
-      hazardHere,
-      hazardAhead,
-      protection,
-      noise,
-      sexSignal,
-      ageSignal,
-      mateNear,
-      mateAhead,
-      mateSide,
-      this.memory[0],
-      this.memory[1],
-      carryBlock,
-      carryFood,
-      mateSexSignal,
-      mateReproSignal,
-      mateInvestSignal
-    ];
+    this.lastSensors=inputs;return inputs;
   }
 
   tryPick(){
@@ -1800,6 +1635,7 @@ class Somik{
     this.age++;
     if(this.actionCooldown>0)this.actionCooldown--;
 
+    this.brain.learnFromBody(this.energy);
     const inputs=this.sense();
     const decision=this.brain.think(inputs);
     this.lastDecision=decision;
@@ -1999,64 +1835,10 @@ ctx.strokeStyle=this.id===selectedId?"#fff":"#111827";
 }
 
 
-function serializeBrain(brain){
-  return{
-    inputN:brain.inputN,
-    hiddenN:brain.hiddenN,
-    outputN:brain.outputN,
-    w1:brain.w1,
-    b1:brain.b1,
-    w2:brain.w2,
-    b2:brain.b2
-  };
+function serializeBrain(brain){ return brain.dump();
 }
 
-function deserializeBrain(data){
-  const brain=Object.create(Brain.prototype);
-  const oldInputN=data.inputN??13;
-  const oldOutputN=data.outputN??4;
-
-  brain.inputN=25;
-  brain.hiddenN=data.hiddenN??9;
-  brain.outputN=11;
-
-  brain.w1=data.w1.map(row=>{
-    const r=row.slice(0,Math.min(oldInputN,25));
-    while(r.length<25)r.push(0);
-    return r;
-  });
-  brain.b1=data.b1.slice();
-
-  brain.w2=[];
-  brain.b2=[];
-  const preserve=Math.min(oldOutputN,11);
-  for(let i=0;i<preserve;i++){
-    brain.w2.push(data.w2[i].slice());
-    brain.b2.push(data.b2[i]??0);
-  }
-  while(brain.w2.length<8){
-    brain.w2.push(Array.from({length:brain.hiddenN},()=>rnd(-0.35,0.35)));
-    brain.b2.push(rnd(-0.15,0.15));
-  }
-  if(brain.w2.length<9){
-    brain.w2.push(Array.from({length:brain.hiddenN},()=>rnd(-0.35,0.35)));
-    brain.b2.push(rnd(-0.15,0.15));
-  }
-  if(brain.w2.length<10){
-    brain.w2.push(Array(brain.hiddenN).fill(0));
-    brain.b2.push(1.0);
-  }
-  // השקעה חדשה מתחילה סביב העלות הישנה (~35) כדי לשמור רציפות, ומכאן עוברת אבולוציה.
-  if(brain.w2.length<11){
-    const p=(35-MIN_REPRO_INVEST)/(MAX_REPRO_INVEST-MIN_REPRO_INVEST);
-    brain.w2.push(Array(brain.hiddenN).fill(0));
-    brain.b2.push(Math.log(p/(1-p)));
-  }
-
-  brain.lastInputs=Array(brain.inputN).fill(0);
-  brain.lastHidden=Array(brain.hiddenN).fill(0);
-  brain.lastOutputs=Array(brain.outputN).fill(0);
-  return brain;
+function deserializeBrain(data){ return Brain.load(data);
 }
 function serializeBlock(block){
   return{
@@ -3136,165 +2918,24 @@ function sensorHtml(label,value,signed=false){
 }
 
 function drawInspector(){
-  const s=selectedSomik();
-  const badge=document.getElementById("selectedBadge");
-  const info=document.getElementById("selectedInfo");
-  const sensors=document.getElementById("sensors");
-
-  if(!s){
-    badge.textContent="לחץ על Somik";
-    info.innerHTML="לחץ על Somik כדי לראות את חייו, השושלת שלו, החושים וההחלטות שלו.";
-    sensors.innerHTML="";
-
-    bctx.clearRect(0,0,brainCanvas.width,brainCanvas.height);
-    bctx.fillStyle="#94a3b8";
-    bctx.font="14px Arial";
-    bctx.textAlign="center";
-    bctx.fillText("בחר Somik כדי לראות את המוח",brainCanvas.width/2,brainCanvas.height/2);
-
-    return;
-  }
-
-  badge.textContent="#"+s.id;
-
-  info.innerHTML=
-    `מין: <b>${s.sex==="male"?"זכר ♂":"נקבה ♀"}</b><br>`+
-    `דור: <b>${s.generation}</b><br>`+
-    `זמן חיים: <b>${s.age.toLocaleString("he-IL")}</b> (ללא גיל מקסימלי)<br>`+
-    `מוצא גנטי מוביל: <b>${formatAncestry(s.ancestry)}</b><br>`+
-    `הורה 1: <b>${s.parentId===null?"מייסד":"#"+s.parentId}</b><br>`+
-    `הורה 2: <b>${s.secondParentId===null?"—":"#"+s.secondParentId}</b><br>`+
-    `צאצאים: <b>${s.childrenCount}</b><br>`+
-    `לידות כהורה: <b>${s.birthsAsParent||0}</b><br>`+
-    `אנרגיה שהשקיע בצאצאים: <b>${(s.totalReproInvestment||0).toFixed(1)}</b><br>`+
-    `אוכל שאכל: <b>${s.foodEaten}</b><br>`+
-    `העברות אוכל משמעותיות: <b>${s.meaningfulFoodTransfers||0}</b><br>`+
-    `מרחק העברת אוכל: <b>${Math.round(s.foodTransportDistance||0).toLocaleString("he-IL")}</b><br>`+
-    `נושא אוכל עכשיו: <b>${s.carryingFood?"כן":"לא"}</b><br>`+
-    `אנרגיה: <b>${s.energy.toFixed(1)}</b><br>`+
-    `זמן מוגן בחייו: <b>${s.protectedLifeTicks.toLocaleString("he-IL")}</b><br>`+
-    `נזק מהסכנה בחייו: <b>${s.hazardDamageTaken.toFixed(1)}</b><br>`+
-    `בלוקים שהרים: <b>${s.blocksPicked}</b><br>`+
-    `בלוקים שהניח: <b>${s.blocksDropped}</b><br>`+
-    `נושא בלוק עכשיו: <b>${s.carrying?"כן":"לא"}</b><br>`+
-    `זיכרון M1: <b>${s.memory[0].toFixed(2)}</b><br>`+
-    `זיכרון M2: <b>${s.memory[1].toFixed(2)}</b><br>`+
-    `כתיבה בפועל M1/M2: <b>${personalWriteRates(s)}</b><br>`+
-    `פנייה: <b>${s.lastDecision.turn.toFixed(2)}</b><br>`+
-    `תנועה: <b>${s.lastDecision.thrust.toFixed(2)}</b><br>`+
-    `הרם בלוק: <b>${s.lastDecision.pick.toFixed(2)}</b><br>`+
-    `הנח: <b>${s.lastDecision.drop.toFixed(2)}</b><br>`+
-    `אכול: <b>${(s.lastDecision.eat??0).toFixed(2)}</b><br>`+
-    `רצון להתרבות: <b>${(s.lastDecision.reproduce??0).toFixed(2)}</b><br>`+
-    `השקעה רצויה בצאצא: <b>${desiredReproInvestment(s).toFixed(1)}</b><br>`+
-    `כתיבה ל-M1: <b>${s.lastDecision.memory1Value.toFixed(2)}</b> · שער: <b>${s.lastDecision.memory1Gate.toFixed(2)}</b><br>`+
-    `כתיבה ל-M2: <b>${s.lastDecision.memory2Value.toFixed(2)}</b> · שער: <b>${s.lastDecision.memory2Gate.toFixed(2)}</b>`;
-
-  const x=s.lastSensors;
-
-  sensors.innerHTML=
-    sensorHtml("רמת אנרגיה",x.energy)+
-    sensorHtml("כמה אוכל קרוב",x.foodNear)+
-    sensorHtml("כיוון האוכל: קדימה / אחורה",x.foodAhead,true)+
-    sensorHtml("כיוון האוכל: ימין / שמאל",x.foodSide,true)+
-    sensorHtml("Somik אחר קרוב",x.neighborNear)+
-    sensorHtml("שותף רבייה אפשרי קרוב",x.mateNear??0)+
-    sensorHtml("כיוון שותף אפשרי: קדימה / אחורה",x.mateAhead??0,true)+
-    sensorHtml("כיוון שותף אפשרי: ימין / שמאל",x.mateSide??0,true)+
-    sensorHtml("גיל פנימי",x.ageSignal??0)+
-    sensorHtml("המין שלי",x.sexSignal??0,true)+
-    sensorHtml("מין השותף הקרוב",x.mateSexSignal??0,true)+
-    sensorHtml("רצון הרבייה שלו מהצעד הקודם",x.mateReproSignal??0)+
-    sensorHtml("השקעת הרבייה שלו מהצעד הקודם",x.mateInvestSignal??0)+
-    sensorHtml("כמה בלוק קרוב",x.blockNear)+
-    sensorHtml("כיוון הבלוק: קדימה / אחורה",x.blockAhead,true)+
-    sensorHtml("כיוון הבלוק: ימין / שמאל",x.blockSide,true)+
-    sensorHtml("נושא משהו",x.carrying)+
-    sensorHtml("נושא בלוק",x.carryBlock??0)+
-    sensorHtml("נושא אוכל",x.carryFood??0)+
-    sensorHtml("נמצא באזור המסוכן",x.hazardHere)+
-    sensorHtml("סכנה בכיוון התנועה",x.hazardAhead)+
-    sensorHtml("רמת הגנה מבלוק",x.protection)+
-    sensorHtml("דחף אקראי",x.noise,true)+
-    sensorHtml("זיכרון פנימי M1",s.memory[0],true)+
-    sensorHtml("זיכרון פנימי M2",s.memory[1],true);
-
-  drawBrain(s.brain);
+  const s=selectedSomik(),badge=document.getElementById('selectedBadge'),info=document.getElementById('selectedInfo'),sensors=document.getElementById('sensors'),stats=document.getElementById('brainStats');
+  if(!s){badge.textContent='לחץ על Somik';info.innerHTML='לחץ על Somik כדי לראות את המוח והמצב שלו.';sensors.innerHTML='';if(stats)stats.textContent='בחר Somik.';bctx.clearRect(0,0,brainCanvas.width,brainCanvas.height);bctx.fillStyle='#94a3b8';bctx.font='18px Arial';bctx.textAlign='center';bctx.fillText('בחר Somik כדי לראות את המוח',brainCanvas.width/2,brainCanvas.height/2);return;}
+  badge.textContent='#'+s.id;const b=s.brain,g=b.genome,o=b.lastOutputs||{};
+  info.innerHTML=`מין: <b>${s.sex==='male'?'זכר ♂':'נקבה ♀'}</b><br>דור: <b>${s.generation}</b><br>זמן חיים: <b>${s.age.toLocaleString('he-IL')}</b><br>אנרגיה: <b>${s.energy.toFixed(1)}</b><br>צאצאים: <b>${s.childrenCount}</b><br>אוכל שאכל: <b>${s.foodEaten}</b><br>בלוקים שהרים/הניח: <b>${s.blocksPicked}/${s.blocksDropped}</b><br><br><b>יציאות מוח:</b><br>מנוע שמאל: <b>${(o.left_motor||0).toFixed(3)}</b> · מנוע ימין: <b>${(o.right_motor||0).toFixed(3)}</b><br>לסת: <b>${(o.jaw||0).toFixed(3)}</b> · אחיזה: <b>${(o.grip||0).toFixed(3)}</b> · פליטה כימית: <b>${(o.chemical_emit||0).toFixed(3)}</b>`;
+  let html='';for(const k of ['energy','health','touch','chemical'])html+=sensorHtml(k,b.lastInputs[k]??0,true);for(const rs of g.sensors)html+=sensorHtml('ray '+rs.id,b.lastInputs['ray:'+rs.id]??-1,true);sensors.innerHTML=html;
+  if(stats)stats.innerHTML=`קרניים: <b>${g.sensors.length}</b> · נוירונים פנימיים: <b>${g.hidden.length}</b> · קשרים פעילים: <b>${g.connections.filter(c=>c.enabled).length}</b><br>עדכוני למידה בחיים: <b>${b.learningUpdates.toLocaleString('he-IL')}</b> · |Δ| מצטבר: <b>${b.learningAbsDelta.toFixed(3)}</b> · plasticity: <b>${g.plasticityRate.toFixed(4)}</b>`;
+  drawBrain(b);
 }
-
-function neuronPos(layerIndex,index,count){
-  const xs=[35,160,285];
-  const top=22,bottom=300;
-  const y=count===1?160:top+index*(bottom-top)/(count-1);
-  return{x:xs[layerIndex],y};
-}
-
-function weightStyle(w){
-  const a=Math.min(0.70,0.08+Math.abs(w)*0.23);
-  return w>=0?`rgba(147,197,253,${a})`:`rgba(248,113,113,${a})`;
-}
-
+function weightStyle(w){const a=Math.min(.9,.10+Math.abs(w)*.35);return w>=0?`rgba(96,165,250,${a})`:`rgba(248,113,113,${a})`;}
 function drawBrain(brain){
-  bctx.clearRect(0,0,brainCanvas.width,brainCanvas.height);
-
-  const inPos=Array.from({length:brain.inputN},(_,i)=>neuronPos(0,i,brain.inputN));
-  const hidPos=Array.from({length:brain.hiddenN},(_,i)=>neuronPos(1,i,brain.hiddenN));
-  const outPos=Array.from({length:brain.outputN},(_,i)=>neuronPos(2,i,brain.outputN));
-
-  for(let h=0;h<brain.hiddenN;h++){
-    for(let i=0;i<brain.inputN;i++){
-      bctx.beginPath();
-      bctx.moveTo(inPos[i].x,inPos[i].y);
-      bctx.lineTo(hidPos[h].x,hidPos[h].y);
-      bctx.strokeStyle=weightStyle(brain.w1[h][i]);
-      bctx.lineWidth=0.75;
-      bctx.stroke();
-    }
-  }
-
-  for(let o=0;o<brain.outputN;o++){
-    for(let h=0;h<brain.hiddenN;h++){
-      bctx.beginPath();
-      bctx.moveTo(hidPos[h].x,hidPos[h].y);
-      bctx.lineTo(outPos[o].x,outPos[o].y);
-      bctx.strokeStyle=weightStyle(brain.w2[o][h]);
-      bctx.lineWidth=1;
-      bctx.stroke();
-    }
-  }
-
-  function node(p,val,label){
-    const intensity=Math.round(105+Math.abs(val)*150);
-
-    bctx.beginPath();
-    bctx.arc(p.x,p.y,6.2,0,Math.PI*2);
-    bctx.fillStyle=`rgb(${intensity},${intensity},${intensity})`;
-    bctx.fill();
-    bctx.strokeStyle="#0f172a";
-    bctx.stroke();
-
-    if(label){
-      bctx.fillStyle="#cbd5e1";
-      bctx.font="8px Arial";
-      bctx.textAlign="center";
-      bctx.fillText(label,p.x,p.y+15);
-    }
-  }
-
-  inPos.forEach((p,i)=>node(p,brain.lastInputs[i],"I"+(i+1)));
-  hidPos.forEach((p,i)=>node(p,brain.lastHidden[i],""));
-
-  node(outPos[0],brain.lastOutputs[0],"פנה");
-  node(outPos[1],brain.lastOutputs[1]*2-1,"זוז");
-  node(outPos[2],brain.lastOutputs[2]*2-1,"הרם");
-  node(outPos[3],brain.lastOutputs[3]*2-1,"הנח");
-  node(outPos[4],brain.lastOutputs[4],"M1");
-  node(outPos[5],brain.lastOutputs[5]*2-1,"G1");
-  node(outPos[6],brain.lastOutputs[6],"M2");
-  node(outPos[7],brain.lastOutputs[7]*2-1,"G2");
-  node(outPos[8],brain.lastOutputs[8]*2-1,"רבייה");
-  node(outPos[9],brain.lastOutputs[9]*2-1,"אכול");
-  node(outPos[10],brain.lastOutputs[10]*2-1,"השקעה");
+  const c=brainCanvas,ctx=bctx,Wc=c.width,Hc=c.height;ctx.clearRect(0,0,Wc,Hc);const g=brain.genome;
+  const inputIds=['energy','health','touch','chemical',...g.sensors.map(s=>'ray:'+s.id)],hiddenIds=g.hidden.map(h=>h.id),outputIds=brain.actuators.map(a=>'act:'+a);
+  const pos=new Map();const layer=(ids,x)=>ids.forEach((id,i)=>pos.set(id,{x,y:32+(Hc-64)*(i+.5)/ids.length}));layer(inputIds,75);layer(hiddenIds,Wc/2);layer(outputIds,Wc-80);
+  for(const cn of g.connections){if(!cn.enabled||!pos.has(cn.from)||!pos.has(cn.to))continue;const a=pos.get(cn.from),z=pos.get(cn.to),w=cn.weight+(brain.learnedWeights[cn.id]||0);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(z.x,z.y);ctx.strokeStyle=weightStyle(w);ctx.lineWidth=Math.min(3,.45+Math.abs(w)*1.1);ctx.stroke();}
+  const val=id=>id.startsWith('act:')?(brain.lastRawOutputs[id.slice(4)]||0):(brain.lastHidden[id]??brain.lastInputs[id]??0);
+  const label=id=>id.startsWith('ray:')?id.replace('ray:','R'):id.startsWith('act:')?({left_motor:'L motor',right_motor:'R motor',jaw:'jaw',grip:'grip',chemical_emit:'chem'})[id.slice(4)]:id;
+  for(const [id,p] of pos){const v=clamp(val(id),-1,1),lum=Math.round(115+Math.abs(v)*120);ctx.beginPath();ctx.arc(p.x,p.y,id.startsWith('h')?7:8,0,Math.PI*2);ctx.fillStyle=`rgb(${lum},${lum},${lum})`;ctx.fill();ctx.strokeStyle='#0f172a';ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#cbd5e1';ctx.font='11px Arial';ctx.textAlign=id.startsWith('act:')?'right':(id.startsWith('h')?'center':'left');ctx.fillText(label(id),p.x+(id.startsWith('act:')?-12:12),p.y+4);}
+  ctx.fillStyle='#93c5fd';ctx.font='12px Arial';ctx.textAlign='center';ctx.fillText('RAW INPUTS',75,15);ctx.fillText('RECURRENT HIDDEN',Wc/2,15);ctx.fillText('ACTUATORS',Wc-80,15);
 }
 
 worldCanvas.addEventListener("pointerdown",e=>{
