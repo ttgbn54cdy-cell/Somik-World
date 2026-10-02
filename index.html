@@ -299,10 +299,13 @@ const BLOCK_GRID=25;
 const EMERGENCY_MAX_POP=1000; // לא חוק ביולוגי — רק הגנת דפדפן
 const MATE_VISION=180;
 const MATE_CONTACT_RADIUS=24;
-const REPRO_SIGNAL_THRESHOLD=0.58;
 const ACTION_THRESHOLD=0.68;
-const MIN_REPRO_INVEST=2;
-const MAX_REPRO_INVEST=80;
+// v4-style reproduction is body-state/contact driven, not a neural output.
+const REPRO_MATURITY_TICKS=300;
+const REPRO_COOLDOWN_TICKS=260;
+const REPRO_ENERGY_THRESHOLD=104.4; // 58% of the v0.5 energy cap (180)
+const REPRO_INVESTMENT_FRACTION=0.24;
+const REPRO_MIN_CONTRIBUTION=18;
 const FOOD_TARGET=120;
 const FOOD_REGEN_CHANCE=0.18;
 const INITIAL_BLOCKS=120;
@@ -379,7 +382,7 @@ const PRE_SEX_MARKER_SAVE_KEY="somik-world-v05-pre-sex-marker-backup";
 const PRE_SIMPLE_SEX_COLOR_SAVE_KEY="somik-world-v05-pre-simple-sex-color-backup";
 const PRE_EAT_SAVE_KEY="somik-world-v05-pre-eat-output-backup";
 const PRE_EMERGENCE_V14_SAVE_KEY="somik-world-v05-pre-emergence-v14-backup";
-const SAVE_VERSION=14;
+const SAVE_VERSION=15;
 
 const MEMORY_GATE_OPEN=0.65;
 const MEMORY_WRITE_DELTA=0.03;
@@ -470,9 +473,11 @@ function formatOutcomePair(a,b){
   const kidsA=a.children/a.n,kidsB=b.children/b.n;
   return `חיים ${lifeA.toLocaleString("he-IL")} / ${lifeB.toLocaleString("he-IL")} · צאצאים ${kidsA.toFixed(1)} / ${kidsB.toFixed(1)}`;
 }
+function reproductionEligible(s){
+  return s.energy>=REPRO_ENERGY_THRESHOLD && s.age>=REPRO_MATURITY_TICKS && (ticks-(s.lastBirthTick??-1e12))>=REPRO_COOLDOWN_TICKS;
+}
 function desiredReproInvestment(s){
-  const p=clamp(s.lastDecision?.investment??0.42,0,1);
-  return MIN_REPRO_INVEST+p*(MAX_REPRO_INVEST-MIN_REPRO_INVEST);
+  return Math.min(s.energy*REPRO_INVESTMENT_FRACTION,180*0.34);
 }
 function livingFounderStats(){
   const totals=new Map();
@@ -910,12 +915,7 @@ function matingStats(){
     if(s.sex==="male")males++;
     else females++;
 
-    if(
-      s.energy>0 &&
-      (s.lastDecision.reproduce??0)>=REPRO_SIGNAL_THRESHOLD
-    ){
-      willing.push(s);
-    }
+    if(reproductionEligible(s)) willing.push(s);
   }
 
   let nearbyPairs=0;
@@ -1319,7 +1319,7 @@ class Brain{
     this.lastOutputs={left_motor:raw.left_motor,right_motor:raw.right_motor,jaw:(raw.jaw+1)/2,grip:(raw.grip+1)/2,chemical_emit:(raw.chemical_emit+1)/2};
     this.lastTrace={inputs:{...inputs},prev:{...prev},hidden:{...next},rawOutputs:{...raw}};
     const drive=clamp((raw.left_motor+raw.right_motor+2)/4,0,1), turn=clamp((raw.right_motor-raw.left_motor)/2,-1,1), grip=this.lastOutputs.grip, jaw=this.lastOutputs.jaw;
-    return {turn,thrust:drive,pick:grip,drop:1-grip,memory1Value:0,memory1Gate:0,memory2Value:0,memory2Gate:0,reproduce:(inputs.energy>0.15?1:0),eat:jaw,investment:0.24,left_motor:raw.left_motor,right_motor:raw.right_motor,jaw,grip,chemical_emit:this.lastOutputs.chemical_emit};
+    return {turn,thrust:drive,left_motor:raw.left_motor,right_motor:raw.right_motor,jaw,grip,chemical_emit:this.lastOutputs.chemical_emit};
   }
   dump(){return {genome:this.genome,hiddenState:this.hiddenState,learnedWeights:this.learnedWeights,lastInputs:this.lastInputs,lastHidden:this.lastHidden,lastOutputs:this.lastOutputs,lastRawOutputs:this.lastRawOutputs,learningUpdates:this.learningUpdates,learningAbsDelta:this.learningAbsDelta,lastBodyEnergy:this.lastBodyEnergy};}
   static load(d){const b=Object.create(Brain.prototype);b.fixedSensors=['energy','health','touch','chemical'];b.actuators=['left_motor','right_motor','jaw','grip','chemical_emit'];b.maxRaySensors=12;b.minRaySensors=2;b.maxHidden=32;b.minHidden=4;Object.assign(b,d);b.genome=JSON.parse(JSON.stringify(d.genome));b.hiddenState=d.hiddenState||{};b.learnedWeights=d.learnedWeights||{};b.lastInputs=d.lastInputs||{};b.lastHidden=d.lastHidden||{};b.lastOutputs=d.lastOutputs||{left_motor:0,right_motor:0,jaw:0,grip:0,chemical_emit:0};b.lastRawOutputs=d.lastRawOutputs||{};return b;}
@@ -1409,48 +1409,11 @@ class Somik{
     this.prevReproduceSignal=0;
     this.prevInvestmentSignal=0;
 
-    // שני תאי זיכרון. צאצא חדש תמיד מתחיל ללא זיכרונות.
-    this.memory=[0,0];
-    this.memoryTracker=makeMemoryTracker(this.x,this.y,ticks);
+    // v5.1: recurrent hiddenState inside the v4 brain is the only neural memory.
+    this.lastSensors={};
+    this.lastDecision={turn:0,thrust:0,left_motor:0,right_motor:0,jaw:0,grip:0,chemical_emit:0};
+    this.lastBirthTick=-1e12;
 
-    this.carrying=null;
-    this.carryingFood=null;
-    this.actionCooldown=0;
-
-    this.lastSensors={
-      energy:0,
-      foodNear:0,
-      foodAhead:0,
-      foodSide:0,
-      neighborNear:0,
-      blockNear:0,
-      blockAhead:0,
-      blockSide:0,
-      carrying:0,
-      hazardHere:0,
-      hazardAhead:0,
-      protection:0,
-      noise:0,
-      sexSignal:0,
-      ageSignal:0,
-      mateNear:0,
-      mateAhead:0,
-      mateSide:0,
-      carryBlock:0,
-      carryFood:0,
-      mateSexSignal:0,
-      mateReproSignal:0,
-      mateInvestSignal:0
-    };
-
-    this.lastDecision={
-      turn:0,thrust:0,pick:0,drop:0,
-      memory1Value:0,memory1Gate:0,
-      memory2Value:0,memory2Gate:0,
-      reproduce:0,
-      eat:0,
-      investment:0.42
-    };
     this.nearestFood=null;
     this.nearestBlock=null;
     this.lastHazardDamage=0;
@@ -1464,7 +1427,7 @@ class Somik{
     for(const f of foods)entities.push({x:f.x,y:f.y,r:f.r||5});
     for(const s of somiks)if(s!==this)entities.push({x:s.x,y:s.y,r:s.r});
     for(const q of entities){const d=Math.hypot(q.x-this.x,q.y-this.y)-q.r-this.r;if(d<=0){touching=true;break;}}
-    const inputs={energy:clamp(this.energy/180,0,1)*2-1,health:1,touch:touching?1:-1,chemical:0};
+    const inputs={energy:clamp(this.energy/180,0,1)*2-1,health:0,touch:touching?1:-1,chemical:0};
     const rayCircle=(ox,oy,dx,dy,cx,cy,rr,maxD)=>{const lx=cx-ox,ly=cy-oy,t=lx*dx+ly*dy;if(t<0||t>maxD)return maxD;const p2=lx*lx+ly*ly-t*t,r2=rr*rr;if(p2>r2)return maxD;return Math.max(0,t-Math.sqrt(Math.max(0,r2-p2)));};
     for(const rs of g.sensors){const ang=this.dir+rs.angle,dx=Math.cos(ang),dy=Math.sin(ang);let best=rs.range;
       if(dx>1e-9)best=Math.min(best,(W-this.r-this.x)/dx); else if(dx<-1e-9)best=Math.min(best,(this.r-this.x)/(-dx));
@@ -1640,21 +1603,6 @@ class Somik{
     const decision=this.brain.think(inputs);
     this.lastDecision=decision;
 
-    const previousMemory=this.memory.slice();
-
-    // gate=0: שומר את הזיכרון הישן. gate=1: מחליף בערך החדש.
-    // הערך החדש ישפיע על ההחלטה החל מה-tick הבא.
-    this.memory[0]=clamp(
-      this.memory[0]*(1-decision.memory1Gate)+decision.memory1Value*decision.memory1Gate,
-      -1,1
-    );
-    this.memory[1]=clamp(
-      this.memory[1]*(1-decision.memory2Gate)+decision.memory2Value*decision.memory2Gate,
-      -1,1
-    );
-
-    recordMemoryTick(this,previousMemory,decision);
-
     this.dir+=decision.turn*0.17;
 
     const moveSpeed=0.25+decision.thrust*1.75;
@@ -1685,71 +1633,35 @@ class Somik{
 
     let ateFoodThisTick=false;
 
-    // אוכל שנישא יכול להיאכל מאוחר יותר — רק בהחלטת EAT.
-    if(this.carryingFood && decision.eat>ACTION_THRESHOLD && decision.eat>decision.drop){
+    // v4 jaw: generic contact action. Material physics decides whether contact is edible.
+    if(this.carryingFood && decision.jaw>ACTION_THRESHOLD){
       this.energy=Math.min(180,this.energy+42);
       this.foodEaten++;
       this.carryingFood=null;
       ateFoodThisTick=true;
     }
-
-    // EAT / PICK / IGNORE — אין יותר אכילה אוטומטית.
-    if(!ateFoodThisTick && !this.carryingFood){
+    if(!ateFoodThisTick){
       for(let i=foods.length-1;i>=0;i--){
-        const f=foods[i];
-        const dx=this.x-f.x,dy=this.y-f.y;
-
-        if(dx*dx+dy*dy<sq(this.r+f.r)){
-          const wantsPickFood=
-            !this.carrying &&
-            this.actionCooldown<=0 &&
-            decision.pick>ACTION_THRESHOLD &&
-            decision.pick>decision.eat;
-
-          const wantsEat=
-            decision.eat>ACTION_THRESHOLD &&
-            decision.eat>=decision.pick;
-
-          if(wantsPickFood){
-            this.carryingFood={
-              r:f.r??5,pickedAtTick:ticks,pickupX:f.x,pickupY:f.y,
-              everMoved:!!f.everMoved,movedDistance:f.movedDistance??0
-            };
-            foods.splice(i,1);
-            this.energy-=0.12;
-            this.actionCooldown=12;
-            this.foodPicked++;
-            foodPickCount++;
-            break;
-          }
-
-          if(wantsEat){
-            this.energy=Math.min(180,this.energy+42);
-            this.foodEaten++;
-            foods.splice(i,1);
-            ateFoodThisTick=true;
-            break;
-          }
-
-          break; // IGNORE
+        const f=foods[i],dx=this.x-f.x,dy=this.y-f.y;
+        if(dx*dx+dy*dy<sq(this.r+f.r) && decision.jaw>ACTION_THRESHOLD){
+          this.energy=Math.min(180,this.energy+42);
+          this.foodEaten++; foods.splice(i,1); ateFoodThisTick=true; break;
         }
       }
     }
 
-    const nowInHazard=insideHazard(this.x,this.y);
-    if(nowInHazard&&!this.memoryTracker.prevInHazard){
-      startMemoryEvent(this,"hazard");
-    }
-    this.memoryTracker.prevInHazard=nowInHazard;
-
-    if(ateFoodThisTick){
-      startMemoryEvent(this,"food");
-    }
-
-    if(decision.pick>ACTION_THRESHOLD&&decision.pick>decision.drop){
-      this.tryPick();
-    }else if(decision.drop>ACTION_THRESHOLD&&decision.drop>decision.pick){
+    // v4 grip hysteresis: >0.70 attempts a grip; <0.32 releases.
+    if((this.carrying||this.carryingFood) && decision.grip<0.32){
       if(!this.tryDropFood())this.tryDrop();
+    }else if(!this.carrying&&!this.carryingFood && decision.grip>0.70){
+      // Food and blocks are both generic grippable contacts; no semantic sensor tells the brain which is which.
+      let bestFood=-1,bestD2=Infinity;
+      for(let i=0;i<foods.length;i++){const f=foods[i],dx=f.x-this.x,dy=f.y-this.y,d2=dx*dx+dy*dy;if(d2<bestD2&&d2<28*28){bestD2=d2;bestFood=i;}}
+      if(bestFood>=0 && this.actionCooldown<=0){
+        const f=foods.splice(bestFood,1)[0];
+        this.carryingFood={r:f.r??5,pickedAtTick:ticks,pickupX:f.x,pickupY:f.y,everMoved:!!f.everMoved,movedDistance:f.movedDistance??0};
+        this.energy-=0.12; this.actionCooldown=12; this.foodPicked++; foodPickCount++;
+      }else this.tryPick();
     }
 
   }
@@ -1914,10 +1826,7 @@ function serializeSomik(s){
     hazardDamageTaken:s.hazardDamageTaken,
     totalReproInvestment:s.totalReproInvestment,
     birthsAsParent:s.birthsAsParent,
-    prevReproduceSignal:s.prevReproduceSignal,
-    prevInvestmentSignal:s.prevInvestmentSignal,
-    memory:s.memory.slice(),
-    memoryTracker:s.memoryTracker,
+    lastBirthTick:s.lastBirthTick,
     carrying:s.carrying?serializeBlock(s.carrying):null,
     carryingFood:s.carryingFood?{...s.carryingFood}:null,
     actionCooldown:s.actionCooldown,
@@ -1963,44 +1872,16 @@ function deserializeSomik(data){
   s.hazardDamageTaken=data.hazardDamageTaken ?? 0;
   s.totalReproInvestment=data.totalReproInvestment ?? 0;
   s.birthsAsParent=data.birthsAsParent ?? 0;
-  s.prevReproduceSignal=data.prevReproduceSignal ?? 0;
-  s.prevInvestmentSignal=data.prevInvestmentSignal ?? 0;
-  s.memory=Array.isArray(data.memory)&&data.memory.length>=2
-    ? [clamp(data.memory[0],-1,1),clamp(data.memory[1],-1,1)]
-    : [0,0];
-  s.memoryTracker=normalizeMemoryTracker(data.memoryTracker,s.x,s.y);
+  s.lastBirthTick=data.lastBirthTick ?? -1e12;
 
   s.carrying=data.carrying?deserializeBlock(data.carrying):null;
   s.carryingFood=data.carryingFood?{...data.carryingFood}:null;
   s.actionCooldown=data.actionCooldown ?? 0;
-  s.lastSensors=data.lastSensors ?? {
-    energy:0,foodNear:0,foodAhead:0,foodSide:0,neighborNear:0,
-    blockNear:0,blockAhead:0,blockSide:0,carrying:0,
-    hazardHere:0,hazardAhead:0,protection:0,noise:0,
-    sexSignal:s.sex==="male"?-1:1,
-    ageSignal:1-Math.exp(-(s.age??0)/2500),
-    mateNear:0,mateAhead:0,mateSide:0,
-    carryBlock:s.carrying?1:0,carryFood:s.carryingFood?1:0,
-    mateSexSignal:0,mateReproSignal:0,mateInvestSignal:0
-  };
-  s.lastSensors.carryBlock=s.lastSensors.carryBlock??(s.carrying?1:0);
-  s.lastSensors.carryFood=s.lastSensors.carryFood??(s.carryingFood?1:0);
-  s.lastSensors.mateSexSignal=s.lastSensors.mateSexSignal??0;
-  s.lastSensors.mateReproSignal=s.lastSensors.mateReproSignal??0;
-  s.lastSensors.mateInvestSignal=s.lastSensors.mateInvestSignal??0;
-
+  s.lastSensors=data.lastSensors ?? {};
   s.lastDecision={
-    turn:data.lastDecision?.turn ?? 0,
-    thrust:data.lastDecision?.thrust ?? 0,
-    pick:data.lastDecision?.pick ?? 0,
-    drop:data.lastDecision?.drop ?? 0,
-    memory1Value:data.lastDecision?.memory1Value ?? 0,
-    memory1Gate:data.lastDecision?.memory1Gate ?? 0,
-    memory2Value:data.lastDecision?.memory2Value ?? 0,
-    memory2Gate:data.lastDecision?.memory2Gate ?? 0,
-    reproduce:data.lastDecision?.reproduce ?? 0,
-    eat:data.lastDecision?.eat ?? 0,
-    investment:data.lastDecision?.investment ?? 0.42
+    turn:data.lastDecision?.turn ?? 0, thrust:data.lastDecision?.thrust ?? 0,
+    left_motor:data.lastDecision?.left_motor ?? 0, right_motor:data.lastDecision?.right_motor ?? 0,
+    jaw:data.lastDecision?.jaw ?? 0, grip:data.lastDecision?.grip ?? 0, chemical_emit:data.lastDecision?.chemical_emit ?? 0
   };
   s.lastHazardDamage=data.lastHazardDamage ?? 0;
   s.nearestFood=null;
@@ -2406,10 +2287,7 @@ function resetWorld(){
 function processFreeReproduction(){
   if(somiks.length>=EMERGENCY_MAX_POP)return;
 
-  const willing=somiks.filter(s=>
-    s.energy>0 &&
-    (s.lastDecision.reproduce??0)>=REPRO_SIGNAL_THRESHOLD
-  );
+  const willing=somiks.filter(reproductionEligible);
   if(willing.length<2)return;
 
   const used=new Set();
@@ -2433,10 +2311,11 @@ function processFreeReproduction(){
     const investB=desiredReproInvestment(partner);
 
     // כל הורה בוחר את ההשקעה שלו. אם אין לו את האנרגיה שבחר — הניסיון נכשל.
-    if(a.energy<=investA||partner.energy<=investB||somiks.length>=EMERGENCY_MAX_POP)continue;
+    if(investA<REPRO_MIN_CONTRIBUTION||investB<REPRO_MIN_CONTRIBUTION||a.energy<=investA||partner.energy<=investB||somiks.length>=EMERGENCY_MAX_POP)continue;
 
     a.energy-=investA;
     partner.energy-=investB;
+    a.lastBirthTick=ticks; partner.lastBirthTick=ticks;
     a.childrenCount++;partner.childrenCount++;
     a.birthsAsParent++;partner.birthsAsParent++;
     a.totalReproInvestment+=investA;
@@ -2466,12 +2345,6 @@ function processFreeReproduction(){
 
 function updateWorld(){
   ticks++;
-
-  // חישה חברתית משתמשת בהחלטות מה-tick הקודם, כדי שסדר העדכון לא ייתן יתרון מלאכותי.
-  for(const s of somiks){
-    s.prevReproduceSignal=s.lastDecision?.reproduce??0;
-    s.prevInvestmentSignal=s.lastDecision?.investment??0;
-  }
 
   for(const s of [...somiks])s.update();
 
