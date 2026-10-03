@@ -1970,20 +1970,49 @@ function stateObject(){
   };
 }
 
-function saveGame(){
-  try{
-    localStorage.setItem(SAVE_KEY,JSON.stringify(stateObject()));
-
-    const t=new Date();
-    setSaveStatus(
-      "✅ נשמר "+t.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit",second:"2-digit"})
-    );
-    return true;
-  }catch(err){
-    console.error("Save failed",err);
-    setSaveStatus("⚠️ השמירה נכשלה");
-    return false;
+// Older experimental autosaves can fill the small localStorage quota because each
+// version stores a full world snapshot. They are removed only if the browser
+// reports quota exhaustion; the current v5.3.2 save is never removed here.
+const OLD_EXPERIMENT_AUTOSAVE_KEYS=[
+  "somik-world-v5-2-neutral-spatial-baseline-autosave",
+  "somik-world-v5-3-tree-ecology-autosave",
+  "somik-world-v5-3-1-tree-ecology-autosave"
+];
+function isQuotaError(err){
+  return !!err && (err.name==="QuotaExceededError" || err.name==="NS_ERROR_DOM_QUOTA_REACHED" || err.code===22 || err.code===1014);
+}
+function clearOldExperimentAutosaves(){
+  for(const key of OLD_EXPERIMENT_AUTOSAVE_KEYS){
+    if(key!==SAVE_KEY) localStorage.removeItem(key);
   }
+}
+function saveGame(){
+  let payload;
+  try{
+    payload=JSON.stringify(stateObject());
+    localStorage.setItem(SAVE_KEY,payload);
+  }catch(err){
+    if(isQuotaError(err)){
+      try{
+        clearOldExperimentAutosaves();
+        localStorage.setItem(SAVE_KEY,payload ?? JSON.stringify(stateObject()));
+      }catch(retryErr){
+        console.error("Save failed after quota cleanup",retryErr);
+        setSaveStatus("⚠️ השמירה נכשלה — אין מספיק מקום באחסון המקומי");
+        return false;
+      }
+    }else{
+      console.error("Save failed",err);
+      setSaveStatus("⚠️ השמירה נכשלה");
+      return false;
+    }
+  }
+
+  const t=new Date();
+  setSaveStatus(
+    "✅ נשמר "+t.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit",second:"2-digit"})
+  );
+  return true;
 }
 
 function restoreState(state){
